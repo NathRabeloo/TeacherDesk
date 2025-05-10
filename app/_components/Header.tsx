@@ -88,14 +88,6 @@ const Header: React.FC<HeaderProps> = ({
             className="absolute right-10 bottom-[-10px] max-h-[180px] object-contain"
           />
         )}
-        
-        {!showOnlyLeftImage && !desktopImageRight && title !== "Bibliografia" && (
-          <img
-            src="/assets/mesa_professora_ruiva.png"
-            alt="Mesa Teacher Desk"
-            className="absolute right-10 bottom-[-10px] max-h-[180px] object-contain"
-          />
-        )}
       </div>
     </div>
   );

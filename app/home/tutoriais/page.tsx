@@ -74,10 +74,12 @@ const Tutoriais = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {tutoriaisFiltrados.map((tutorial) => (
           <Card key={tutorial.id}>
-            <CardContent className="p-4 bg-white rounded-lg shadow-md space-y-2 dark:bg-dark-card">
-              <h2 className="text-md font-semibold">{tutorial.titulo}</h2>
+            <CardContent className="p-3 bg-white rounded-lg shadow-md space-y-2 min-h-[95px] dark:bg-dark-card flex flex-col justify-between">
+              <h2 className="text-sm font-semibold leading-tight line-clamp-2">
+                {tutorial.titulo}
+              </h2>
               <div
-                className={`rounded text-white text-sm font-semibold px-2 py-1 text-center ${tipoColors[tutorial.tipo]}`}
+                className={`rounded text-white text-xs font-semibold px-2 py-1 text-left ${tipoColors[tutorial.tipo]}`}
               >
                 {tutorial.tipo.charAt(0).toUpperCase() + tutorial.tipo.slice(1)}
               </div>
@@ -90,4 +92,3 @@ const Tutoriais = () => {
 };
 
 export default Tutoriais;
-
