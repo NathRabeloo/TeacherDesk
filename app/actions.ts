@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { MENSAGENS } from "@/constants/messages";
 
+// Função para criar um novo usuário
 export const signUpAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
   const password = formData.get("password")?.toString();
@@ -36,6 +37,7 @@ export const signUpAction = async (formData: FormData) => {
   return redirect(`/sign-up?message=${encodeURIComponent(MENSAGENS.cadastro.sucesso)}`);
 };
 
+// Função para fazer login
 export const signInAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
   const password = formData.get("password")?.toString();
@@ -58,6 +60,7 @@ export const signInAction = async (formData: FormData) => {
   return redirect("/home");
 };
 
+// Função para redefinir senha
 export const forgotPasswordAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
   const supabase = createClient();
@@ -84,6 +87,7 @@ export const forgotPasswordAction = async (formData: FormData) => {
   return encodedRedirect("success", "/forgot-password", MENSAGENS.redefinicaoSenha.sucessoRedefinir);
 };
 
+// Função para resetar senha
 export const resetPasswordAction = async (formData: FormData) => {
   const supabase = createClient();
 
@@ -110,12 +114,14 @@ export const resetPasswordAction = async (formData: FormData) => {
   return encodedRedirect("success", "/protected/reset-password", MENSAGENS.redefinicaoSenha.sucessoAtualizar);
 };
 
+// Função para deslogar o usuário
 export const signOutAction = async () => {
   const supabase = createClient();
   await supabase.auth.signOut();
   return redirect("/sign-in");
 };
 
+// Função para listar disciplinas do usuário
 export const listarDisciplinas = async () => {
   const supabase = createClient();
   const {
@@ -142,6 +148,7 @@ export const listarDisciplinas = async () => {
   return data;
 };
 
+// Função para criar disciplina
 export const criarDisciplina = async (formData: FormData) => {
   const nome = formData.get("nome")?.toString();
 
@@ -178,3 +185,36 @@ export const criarDisciplina = async (formData: FormData) => {
 
   return { success: true, data };
 };
+
+// Função para criar plano de aula
+export const criarPlanoAula = async (formData: FormData) => {
+  const titulo = formData.get("titulo")?.toString();
+  const descricao = formData.get("descricao")?.toString();
+  const disciplina_id = formData.get("disciplina_id")?.toString(); // Agora você vai associar o plano de aula à disciplina
+  const supabase = createClient();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+  if (!user || userError) {
+    console.error("Erro ao obter usuário:", userError?.message);
+    return { error: "Usuário não autenticado" };
+  }
+
+  const { data, error } = await supabase
+    .from("PlanoAula") // Inserir plano de aula na tabela 'PlanoAula'
+    .insert({
+      titulo,
+      descricao,
+      disciplina_id: disciplina_id ? disciplina_id : null, // Valor do ID da disciplina
+      user_id: user.id, // Associar o plano ao usuário
+    })
+    .select();
+
+  if (error) {
+    console.error("Erro ao criar plano de aula:", error.message);
+    return { error: error.message };
+  }
+
+  console.log("Plano de aula criado:", data);
+  return { success: true, data };
+};
+
