@@ -1,9 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import * as XLSX from "xlsx";
-import * as mammoth from "mammoth";
-import dynamic from "next/dynamic";
+import SpinningWheel from "./SpinningWheel"; // componente existente
 
 type FormType = "range" | "list" | "arquivo";
 
@@ -12,10 +10,6 @@ interface DynamicFormProps {
     onSubmit: (data: any) => void;
     initialData?: any;
 }
-
-const SpinningWheel = dynamic(() => import("./SpinningWheel"), {
-    ssr: false,
-});
 
 const DynamicForm: React.FC<DynamicFormProps> = ({ formType, onSubmit, initialData }) => {
     const [range, setRange] = useState({ min: initialData?.min || "", max: initialData?.max || "" });
@@ -26,19 +20,10 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formType, onSubmit, initialDa
     const [shuffledValue, setShuffledValue] = useState("");
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
-    const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
-        setIsClient(true);
-    }, []);
-
-    useEffect(() => {
-        setSelectedResult("");
+        setSelectedResult(""); // limpa resultado ao mudar de tipo
     }, [formType]);
-
-    if (!isClient) {
-        return null;
-    }
 
     const handleListChange = (index: number, value: string) => {
         const updated = [...list];
@@ -74,14 +59,8 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formType, onSubmit, initialDa
     const handleRangeDraw = () => {
         const min = parseInt(range.min, 10);
         const max = parseInt(range.max, 10);
-
-        if (isNaN(min) || isNaN(max)) {
-            alert("Por favor, insira números válidos.");
-            return;
-        }
-
-        if (min > max) {
-            alert("O valor mínimo não pode ser maior que o valor máximo.");
+        if (isNaN(min) || isNaN(max) || min > max) {
+            alert("Por favor, insira valores válidos para mínimo e máximo.");
             return;
         }
 
@@ -92,66 +71,32 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formType, onSubmit, initialDa
     const handleArchiveChange = (index: number, value: string) => {
         const updated = [...arquivoItems];
         updated[index] = value;
-        setArquivoItems(updated);
+        setArquivoItems(updated); // Atualiza a lista com o novo valor
     };
 
     const removeArchiveItem = (index: number) => {
         const updated = [...arquivoItems];
-        updated.splice(index, 1);
-        setArquivoItems(updated);
+        updated.splice(index, 1); // Remove o item pelo índice
+        setArquivoItems(updated); // Atualiza a lista após remoção
     };
 
     const addArchiveItem = () => {
-        setArquivoItems([...arquivoItems, ""]);
+        setArquivoItems([...arquivoItems, ""]); // Adiciona um item vazio à lista
     };
 
-    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+
+    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
-        if (!file) return;
-
-        const extension = file.name.split(".").pop()?.toLowerCase();
-
-        try {
-            if (extension === "txt") {
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const content = reader.result as string;
-                    const lines = content.split("\n").map(line => line.trim()).filter(Boolean);
-                    setArquivoItems(lines);
-                };
-                reader.readAsText(file);
-            } else if (extension === "xlsx" || extension === "xls") {
-                const reader = new FileReader();
-                reader.onload = async (e) => {
-                    const data = new Uint8Array(e.target?.result as ArrayBuffer);
-                    const workbook = XLSX.read(data, { type: "array" });
-                    const sheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[sheetName];
-                    const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as string[][];
-                    const lines = json.flat().map(cell => cell?.toString()?.trim()).filter(Boolean);
-                    setArquivoItems(lines);
-                };
-                reader.readAsArrayBuffer(file);
-            }
-            else if (extension === "pdf") {
-                console.log("Não foi implementado");
-                alert("Não foi implementado");
-            }
-            else if (extension === "docx") {
-                const reader = new FileReader();
-                reader.onload = async (e) => {
-                    const arrayBuffer = e.target?.result as ArrayBuffer;
-                    const result = await mammoth.extractRawText({ arrayBuffer });
-                    const lines = result.value.split("\n").map(line => line.trim()).filter(Boolean);
-                    setArquivoItems(lines);
-                };
-                reader.readAsArrayBuffer(file);
-            } else {
-                alert("Formato de arquivo não suportado.");
-            }
-        } catch (error) {
-            console.error("Erro ao ler o arquivo:", error);
-            alert("Ocorreu um erro ao processar o arquivo.");
+        if (file && file.type === "text/plain") {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const content = reader.result as string;
+                const lines = content.split("\n").map((line) => line.trim()).filter((line) => line);
+                setArquivoItems(lines);
+            };
+            reader.readAsText(file);
+        } else {
+            alert("Por favor, selecione um arquivo .txt válido.");
         }
     };
 
@@ -166,36 +111,40 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formType, onSubmit, initialDa
 
     return (
         <form onSubmit={(e) => e.preventDefault()} className="w-full bg-[#5A9BF6] dark:bg-dark-primary text-white p-4 md:p-6 rounded-2xl shadow-lg flex flex-col gap-4">
+
+            {/* Range */}
             {formType === "range" && (
-                <div className="flex flex-col md:flex-row gap-4 items-end">
-                    <div className="flex flex-col">
-                        <label className="text-sm mb-1">Mínimo:</label>
+                <>
+                    <div>
+                        <label className="text-sm block mb-1">Mínimo:</label>
                         <input
                             type="number"
                             value={range.min}
                             onChange={(e) => setRange({ ...range, min: e.target.value })}
-                            className="px-3 py-2 rounded-lg text-black w-40"
+                            className="w-full px-3 py-2 rounded-lg text-black"
                         />
                     </div>
-                    <div className="flex flex-col">
-                        <label className="text-sm mb-1">Máximo:</label>
+                    <div>
+                        <label className="text-sm block mb-1">Máximo:</label>
                         <input
                             type="number"
                             value={range.max}
                             onChange={(e) => setRange({ ...range, max: e.target.value })}
-                            className="px-3 py-2 rounded-lg text-black w-40"
+                            className="w-full px-3 py-2 rounded-lg text-black"
                         />
                     </div>
+
                     <button
                         type="button"
                         onClick={handleRangeDraw}
-                        className="bg-[#4A86E8] hover:bg-[#3B76D4] px-4 py-2 rounded-lg text-white font-semibold"
+                        className="mt-2 bg-[#4A86E8] hover:bg-[#3B76D4] px-4 py-2 rounded-lg text-white font-semibold"
                     >
                         Sortear Número
                     </button>
-                </div>
+                </>
             )}
 
+            {/* Lista */}
             {formType === "list" && (
                 <div className="flex">
                     <div className="w-1/2">
@@ -222,19 +171,13 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formType, onSubmit, initialDa
                                 ))}
                             </div>
                         </div>
+
                         <button
                             type="button"
                             onClick={addListItem}
                             className="bg-[#4A86E8] hover:bg-[#3B76D4] px-4 py-2 rounded-lg text-white text-sm mt-4"
                         >
                             + Adicionar item
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setList([""])}
-                            className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white text-sm mt-2 ml-2"
-                        >
-                            Limpar todos
                         </button>
                     </div>
 
@@ -262,13 +205,13 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formType, onSubmit, initialDa
                             onClick={() => fileInputRef.current?.click()}
                             className="bg-[#4A86E8] hover:bg-[#3B76D4] px-1 py-1 rounded-lg text-white text-sm"
                         >
-                            Selecione o seu Arquivo
+                            Selecionar o Arquivo .TXT
                         </button>
                     </div>
 
                     <input
                         type="file"
-                        accept=".txt, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        accept=".txt"
                         ref={fileInputRef}
                         className="hidden"
                         onChange={handleFileUpload}
@@ -280,6 +223,8 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formType, onSubmit, initialDa
                                 <div className="">
                                     {arquivoItems.length} itens carregados.
                                 </div>
+
+                                {/* Lista de Itens com Edição e Remoção */}
                                 <div className="overflow-y-auto h-[200px]">
                                     <div className="w-full grid grid-cols-3">
                                         {arquivoItems.map((item, index) => (
@@ -287,13 +232,13 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formType, onSubmit, initialDa
                                                 <input
                                                     type="text"
                                                     value={item}
-                                                    onChange={(e) => handleArchiveChange(index, e.target.value)}
+                                                    onChange={(e) => handleArchiveChange(index, e.target.value)} // Alterar item
                                                     className="flex-1 px-3 py-2 rounded-lg text-black"
                                                     placeholder={`Item ${index + 1}`}
                                                 />
                                                 <button
                                                     type="button"
-                                                    onClick={() => removeArchiveItem(index)}
+                                                    onClick={() => removeArchiveItem(index)} // Remover item
                                                     className="text-black hover:bg-red-600 rounded-lg px-2 py-1 text-sm mx-1"
                                                 >
                                                     ✕
@@ -302,22 +247,18 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formType, onSubmit, initialDa
                                         ))}
                                     </div>
                                 </div>
+
+                                {/* Botão para Adicionar Novo Item */}
                                 <button
                                     type="button"
-                                    onClick={addArchiveItem}
+                                    onClick={addArchiveItem} // Adicionar novo item
                                     className="bg-[#4A86E8] hover:bg-[#3B76D4] px-4 py-2 rounded-lg text-white text-sm mt-4"
                                 >
                                     + Adicionar item
                                 </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setArquivoItems([])}
-                                    className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white text-sm mt-2 ml-2"
-                                >
-                                    Limpar todos
-                                </button>
                             </div>
 
+                            {/* Roleta para o Sorteio */}
                             <div className="mt-1">
                                 <SpinningWheel
                                     items={arquivoItems}
@@ -329,6 +270,18 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formType, onSubmit, initialDa
                             </div>
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* Resultado */}
+            {shuffling && (
+                <div className="mt-6 text-center text-3xl font-bold animate-pulse">
+                    {shuffledValue}
+                </div>
+            )}
+            {!shuffling && selectedResult && (
+                <div id={selectedResult} className="mt-3 text-center text-7xl font-bold text-azulteacherdesk-900 animate-bounce uppercase">
+                    🎉 {selectedResult} 🎉
                 </div>
             )}
         </form>
