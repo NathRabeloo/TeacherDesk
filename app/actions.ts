@@ -13,7 +13,7 @@ export const signUpAction = async (formData: FormData) => {
   const supabase = createClient();
   const origin = headers().get("origin");
 
-  if (!email || !password || !name ) {
+  if (!email || !password || !name) {
     return redirect(`/sign-up?message=${encodeURIComponent(MENSAGENS.cadastro.camposObrigatorios)}`);
   }
 
@@ -24,7 +24,6 @@ export const signUpAction = async (formData: FormData) => {
       emailRedirectTo: `${origin}/auth/callback`,
       data: {
         name,
-      
       },
     },
   });
@@ -115,4 +114,67 @@ export const signOutAction = async () => {
   const supabase = createClient();
   await supabase.auth.signOut();
   return redirect("/sign-in");
+};
+
+export const listarDisciplinas = async () => {
+  const supabase = createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (!user || userError) {
+    console.error("Erro ao obter usuário:", userError?.message);
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("Disciplina")
+    .select("id, nome")
+    .eq("user_id", user.id)
+    .order("id", { ascending: false });
+
+  if (error) {
+    console.error("Erro ao listar disciplinas:", error.message);
+    return [];
+  }
+
+  return data;
+};
+
+export const criarDisciplina = async (formData: FormData) => {
+  const nome = formData.get("nome")?.toString();
+
+  if (!nome) {
+    return { error: "Nome da disciplina é obrigatório" };
+  }
+
+  const supabase = createClient();
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (!user || userError) {
+    console.error("Erro ao obter usuário:", userError?.message);
+    return { error: "Usuário não autenticado" };
+  }
+
+  const { data, error, status } = await supabase
+    .from("Disciplina")
+    .insert({
+      nome: nome,
+      user_id: user.id,
+    })
+    .select();
+
+  if (error) {
+    console.error("Erro ao criar disciplina:", error.message);
+    return { error: error.message };
+  }
+
+  console.log("Disciplina criada:", data, "Status:", status);
+
+  return { success: true, data };
 };

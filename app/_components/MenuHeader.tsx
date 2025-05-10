@@ -84,9 +84,10 @@ const MenuHeader: React.FC = () => {
           <span className="text-sm hidden sm:inline">Página Principal</span>
         </button>
 
-        <button onClick={() => router.push("/profile")} className="flex items-center space-x-1 hover:text-gray-200">
+        <button onClick={() => router.push("/header/perfil")} className="flex items-center space-x-1 hover:text-gray-200">
           <FaUser />
           <span className="text-sm hidden sm:inline">Meu Perfil</span>
+          
         </button>
 
         <div className="hover:text-gray-200">
