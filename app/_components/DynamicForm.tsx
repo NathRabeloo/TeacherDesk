@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import * as XLSX from "xlsx";
 import * as mammoth from "mammoth";
-import SpinningWheel from "./SpinningWheel"; 
+import SpinningWheel from "./SpinningWheel";
 
 type FormType = "range" | "list" | "arquivo";
 
@@ -24,7 +24,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formType, onSubmit, initialDa
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     useEffect(() => {
-        setSelectedResult(""); 
+        setSelectedResult("");
     }, [formType]);
 
     const handleListChange = (index: number, value: string) => {
@@ -137,29 +137,30 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formType, onSubmit, initialDa
             {/* Range */}
             {formType === "range" && (
                 <>
-                    <div>
-                        <label className="text-sm block mb-1">Mínimo:</label>
-                        <input
-                            type="number"
-                            value={range.min}
-                            onChange={(e) => setRange({ ...range, min: e.target.value })}
-                            className="w-full px-3 py-2 rounded-lg text-black"
-                        />
+                    <div className="flex gap-4">
+                        <div>
+                            <label className="text-sm block mb-1">Mínimo:</label>
+                            <input
+                                type="number"
+                                value={range.min}
+                                onChange={(e) => setRange({ ...range, min: e.target.value })}
+                                className="w-24 px-2 py-1 rounded-lg text-black"
+                            />
+                        </div>
+                        <div>
+                            <label className="text-sm block mb-1">Máximo:</label>
+                            <input
+                                type="number"
+                                value={range.max}
+                                onChange={(e) => setRange({ ...range, max: e.target.value })}
+                                className="w-24 px-2 py-1 rounded-lg text-black"
+                            />
+                        </div>
                     </div>
-                    <div>
-                        <label className="text-sm block mb-1">Máximo:</label>
-                        <input
-                            type="number"
-                            value={range.max}
-                            onChange={(e) => setRange({ ...range, max: e.target.value })}
-                            className="w-full px-3 py-2 rounded-lg text-black"
-                        />
-                    </div>
-
                     <button
                         type="button"
                         onClick={handleRangeDraw}
-                        className="mt-2 bg-[#4A86E8] hover:bg-[#3B76D4] px-4 py-2 rounded-lg text-white font-semibold"
+                        className="bg-[#4A86E8] hover:bg-[#3B76D4] px-2 py-1 rounded-md text-white text-xs w-fit mt-4"
                     >
                         Sortear Número
                     </button>
@@ -197,7 +198,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formType, onSubmit, initialDa
                         <button
                             type="button"
                             onClick={addListItem}
-                            className="bg-[#4A86E8] hover:bg-[#3B76D4] px-4 py-2 rounded-lg text-white text-sm mt-4"
+                            className="bg-[#4A86E8] hover:bg-[#3B76D4] px-2 py-1 rounded-md text-white text-xs w-fit mt-4"
                         >
                             + Adicionar item
                         </button>
@@ -221,12 +222,12 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formType, onSubmit, initialDa
 
             {/* Arquivo */}
             {formType === "arquivo" && (
-                <div className="">
+                <div>
                     <div className="grid grid-cols-2">
                         <button
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
-                            className="bg-[#4A86E8] hover:bg-[#3B76D4] px-1 py-1 rounded-lg text-white text-sm"
+                            className="bg-[#4A86E8] hover:bg-[#3B76D4] px-2 py-1 rounded-md text-white text-xs w-fit"
                         >
                             Selecionar Arquivo (.txt, .csv, .xlsx, .docx)
                         </button>
@@ -269,7 +270,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formType, onSubmit, initialDa
                                 <button
                                     type="button"
                                     onClick={addArchiveItem}
-                                    className="bg-[#4A86E8] hover:bg-[#3B76D4] px-4 py-2 rounded-lg text-white text-sm mt-4"
+                                    className="bg-[#4A86E8] hover:bg-[#3B76D4] px-2 py-1 rounded-md text-white text-xs w-fit mt-4"
                                 >
                                     + Adicionar item
                                 </button>
