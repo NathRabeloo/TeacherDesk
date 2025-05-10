@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 
 // Importando os componentes
-import CalendarioVisual from "../../components/CalendarioVisual";
+import CalendarioVisual from "../../_components/CalendarioVisual";
 
 const Calendario = () => {
   const router = useRouter();
