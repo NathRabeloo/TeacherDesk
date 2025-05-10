@@ -1,32 +1,29 @@
 import React from 'react';
-import { Card, CardContent } from "@/components/ui/card";  // Adapte para seu estilo de componente de card
-import { FaFileDownload } from 'react-icons/fa';  // Usando Font Awesome, instale react-icons
+import { Card, CardContent } from "@/components/ui/card";
+import { FaFileDownload } from 'react-icons/fa';  // instalar react-icons
 
 export default function Modelos() {
   const modelos = [
     {
       titulo: "Modelo de Slides",
       descricao: "Modelo de slides com o ícone da instituição para apresentações.",
-      link: "/modelos/slides.pptx",  // Caminho do arquivo
+      link: "/modelos/slides.pptx", //precisa criar
     },
     {
       titulo: "Documento da Secretaria",
       descricao: "Modelo de documento oficial da secretaria para comunicados.",
-      link: "/modelos/documento_secretaria.docx",
+      link: "/modelos/documento_secretaria.docx", //precisa criar
     },
     {
       titulo: "Relatório de Aulas",
       descricao: "Modelo de relatório para registrar as atividades das aulas.",
-      link: "/modelos/relatorio_aulas.pdf",
+      link: "/modelos/relatorio_aulas.pdf", //precisa criar
     },
   ];
 
   return (
     <div className="p-6">
-      {/* Título da Página */}
       <h1 className="text-3xl font-bold text-center mb-8">Modelos para Download</h1>
-
-      {/* Cards com Modelos */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {modelos.map((modelo, index) => (
           <Card key={index}>

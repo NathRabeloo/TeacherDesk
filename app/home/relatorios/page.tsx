@@ -23,7 +23,7 @@ export default function RelatoriosPage() {
   ];
 
   const quizzesCriados = 12;
-  const participacao = 78; // em %
+  const participacao = 78; 
   const metas = [
     { titulo: "Criar 10 quizzes no mês", progresso: 100 },
     { titulo: "Concluir 15 tarefas pedagógicas", progresso: 60 },
@@ -31,7 +31,6 @@ export default function RelatoriosPage() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
-      {/* To-do List */}
       <Card>
         <CardContent className="p-4">
           <h2 className="text-xl font-bold mb-4">To-do</h2>
@@ -46,7 +45,6 @@ export default function RelatoriosPage() {
         </CardContent>
       </Card>
 
-      {/* Gráfico de Tarefas Realizadas */}
       <Card>
         <CardContent className="p-4">
           <h2 className="text-xl font-bold mb-4">Tarefas Realizadas</h2>
@@ -54,7 +52,6 @@ export default function RelatoriosPage() {
         </CardContent>
       </Card>
 
-      {/* Gráfico de Participação */}
       <Card>
         <CardContent className="p-4">
           <h2 className="text-xl font-bold mb-4">Participação nas Aulas</h2>
@@ -65,7 +62,6 @@ export default function RelatoriosPage() {
         </CardContent>
       </Card>
 
-      {/* Quantidade de Quizzes */}
       <Card>
         <CardContent className="p-4">
           <h2 className="text-xl font-bold mb-4">Quizzes Criados</h2>
@@ -73,7 +69,6 @@ export default function RelatoriosPage() {
         </CardContent>
       </Card>
 
-      {/* Metas Atingidas */}
       <Card>
         <CardContent className="p-4">
           <h2 className="text-xl font-bold mb-4">Metas</h2>
