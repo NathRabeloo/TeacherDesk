@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import SpinningWheel from "./SpinningWheel"; // componente existente
+import * as XLSX from "xlsx";
+import * as mammoth from "mammoth";
+import SpinningWheel from "./SpinningWheel"; 
 
 type FormType = "range" | "list" | "arquivo";
 
@@ -22,7 +24,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formType, onSubmit, initialDa
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     useEffect(() => {
-        setSelectedResult(""); // limpa resultado ao mudar de tipo
+        setSelectedResult(""); 
     }, [formType]);
 
     const handleListChange = (index: number, value: string) => {
@@ -71,42 +73,62 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formType, onSubmit, initialDa
     const handleArchiveChange = (index: number, value: string) => {
         const updated = [...arquivoItems];
         updated[index] = value;
-        setArquivoItems(updated); // Atualiza a lista com o novo valor
+        setArquivoItems(updated);
     };
 
     const removeArchiveItem = (index: number) => {
         const updated = [...arquivoItems];
-        updated.splice(index, 1); // Remove o item pelo índice
-        setArquivoItems(updated); // Atualiza a lista após remoção
+        updated.splice(index, 1);
+        setArquivoItems(updated);
     };
 
     const addArchiveItem = () => {
-        setArquivoItems([...arquivoItems, ""]); // Adiciona um item vazio à lista
+        setArquivoItems([...arquivoItems, ""]);
     };
-
 
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
-        if (file && file.type === "text/plain") {
-            const reader = new FileReader();
+        if (!file) return;
+
+        const reader = new FileReader();
+        const extension = file.name.split(".").pop()?.toLowerCase();
+
+        if (extension === "txt") {
             reader.onload = () => {
                 const content = reader.result as string;
-                const lines = content.split("\n").map((line) => line.trim()).filter((line) => line);
+                const lines = content.split("\n").map(line => line.trim()).filter(Boolean);
                 setArquivoItems(lines);
             };
             reader.readAsText(file);
+        } else if (extension === "csv") {
+            reader.onload = () => {
+                const content = reader.result as string;
+                const lines = content.split("\n").flatMap(line => line.split(",")).map(item => item.trim()).filter(Boolean);
+                setArquivoItems(lines);
+            };
+            reader.readAsText(file);
+        } else if (extension === "xlsx") {
+            reader.onload = (e) => {
+                const data = new Uint8Array(e.target?.result as ArrayBuffer);
+                const workbook = XLSX.read(data, { type: "array" });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                const items = (jsonData as string[][]).flat().filter(item => item);
+                setArquivoItems(items);
+            };
+            reader.readAsArrayBuffer(file);
+        } else if (extension === "docx") {
+            reader.onload = async () => {
+                const arrayBuffer = reader.result as ArrayBuffer;
+                const result = await mammoth.extractRawText({ arrayBuffer });
+                const lines = result.value.split("\n").map(line => line.trim()).filter(Boolean);
+                setArquivoItems(lines);
+            };
+            reader.readAsArrayBuffer(file);
         } else {
-            alert("Por favor, selecione um arquivo .txt válido.");
+            alert("Formato de arquivo não suportado. Use .txt, .csv, .xlsx ou .docx.");
         }
-    };
-
-    const handleArquivoDraw = () => {
-        if (arquivoItems.length === 0) {
-            alert("Nenhum item carregado do arquivo.");
-            return;
-        }
-
-        shuffleAndSelect(arquivoItems, onSubmit);
     };
 
     return (
@@ -197,6 +219,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formType, onSubmit, initialDa
                 </div>
             )}
 
+            {/* Arquivo */}
             {formType === "arquivo" && (
                 <div className="">
                     <div className="grid grid-cols-2">
@@ -205,13 +228,13 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formType, onSubmit, initialDa
                             onClick={() => fileInputRef.current?.click()}
                             className="bg-[#4A86E8] hover:bg-[#3B76D4] px-1 py-1 rounded-lg text-white text-sm"
                         >
-                            Selecionar o Arquivo .TXT
+                            Selecionar Arquivo (.txt, .csv, .xlsx, .docx)
                         </button>
                     </div>
 
                     <input
                         type="file"
-                        accept=".txt"
+                        accept=".txt,.csv,.xlsx,.docx"
                         ref={fileInputRef}
                         className="hidden"
                         onChange={handleFileUpload}
@@ -220,11 +243,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formType, onSubmit, initialDa
                     {arquivoItems.length > 0 && (
                         <div className="grid grid-cols-2 gap-4">
                             <div className="text-sm text-white mt-2">
-                                <div className="">
-                                    {arquivoItems.length} itens carregados.
-                                </div>
-
-                                {/* Lista de Itens com Edição e Remoção */}
+                                <div>{arquivoItems.length} itens carregados.</div>
                                 <div className="overflow-y-auto h-[200px]">
                                     <div className="w-full grid grid-cols-3">
                                         {arquivoItems.map((item, index) => (
@@ -232,13 +251,13 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formType, onSubmit, initialDa
                                                 <input
                                                     type="text"
                                                     value={item}
-                                                    onChange={(e) => handleArchiveChange(index, e.target.value)} // Alterar item
+                                                    onChange={(e) => handleArchiveChange(index, e.target.value)}
                                                     className="flex-1 px-3 py-2 rounded-lg text-black"
                                                     placeholder={`Item ${index + 1}`}
                                                 />
                                                 <button
                                                     type="button"
-                                                    onClick={() => removeArchiveItem(index)} // Remover item
+                                                    onClick={() => removeArchiveItem(index)}
                                                     className="text-black hover:bg-red-600 rounded-lg px-2 py-1 text-sm mx-1"
                                                 >
                                                     ✕
@@ -247,18 +266,15 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formType, onSubmit, initialDa
                                         ))}
                                     </div>
                                 </div>
-
-                                {/* Botão para Adicionar Novo Item */}
                                 <button
                                     type="button"
-                                    onClick={addArchiveItem} // Adicionar novo item
+                                    onClick={addArchiveItem}
                                     className="bg-[#4A86E8] hover:bg-[#3B76D4] px-4 py-2 rounded-lg text-white text-sm mt-4"
                                 >
                                     + Adicionar item
                                 </button>
                             </div>
 
-                            {/* Roleta para o Sorteio */}
                             <div className="mt-1">
                                 <SpinningWheel
                                     items={arquivoItems}
@@ -273,7 +289,6 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ formType, onSubmit, initialDa
                 </div>
             )}
 
-            {/* Resultado */}
             {shuffling && (
                 <div className="mt-6 text-center text-3xl font-bold animate-pulse">
                     {shuffledValue}
