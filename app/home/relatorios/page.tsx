@@ -1,23 +1,92 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
+import dynamic from "next/dynamic";
 
-// Importando os componentes
-//import CalendarioVisual from "../../components/CalendarioVisual";
+const ClientOnlyChart = dynamic(() => import("../../_components/ClientOnlyChart"), {
+  ssr: false,
+});
 
-const Relatorios = () => {
-  const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
+export default function RelatoriosPage() {
+  const tarefas = [
+    { id: 1, titulo: "Criar quiz para aula 3", feito: true },
+    { id: 2, titulo: "Corrigir atividades semanais", feito: false },
+    { id: 3, titulo: "Agendar reunião com coordenação", feito: false },
+  ];
 
+  const tarefasStats = [
+    { name: "Concluídas", valor: tarefas.filter((t) => t.feito).length },
+    { name: "Pendentes", valor: tarefas.filter((t) => !t.feito).length },
+  ];
+
+  const quizzesCriados = 12;
+  const participacao = 78; // em %
+  const metas = [
+    { titulo: "Criar 10 quizzes no mês", progresso: 100 },
+    { titulo: "Concluir 15 tarefas pedagógicas", progresso: 60 },
+  ];
 
   return (
-    <div className="flex flex-col h-screen font-sans bg-gray-100 dark:bg-dark-primary">
-      <div className="">
-        
-      </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
+      {/* To-do List */}
+      <Card>
+        <CardContent className="p-4">
+          <h2 className="text-xl font-bold mb-4">To-do</h2>
+          <ul className="space-y-2">
+            {tarefas.map((tarefa) => (
+              <li key={tarefa.id} className="flex items-center space-x-2">
+                <Checkbox checked={tarefa.feito} />
+                <span className={tarefa.feito ? "line-through text-gray-400" : ""}>{tarefa.titulo}</span>
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
+
+      {/* Gráfico de Tarefas Realizadas */}
+      <Card>
+        <CardContent className="p-4">
+          <h2 className="text-xl font-bold mb-4">Tarefas Realizadas</h2>
+          <ClientOnlyChart data={tarefasStats} />
+        </CardContent>
+      </Card>
+
+      {/* Gráfico de Participação */}
+      <Card>
+        <CardContent className="p-4">
+          <h2 className="text-xl font-bold mb-4">Participação nas Aulas</h2>
+          <div className="text-center">
+            <div className="text-4xl font-semibold">{participacao}%</div>
+            <Progress value={participacao} className="mt-2" />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Quantidade de Quizzes */}
+      <Card>
+        <CardContent className="p-4">
+          <h2 className="text-xl font-bold mb-4">Quizzes Criados</h2>
+          <div className="text-5xl font-bold text-center text-blue-600">{quizzesCriados}</div>
+        </CardContent>
+      </Card>
+
+      {/* Metas Atingidas */}
+      <Card>
+        <CardContent className="p-4">
+          <h2 className="text-xl font-bold mb-4">Metas</h2>
+          <ul className="space-y-4">
+            {metas.map((meta, index) => (
+              <li key={index}>
+                <div className="text-sm font-medium mb-1">{meta.titulo}</div>
+                <Progress value={meta.progresso} />
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
     </div>
   );
-};
-
-export default Relatorios;
+}

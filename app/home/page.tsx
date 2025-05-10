@@ -1,10 +1,8 @@
 // "use client";
 
 import Header from "../_components/Header";
-
 import { createClient } from "@/lib/utils/supabase/server";
 import { redirect } from 'next/navigation';
-
 import Grid from "../_components/Grid";
 
 export default async function Home() {

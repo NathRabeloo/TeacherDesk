@@ -10,7 +10,7 @@ const MainPage = () => {
   };
 
   const handleAlunoRedirect = () => {
-    router.push('/aluno');
+    router.push('/home/bibliografia/');
   };
 
   return (
