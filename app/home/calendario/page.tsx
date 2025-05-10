@@ -4,9 +4,9 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 
 // Importando os componentes
-//import CalendarioVisual from "../../components/CalendarioVisual";
+import CalendarioVisual from "../../components/CalendarioVisual";
 
-const Bibliografia = () => {
+const Calendario = () => {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -14,10 +14,10 @@ const Bibliografia = () => {
   return (
     <div className="flex flex-col h-screen font-sans bg-gray-100 dark:bg-dark-primary">
       <div className="">
-        
+        <CalendarioVisual />
       </div>
     </div>
   );
 };
 
-export default Bibliografia;
+export default Calendario;

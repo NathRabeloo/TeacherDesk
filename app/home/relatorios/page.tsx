@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 // Importando os componentes
 //import CalendarioVisual from "../../components/CalendarioVisual";
 
-const Bibliografia = () => {
+const Relatorios = () => {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -20,4 +20,4 @@ const Bibliografia = () => {
   );
 };
 
-export default Bibliografia;
+export default Relatorios;
