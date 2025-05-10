@@ -34,7 +34,6 @@ export default async function Home() {
         buttonText="Tutorial TeacherDesk →"
         buttonLink="/home/tutorial"
         desktopImageLeft="/assets/avatar_ruiva.png"
-        desktopImageRight="/assets/mesa_professora_ruiva.png"
         mobileImage="/assets/avatar_ruiva.png"
       />
       <Grid/>
