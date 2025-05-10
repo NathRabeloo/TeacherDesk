@@ -14,7 +14,7 @@ const PlanoDeAula = () => {
   return (
     <div className="flex flex-col h-screen font-sans bg-gray-100 dark:bg-dark-primary">
       <div className="">
-        
+
       </div>
     </div>
   );

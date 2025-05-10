@@ -16,7 +16,7 @@ import {
 
 // Importando os componentes
 
-import DynamicForm from "../../components/DynamicForm";
+import DynamicForm from "../../_components/DynamicForm";
 
 interface Item {
     name: string;

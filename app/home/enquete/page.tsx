@@ -1,32 +1,23 @@
 "use client";
 
-import Header from "../../components/Header";
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 
-const Home = () => {
+// Importando os componentes
+//import CalendarioVisual from "../../components/CalendarioVisual";
 
-  const currentDate = new Date().toLocaleDateString("pt-BR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+const Enquete = () => {
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
+
 
   return (
     <div className="flex flex-col h-screen font-sans bg-gray-100 dark:bg-dark-primary">
-      <Header 
-        date={currentDate} 
-        title="Enquetes" 
-        buttonText="Criar uma Enquete →" 
-        buttonLink="/enquetes"
-        mobileImage="/assets/professora_denilce.png" 
-      />
-      <div className="flex flex-1">
-        <div className="flex flex-col flex-1">
-          <div className="flex flex-col flex-1 gap-4 p-6">
-          </div>
-        </div>
+      <div className="">
+        
       </div>
     </div>
   );
 };
 
-export default Home;
+export default Enquete;
