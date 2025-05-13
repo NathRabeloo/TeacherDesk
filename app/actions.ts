@@ -186,12 +186,29 @@ export const criarDisciplina = async (formData: FormData) => {
   return { success: true, data };
 };
 
+//Função para deletar Disciplina
+export const deletarDisciplina = async (disciplinaId: string) => {
+  const supabase = createClient();
+
+  const { error } = await supabase
+    .from("Disciplina")
+    .delete()
+    .eq("id", disciplinaId);
+
+  if (error) {
+    console.error("Erro ao deletar disciplina:", error.message);
+    return { error: error.message };
+  }
+
+  return { success: true };
+};
+
 // Função para criar plano de aula
 export const criarPlanoAula = async (formData: FormData) => {
   const titulo = formData.get("titulo")?.toString();
-  const descricao = formData.get("descricao")?.toString();
-  const disciplina_id = formData.get("disciplina_id")?.toString(); // Agora você vai associar o plano de aula à disciplina
+  const disciplina_id = formData.get("disciplina_id")?.toString();  
   const supabase = createClient();
+
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
   if (!user || userError) {
@@ -199,13 +216,17 @@ export const criarPlanoAula = async (formData: FormData) => {
     return { error: "Usuário não autenticado" };
   }
 
+  if (!titulo || !disciplina_id) {
+    return { error: "Título e Disciplina são obrigatórios" };  
+  }
+
+
   const { data, error } = await supabase
-    .from("PlanoAula") // Inserir plano de aula na tabela 'PlanoAula'
+    .from("PlanoAula")
     .insert({
       titulo,
-      descricao,
-      disciplina_id: disciplina_id ? disciplina_id : null, // Valor do ID da disciplina
-      user_id: user.id, // Associar o plano ao usuário
+      disciplina_id,   
+      user_id: user.id,  
     })
     .select();
 
@@ -217,4 +238,74 @@ export const criarPlanoAula = async (formData: FormData) => {
   console.log("Plano de aula criado:", data);
   return { success: true, data };
 };
+export const listarPlanosAula = async () => {
+  const supabase = createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
 
+  if (!user || userError) {
+    console.error("Erro ao obter usuário:", userError?.message);
+    return [];
+  }
+
+  // Consulta para buscar planos de aula com o nome da disciplina associada
+  const { data, error } = await supabase
+    .from("PlanoAula")
+    .select(`
+      id,
+      titulo,
+      disciplina_id,
+      Disciplina: Disciplina(nome)   // Relacionamento com a tabela Disciplina
+    `)
+    .eq("user_id", user.id)
+    .order("id", { ascending: false });
+
+  if (error) {
+    console.error("Erro ao listar planos de aula:", error.message);
+    return [];
+  }
+
+  return data;
+};
+
+//Função para deletar Plano de Aula
+export const deletarPlanoAula = async (planoId: string) => {
+  const supabase = createClient();
+
+  const { error } = await supabase
+    .from("PlanoAula")
+    .delete()
+    .eq("id", planoId);
+
+  if (error) {
+    console.error("Erro ao deletar plano de aula:", error.message);
+    return { error: error.message };
+  }
+
+  return { success: true };
+};
+
+export const editarPlanoAula = async (formData: FormData) => {
+  const planoId = formData.get("id")?.toString();
+  const titulo = formData.get("titulo")?.toString();
+
+  if (!planoId || !titulo ) {
+    return { error: "Todos os campos são obrigatórios" };
+  }
+
+  const supabase = createClient();
+
+  const { error } = await supabase
+    .from("PlanoAula")
+    .update({ titulo })
+    .eq("id", planoId);
+
+  if (error) {
+    console.error("Erro ao editar plano de aula:", error.message);
+    return { error: error.message };
+  }
+
+  return { success: true };
+};

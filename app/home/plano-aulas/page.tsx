@@ -11,8 +11,14 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { listarDisciplinas, criarPlanoAula } from "@/app/actions";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { listarDisciplinas, listarPlanosAula, criarPlanoAula } from "@/app/actions";
 
 const disciplinaColors: Record<string, string> = {
   matematica: "bg-blue-500",
@@ -26,12 +32,15 @@ const disciplinaColors: Record<string, string> = {
 type Plano = {
   id: string;
   titulo: string;
-  disciplina: string; // This is the ID, not the name
-  [key: string]: any;
+  disciplina_id: string; // Alterado para armazenar o ID da disciplina
+};
+
+type Disciplina = {
+  id: string;
+  nome: string;
 };
 
 const PlanoAulas = () => {
-  type Disciplina = { id: string; nome: string };
   const [planos, setPlanos] = useState<Plano[]>([]);
   const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -43,10 +52,14 @@ const PlanoAulas = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const fetchedDisciplinas = await listarDisciplinas();
-        setDisciplinas(fetchedDisciplinas);
+        const [disciplinasDB, planosDB] = await Promise.all([
+          listarDisciplinas(),
+          listarPlanosAula(),
+        ]);
+        setDisciplinas(disciplinasDB);
+        setPlanos(planosDB);
       } catch (error) {
-        console.error("Erro ao carregar disciplinas:", error);
+        console.error("Erro ao carregar dados:", error);
       }
     };
 
@@ -55,38 +68,40 @@ const PlanoAulas = () => {
 
   const planosFiltrados = planos.filter((plano) => {
     const matchSearch = plano.titulo.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchDisciplina = disciplinaFiltro ? plano.disciplina === disciplinaFiltro : true;
+    const matchDisciplina = disciplinaFiltro ? plano.disciplina_id === disciplinaFiltro : true;
     return matchSearch && matchDisciplina;
   });
 
   const adicionarPlano = async () => {
-    if (!novoTitulo || !novaDisciplinaId) return;
+    if (!novoTitulo || !novaDisciplinaId) {
+      alert("Preencha o título e selecione a disciplina.");
+      return;
+    }
 
-    const novoPlanoFormData = new FormData();
-    novoPlanoFormData.append("titulo", novoTitulo);
-    novoPlanoFormData.append("disciplina_id", novaDisciplinaId);
+    const formData = new FormData();
+    formData.append("titulo", novoTitulo);
+    formData.append("disciplina_id", novaDisciplinaId); // Passando o ID da disciplina
 
-    const { success, data } = await criarPlanoAula(novoPlanoFormData);
+    const { success, data } = await criarPlanoAula(formData);
 
     if (success && Array.isArray(data) && data.length > 0) {
       const novoPlano: Plano = {
         id: data[0].id,
         titulo: data[0].titulo,
-        disciplina: data[0].disciplina, // Use the ID
-        ...data[0],
+        disciplina_id: data[0].disciplina_id, // Corrigido para usar disciplina_id
       };
       setPlanos((prev) => [...prev, novoPlano]);
       setModalAberto(false);
       setNovoTitulo("");
       setNovaDisciplinaId(null);
     } else {
-      console.error("Erro ao criar plano de aula:", data);
+      console.error("Erro ao criar plano:", data);
     }
   };
 
-  // Function to get the name of the discipline based on its ID
-  const getDisciplinaNome = (id: string) => {
-    const disciplina = disciplinas.find((d) => d.id === id);
+  const getDisciplinaNome = (id: string | number) => {
+    if (!id) return "Desconhecida";
+    const disciplina = disciplinas.find((d) => String(d.id) === String(id));
     return disciplina ? disciplina.nome : "Desconhecida";
   };
 
@@ -122,9 +137,11 @@ const PlanoAulas = () => {
             <CardContent className="p-4 bg-white rounded-lg shadow-md space-y-2 dark:bg-dark-card">
               <h2 className="text-md font-semibold">{plano.titulo}</h2>
               <div
-                className={`rounded text-white text-sm font-semibold px-2 py-1 text-center ${disciplinaColors[getDisciplinaNome(plano.disciplina).toLowerCase()] || "bg-gray-500"}`}
+                className={`rounded text-white text-sm font-semibold px-2 py-1 text-center ${
+                  disciplinaColors[getDisciplinaNome(plano.disciplina_id).toLowerCase()] || "bg-gray-500"
+                }`}
               >
-                {getDisciplinaNome(plano.disciplina)}
+                {getDisciplinaNome(plano.disciplina_id)} {/* Agora usamos disciplina_id */}
               </div>
             </CardContent>
           </Card>
