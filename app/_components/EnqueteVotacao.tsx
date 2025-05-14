@@ -30,3 +30,7 @@ const EnqueteVotacao: React.FC<EnqueteVotacaoProps> = ({ pergunta, opcoes, onVot
 };
 
 export default EnqueteVotacao;
+
+
+
+

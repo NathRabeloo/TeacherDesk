@@ -3,8 +3,6 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 
-// Importando os componentes
-
 import DynamicForm from "../../_components/DynamicForm";
 
 interface Item {

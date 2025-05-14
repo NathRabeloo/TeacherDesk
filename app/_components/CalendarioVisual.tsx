@@ -1,88 +1,192 @@
-"use client";
-
-import React from "react";
+import React, { useState, useEffect } from "react";
+import ModalAddEvento, { Evento } from "./ModalAddEvento";
 
 const daysOfWeek = ["SEG", "TER", "QUA", "QUI", "SEX", "SAB", "DOM"];
 
 const Calendar = () => {
-    // Mock do mês de janeiro de 2025 (começa em quarta)
-    const days = Array.from({ length: 31 }, (_, i) => i + 1);
-    const startDay = 2; // Segunda = 0, então quarta = 2
-    const totalCells = 35; // 5 semanas
+  const [eventos, setEventos] = useState<Evento[]>([]);
+  const [showModal, setShowModal] = useState(false);
 
-    // Anotando o tipo de eventDays para garantir que as chaves sejam números específicos
-    const eventDays: Record<1 | 4 | 6 | 9 | 16 | 20 | 27 | 31, string> = {
-        1: "pink",
-        4: "yellow",
-        6: "pink",
-        9: "green",
-        16: "yellow",
-        20: "green",
-        27: "pink",
-        31: "green",
-    };
+  // Inicializa com o mês e ano atuais
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth()); // Mês atual (0 a 11)
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear()); // Ano atual
 
-    const getColor = (day: number) => {
-        // Verifica se o dia existe no objeto eventDays
-        const color = eventDays[day as 1 | 4 | 6 | 9 | 16 | 20 | 27 | 31];
-        switch (color) {
-            case "pink":
-                return "bg-pink-200";
-            case "green":
-                return "bg-green-200";
-            case "yellow":
-                return "bg-yellow-200";
-            default:
-                return "bg-white";
-        }
-    };
+  const getPrioridade = (dataEvento: string): "alta" | "media" | "baixa" => {
+    const hoje = new Date();
+    const evento = new Date(dataEvento);
+    const diffDias = Math.ceil((evento.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDias <= 3) return "alta";
+    if (diffDias <= 7) return "media";
+    return "baixa";
+  };
 
-    return (
-        // <div className="p-8 bg-blue-100 min-h-screen font-sans">
-        <div className="max-w-5xl mx-auto bg-white shadow rounded-xl p-6 w-full">
+  const getCorPrioridade = (prioridade: string) => {
+    switch (prioridade) {
+      case "alta":
+        return "bg-red-200";
+      case "media":
+        return "bg-yellow-200";
+      case "baixa":
+        return "bg-green-200";
+      default:
+        return "bg-white";
+    }
+  };
 
-            <h2 className="text-2xl font-bold mb-4">Calendário - Janeiro 2025</h2>
+  const diasDoMes = new Date(currentYear, currentMonth + 1, 0).getDate(); // Pega o número de dias do mês atual
+  const inicioSemana = new Date(currentYear, currentMonth, 1).getDay(); // Primeiro dia do mês
+  const totalCelulas = 35;
 
-            <button className="mb-2 bg-azulteacherdesk-500px-4 py-2 rounded-lg font-semibold transition bg-blue-500  border border-blue-600">Adicionar Evento</button>
+  // Função para mudar o mês
+  const changeMonth = (increment: number) => {
+    let newMonth = currentMonth + increment;
+    let newYear = currentYear;
 
-            {/* Cabeçalho dos dias da semana */}
-            <div className="grid grid-cols-7 gap-2 text-center font-semibold text-gray-600">
-                {daysOfWeek.map((day, idx) => (
-                    <div key={idx}>{day}</div>
-                ))}
-            </div>
+    if (newMonth < 0) {
+      newMonth = 11;
+      newYear--;
+    } else if (newMonth > 11) {
+      newMonth = 0;
+      newYear++;
+    }
 
-            {/* Dias do mês */}
-            <div className="grid grid-cols-7 gap-2 mt-2 text-center text-sm">
-                {Array.from({ length: startDay }).map((_, i) => (
-                    <div key={`empty-${i}`} className="h-20" />
-                ))}
-                {days.map((day) => (
-                    <div
-                        key={day}
-                        className={`h-20 p-1 border rounded-lg relative ${getColor(day)}`}
-                    >
-                        <div className="absolute top-1 left-1 text-xs text-gray-700">
-                            {day}
-                        </div>
-                        {/* Eventos mock */}
-                        {eventDays[day as 1 | 4 | 6 | 9 | 16 | 20 | 27 | 31] && (
-                            <div className="text-[10px] mt-5 text-gray-700">
-                                Evento {day}
-                            </div>
-                        )}
-                    </div>
-                ))}
-                {/* Preencher espaço vazio até completar a grade */}
-                {Array.from({ length: totalCells - startDay - days.length }).map(
-                    (_, i) => (
-                        <div key={`end-empty-${i}`} className="h-20" />
-                    )
-                )}
-            </div>
+    setCurrentMonth(newMonth);
+    setCurrentYear(newYear);
+  };
+
+  return (
+    <div className="flex flex-row max-w-7xl mx-auto bg-white shadow rounded-xl p-6 w-full h-full">
+      <div className="flex-1">
+        <div className="flex justify-between items-center mb-4">
+          <button
+            onClick={() => changeMonth(-1)}
+            className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg"
+          >
+            Mês Anterior
+          </button>
+          <h2 className="text-2xl font-bold">
+            Calendário - {new Date(currentYear, currentMonth).toLocaleString('pt-BR', { month: 'long' })} {currentYear}
+          </h2>
+          <button
+            onClick={() => changeMonth(1)}
+            className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg"
+          >
+            Próximo Mês
+          </button>
+          <button
+            onClick={() => setShowModal(true)}
+            className="bg-green-500 text-white px-4 py-2 rounded-lg font-semibold"
+          >
+            NOVO REGISTRO
+          </button>
         </div>
-        // </div>
-    );
+
+        {/* Cabeçalho dos dias da semana */}
+        <div className="grid grid-cols-7 gap-2 text-center font-semibold text-gray-600">
+          {daysOfWeek.map((day, idx) => (
+            <div key={idx}>{day}</div>
+          ))}
+        </div>
+
+        {/* Dias do mês */}
+        <div className="grid grid-cols-7 gap-2 mt-2 text-center text-sm">
+          {Array.from({ length: inicioSemana }).map((_, i) => (
+            <div key={`empty-${i}`} className="h-20" />
+          ))}
+
+          {Array.from({ length: diasDoMes }).map((_, diaIndex) => {
+            const dia = diaIndex + 1;
+            const dataStr = `${currentYear}-${(currentMonth + 1).toString().padStart(2, "0")}-${dia.toString().padStart(2, "0")}`;
+            const eventosDoDia = eventos.filter((e) => e.data === dataStr);
+
+            // Descobre a maior prioridade do dia
+            let prioridadeMaisAlta: "alta" | "media" | "baixa" | "" = "";
+            const prioridades = eventosDoDia.map((e) => getPrioridade(e.data));
+            if (prioridades.includes("alta")) {
+              prioridadeMaisAlta = "alta";
+            } else if (prioridades.includes("media")) {
+              prioridadeMaisAlta = "media";
+            } else if (prioridades.includes("baixa")) {
+              prioridadeMaisAlta = "baixa";
+            }
+
+            const cor = getCorPrioridade(prioridadeMaisAlta);
+
+            return (
+              <div
+                key={dia}
+                className={`h-20 p-1 border rounded-lg relative ${cor}`}
+              >
+                <div className="absolute top-1 left-1 text-xs text-gray-700">{dia}</div>
+                <div className="mt-5 space-y-1 text-[10px]">
+                  {eventosDoDia.map((evento, idx) => {
+                    const prioridade = getPrioridade(evento.data);
+                    const corIndicador =
+                      prioridade === "alta"
+                        ? "bg-red-500"
+                        : prioridade === "media"
+                        ? "bg-orange-400"
+                        : "bg-green-500";
+                    return (
+                      <div key={idx} className="flex items-center gap-1 truncate">
+                        <span className={`w-2 h-2 rounded-full ${corIndicador}`}></span>
+                        <span className="text-gray-700 truncate">{evento.nome}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+
+          {Array.from({ length: totalCelulas - inicioSemana - diasDoMes }).map((_, i) => (
+            <div key={`end-empty-${i}`} className="h-20" />
+          ))}
+        </div>
+      </div>
+
+      {/* Barra lateral */}
+      <div className="w-64 pl-4 border-l border-gray-200">
+        <h3 className="text-lg font-semibold mb-2">Eventos</h3>
+        {eventos.map((evento, idx) => {
+          const prioridade = getPrioridade(evento.data);
+          const corBadge =
+            prioridade === "alta"
+              ? "bg-red-500"
+              : prioridade === "media"
+              ? "bg-yellow-400"
+              : "bg-green-500";
+
+          return (
+            <div
+              key={idx}
+              className="bg-white shadow p-2 rounded-lg mb-2 text-sm border"
+            >
+              <div className="flex justify-between items-center">
+                <span className="font-semibold">{evento.nome}</span>
+                <span
+                  className={`text-xs text-white px-2 py-0.5 rounded-full ${corBadge}`}
+                >
+                  {prioridade.toUpperCase()}
+                </span>
+              </div>
+              <p className="text-gray-600">{evento.descricao}</p>
+              <p className="text-xs text-gray-500">{evento.data}</p>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Modal */}
+      {showModal && (
+        <ModalAddEvento
+          onAdd={(evento) => setEventos([...eventos, evento])}
+          onClose={() => setShowModal(false)}
+        />
+      )}
+    </div>
+  );
 };
 
 export default Calendar;
+
