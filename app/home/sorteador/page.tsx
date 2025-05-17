@@ -26,7 +26,7 @@ const sorteios: Sorteio[] = [
     },
     {
         titulo: "Sorteio por Arquivo",
-        descricao: "Carregue um arquivo .txt com os itens a serem sorteados.",
+        descricao: "Carregue um arquivo com os itens a serem sorteados.",
         tipo: "arquivo",
     },
 ];

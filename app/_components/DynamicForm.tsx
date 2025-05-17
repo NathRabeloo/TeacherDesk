@@ -15,7 +15,7 @@ interface DynamicFormProps {
 
 const DynamicForm: React.FC<DynamicFormProps> = ({ formType, onSubmit, initialData }) => {
   return (
-    <div className="w-full bg-[#5A9BF6] dark:bg-dark-primary text-white p-4 md:p-6 rounded-2xl shadow-lg flex flex-col gap-4">
+    <div className="">
       {formType === "range" && <RangeForm onSubmit={onSubmit} initialData={initialData} />}
       {formType === "list" && <ListForm onSubmit={onSubmit} initialData={initialData} />}
       {formType === "arquivo" && <ArquivoForm onSubmit={onSubmit} initialData={initialData} />}

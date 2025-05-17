@@ -45,7 +45,7 @@ const ListForm: React.FC<ListFormProps> = ({ initialData, onSubmit }) => {
                     type="text"
                     value={item}
                     onChange={(e) => handleListChange(index, e.target.value)}
-                    className="flex-1 px-3 py-2 rounded-lg text-black"
+                    className="flex-1 px-3 py-2 rounded-lg text-black w-0"
                     placeholder={`Item ${index + 1}`}
                   />
                   <button
