@@ -33,8 +33,9 @@ const SpinningWheel: React.FC<SpinningWheelProps> = ({ items, onFinish }) => {
             confetti({
                 particleCount: 150,
                 spread: 70,
-                origin: { y: 0.95, x: 0.569 },
+                origin: { y: 0.1, x: 0.5 }, // mais central e do topo para baixo
             });
+
         }, 4000); // tempo de giro
     };
 
