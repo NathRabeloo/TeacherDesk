@@ -22,13 +22,12 @@ const SpinningWheel: React.FC<SpinningWheelProps> = ({ items, onFinish }) => {
         const minSpins = 10;
         const extraSpins = Math.random() * 5;
         const spins = minSpins + extraSpins;
-
         const degrees = spins * 360;
         setAngle(degrees);
         setSpinning(true);
 
         const winnerIndex = items.length - Math.floor((degrees % 360) / (360 / items.length)) - 1;
-        const winner = items[winnerIndex < 0 ? items.length - 1 : winnerIndex];
+        const winner = winnerIndex < 0 ? items[items.length - 1] : items[winnerIndex];
 
         setTimeout(() => {
             setSpinning(false);
@@ -36,10 +35,9 @@ const SpinningWheel: React.FC<SpinningWheelProps> = ({ items, onFinish }) => {
             confetti({
                 particleCount: 1500,
                 spread: 100,
-                origin: { y: 0.9, x: 0.5 }, // mais central e do topo para baixo
+                origin: { y: 0.9, x: 0.5 },
             });
-
-        }, 4000); // tempo de giro
+        }, 4000);
     };
 
     const colors = ["#F87171", "#60A5FA", "#34D399", "#FBBF24", "#A78BFA", "#F472B6"];
