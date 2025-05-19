@@ -19,7 +19,10 @@ const SpinningWheel: React.FC<SpinningWheelProps> = ({ items, onFinish }) => {
             return;
         }
 
-        const spins = 10 + Math.random() * 5;
+        const minSpins = 10;
+        const extraSpins = Math.random() * 5;
+        const spins = minSpins + extraSpins;
+
         const degrees = spins * 360;
         setAngle(degrees);
         setSpinning(true);
@@ -31,9 +34,9 @@ const SpinningWheel: React.FC<SpinningWheelProps> = ({ items, onFinish }) => {
             setSpinning(false);
             onFinish(winner);
             confetti({
-                particleCount: 150,
-                spread: 70,
-                origin: { y: 0.1, x: 0.5 }, // mais central e do topo para baixo
+                particleCount: 1500,
+                spread: 100,
+                origin: { y: 0.9, x: 0.5 }, // mais central e do topo para baixo
             });
 
         }, 4000); // tempo de giro
@@ -84,7 +87,7 @@ const SpinningWheel: React.FC<SpinningWheelProps> = ({ items, onFinish }) => {
                 style={{
                     position: "absolute",
                     top: "40%", // Ajuste da posição do ponteiro
-                    left: "70%",
+                    left: "98%",
                     zIndex: 50,
                     transform: "translate(50%, -50%) rotate(-90deg)", // Posiciona e rotaciona o ponteiro para a esquerda
 

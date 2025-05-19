@@ -15,6 +15,7 @@ const ArquivoForm: React.FC<ArquivoFormProps> = ({ onSubmit }) => {
   const [removeAfterDraw, setRemoveAfterDraw] = useState(false);
   const [selectedResult, setSelectedResult] = useState("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const handleArchiveChange = (index: number, value: string) => {
     const updated = [...arquivoItems];
@@ -36,48 +37,67 @@ const ArquivoForm: React.FC<ArquivoFormProps> = ({ onSubmit }) => {
     setArquivoItems((prev) => prev.filter((i) => i !== item));
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    setLoading(true); // começa o carregamento
     const reader = new FileReader();
     const extension = file.name.split(".").pop()?.toLowerCase();
 
-    if (extension === "txt") {
-      reader.onload = () => {
-        const content = reader.result as string;
-        const lines = content.split("\n").map(line => line.trim()).filter(Boolean);
-        setArquivoItems(lines);
-      };
-      reader.readAsText(file);
-    } else if (extension === "csv") {
-      reader.onload = () => {
-        const content = reader.result as string;
-        const lines = content.split("\n").flatMap(line => line.split(",")).map(item => item.trim()).filter(Boolean);
-        setArquivoItems(lines);
-      };
-      reader.readAsText(file);
-    } else if (extension === "xlsx") {
-      reader.onload = (e) => {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: "array" });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-        const items = (jsonData as string[][]).flat().filter(item => item);
-        setArquivoItems(items);
-      };
-      reader.readAsArrayBuffer(file);
-    } else if (extension === "docx") {
-      reader.onload = async () => {
-        const arrayBuffer = reader.result as ArrayBuffer;
-        const result = await mammoth.extractRawText({ arrayBuffer });
-        const lines = result.value.split("\n").map(line => line.trim()).filter(Boolean);
-        setArquivoItems(lines);
-      };
-      reader.readAsArrayBuffer(file);
-    } else {
-      alert("Formato de arquivo não suportado. Use .txt, .csv, .xlsx ou .docx.");
+    try {
+      if (extension === "txt") {
+        reader.onload = () => {
+          const content = reader.result as string;
+          const lines = content.split("\n").map(line => line.trim()).filter(Boolean);
+          setArquivoItems(lines);
+          setLoading(false);
+        };
+        reader.readAsText(file);
+      } else if (extension === "csv") {
+        reader.onload = () => {
+          const content = reader.result as string;
+          const lines = content.split("\n").flatMap(line => line.split(",")).map(item => item.trim()).filter(Boolean);
+          setArquivoItems(lines);
+          setLoading(false);
+        };
+        reader.readAsText(file);
+      } else if (extension === "xlsx") {
+        reader.onload = (e) => {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: "array" });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+          const items = (jsonData as string[][]).flat().filter(item => item);
+          setArquivoItems(items);
+          setLoading(false);
+        };
+        reader.readAsArrayBuffer(file);
+      } else if (extension === "docx") {
+        reader.onload = () => {
+          const arrayBuffer = reader.result as ArrayBuffer;
+          mammoth.extractRawText({ arrayBuffer }).then(result => {
+            const lines = result.value.split("\n").map(line => line.trim()).filter(Boolean);
+            setArquivoItems(lines);
+          }).catch(() => {
+            alert("Erro ao ler o arquivo .docx.");
+          }).finally(() => {
+            setLoading(false);
+          });
+        };
+        reader.readAsArrayBuffer(file);
+      }
+      else {
+        alert("Formato de arquivo não suportado. Use .txt, .csv, .xlsx ou .docx.");
+        setLoading(false);
+      }
+    } catch (err) {
+      alert("Erro ao ler o arquivo.");
+      setLoading(false);
+    } finally {
+      // resetar o valor para permitir subir o mesmo arquivo novamente
+      event.target.value = "";
     }
   };
 
@@ -174,12 +194,14 @@ const ArquivoForm: React.FC<ArquivoFormProps> = ({ onSubmit }) => {
       <div className="flex justify-end">
         <button
           type="button"
+          disabled={loading}
           onClick={() => {
             setArquivoItems([]);
             setSelectedResult("");
             setRemoveAfterDraw(false);
           }}
-          className="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm sm:text-base"
+          className={`px-4 py-2 rounded-lg text-sm sm:text-base text-white ${loading ? "bg-gray-400 cursor-not-allowed" : "bg-red-500 hover:bg-red-700"
+            }`}
         >
           Limpar tudo
         </button>
