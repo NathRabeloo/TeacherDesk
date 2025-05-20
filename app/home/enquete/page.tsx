@@ -64,7 +64,8 @@ export default function EnquetePage() {
     if (!enqueteId) return;
 
     // Usar parâmetro `id` (igual ao backend espera)
-    const response = await fetch(`/api/enquete/resultados?id=${enqueteId}`);
+    const response = await fetch(`/api/enquete/resultados?enqueteId=${enqueteId}`);
+
     const data = await response.json();
 
     if (data.error) {
