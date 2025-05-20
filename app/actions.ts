@@ -309,3 +309,134 @@ export const editarPlanoAula = async (formData: FormData) => {
 
   return { success: true };
 };
+
+export const criarEnquete = async (formData: FormData) => {
+  const pergunta = formData.get("pergunta")?.toString();
+  const opcoesJson = formData.get("opcoes")?.toString();
+
+  if (!pergunta) return { error: "Pergunta da enquete é obrigatória" };
+  if (!opcoesJson) return { error: "Opções da enquete são obrigatórias" };
+
+  let opcoes;
+  try {
+    opcoes = JSON.parse(opcoesJson);
+    if (!Array.isArray(opcoes) || opcoes.length === 0) {
+      return { error: "Opções devem ser um array não vazio" };
+    }
+    for (const opcao of opcoes) {
+      if (typeof opcao.texto !== "string" || !opcao.texto.trim()) {
+        return { error: "Cada opção precisa ter um texto válido" };
+      }
+    }
+  } catch {
+    return { error: "Formato das opções inválido" };
+  }
+
+  const supabase = createClient();
+
+  // Criar enquete
+  const { data: enqueteData, error: enqueteError } = await supabase
+    .from("enquetes")
+    .insert({ pergunta, ativa: true })
+    .select("id")
+    .single();
+
+  if (enqueteError) return { error: enqueteError.message };
+
+  // Criar opções vinculadas
+  const opcoesToInsert = opcoes.map((opcao: { texto: string }) => ({
+    enquete_id: enqueteData.id,
+    texto: opcao.texto.trim(),
+  }));
+
+  const { error: opcoesError } = await supabase
+    .from("opcoes_enquete")
+    .insert(opcoesToInsert);
+
+  if (opcoesError) return { error: opcoesError.message };
+
+  return { success: true, enqueteId: enqueteData.id };
+};
+
+export const buscarEnquete = async (id: string) => {
+  const supabase = createClient();
+
+  // Busca enquete ativa
+  const { data: enquete, error: enqueteError } = await supabase
+    .from("enquetes")
+    .select("id, pergunta, ativa")
+    .eq("id", id)
+    .single();
+
+  if (enqueteError) return { error: enqueteError.message };
+  if (!enquete || !enquete.ativa) return { error: "Enquete não encontrada ou inativa" };
+
+  // Busca opções da enquete
+  const { data: opcoes, error: opcoesError } = await supabase
+    .from("opcoes_enquete")
+    .select("id, texto")
+    .eq("enquete_id", id);
+
+  if (opcoesError) return { error: opcoesError.message };
+
+  return { enquete, opcoes };
+};
+
+export const registrarVoto = async (enqueteId: string, opcaoId: string) => {
+  const supabase = createClient();
+
+  // Confirma se enquete está ativa
+  const { data: enquete, error: enqueteError } = await supabase
+    .from("enquetes")
+    .select("ativa")
+    .eq("id", enqueteId)
+    .single();
+
+  if (enqueteError) return { error: enqueteError.message };
+  if (!enquete || !enquete.ativa) return { error: "Enquete não está ativa" };
+
+  // Verifica se opção pertence à enquete
+  const { data: opcao, error: opcaoError } = await supabase
+    .from("opcoes_enquete")
+    .select("id")
+    .eq("id", opcaoId)
+    .eq("enquete_id", enqueteId)
+    .single();
+
+  if (opcaoError) return { error: opcaoError.message };
+  if (!opcao) return { error: "Opção inválida para esta enquete" };
+
+  // Insere voto
+  const { error: votoError } = await supabase
+    .from("respostas_enquete")
+    .insert({ enquete_id: enqueteId, opcao_id: opcaoId });
+
+  if (votoError) return { error: votoError.message };
+
+  return { success: true };
+};
+
+export const buscarResultados = async (enqueteId: string) => {
+  const supabase = createClient();
+
+  // Busca opções e conta votos usando join e agregação
+  const { data, error } = await supabase
+    .from("opcoes_enquete")
+    .select(`
+      id,
+      texto,
+      votos: respostas_enquete!inner (id)
+    `)
+    .eq("enquete_id", enqueteId);
+
+  if (error) return { error: error.message };
+
+  // Mapear para mostrar total de votos por opção
+  const resultados = data.map((opcao: any) => ({
+    id: opcao.id,
+    texto: opcao.texto,
+    votos: opcao.votos.length,
+  }));
+
+  return { resultados };
+};

@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import QRCode from "react-qr-code";
 
@@ -15,6 +14,8 @@ export default function EnquetePage() {
   const [enqueteAtiva, setEnqueteAtiva] = useState(false);
   const [mostrarResultado, setMostrarResultado] = useState(false);
   const [urlVotacao, setUrlVotacao] = useState("");
+  const [enqueteId, setEnqueteId] = useState<string | null>(null);
+  const [resultados, setResultados] = useState<Opcao[]>([]);
 
   const adicionarOpcao = () => {
     setOpcoes([...opcoes, { texto: "", votos: 0 }]);
@@ -26,15 +27,52 @@ export default function EnquetePage() {
     setOpcoes(novasOpcoes);
   };
 
-  const gerarEnquete = () => {
-    const id = Date.now().toString(); // ID simples temporário
-    localStorage.setItem(`enquete-${id}`, JSON.stringify({ pergunta, opcoes }));
-    const url = `${window.location.origin}/home/votar?id=${id}`;
+  const gerarEnquete = async () => {
+    if (!pergunta.trim()) {
+      alert("Digite a pergunta da enquete");
+      return;
+    }
+    if (opcoes.some((opcao) => !opcao.texto.trim())) {
+      alert("Preencha todas as opções");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("pergunta", pergunta);
+
+    // Enviar opções como JSON string dentro do FormData
+    formData.append("opcoes", JSON.stringify(opcoes.map(({ texto }) => ({ texto }))));
+
+    const response = await fetch("/api/enquete", {
+      method: "POST",
+      body: formData,
+    });
+    const data = await response.json();
+
+    if (data.error) {
+      alert("Erro ao criar enquete: " + data.error);
+      return;
+    }
+
+    setEnqueteId(data.enqueteId);
+    const url = `${window.location.origin}/home/votar?id=${encodeURIComponent(data.enqueteId)}`; // <-- aqui passe `id`
     setUrlVotacao(url);
     setEnqueteAtiva(true);
   };
 
-  const encerrarEnquete = () => {
+  const encerrarEnquete = async () => {
+    if (!enqueteId) return;
+
+    // Usar parâmetro `id` (igual ao backend espera)
+    const response = await fetch(`/api/enquete/resultados?id=${enqueteId}`);
+    const data = await response.json();
+
+    if (data.error) {
+      alert("Erro ao buscar resultados: " + data.error);
+      return;
+    }
+
+    setResultados(data.resultados);
     setMostrarResultado(true);
   };
 
@@ -87,7 +125,7 @@ export default function EnquetePage() {
           </DialogHeader>
           <div className="space-y-2">
             <p className="font-semibold">{pergunta}</p>
-            {opcoes.map((opcao, index) => (
+            {(resultados.length > 0 ? resultados : opcoes).map((opcao, index) => (
               <div key={index} className="flex justify-between">
                 <span>{opcao.texto}</span>
                 <span>{opcao.votos} votos</span>
