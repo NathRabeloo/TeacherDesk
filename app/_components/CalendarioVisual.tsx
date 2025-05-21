@@ -178,6 +178,7 @@ const Calendar = () => {
             <div key={idx} className="bg-white shadow p-2 rounded-lg mb-2 text-sm border">
               <div className="flex justify-between items-center">
                 <span className="font-semibold">{evento.nome}</span>
+
                 <span className={`text-xs text-white px-2 py-0.5 rounded-full ${corBadge}`}>
                   {prioridade.toUpperCase()}
                 </span>
@@ -187,6 +188,7 @@ const Calendar = () => {
                 >
                   Editar
                 </button>
+
               </div>
               <p className="text-gray-600">{evento.descricao}</p>
               <p className="text-xs text-gray-500">{new Date(evento.data).toLocaleDateString('pt-BR')}</p>
@@ -195,7 +197,6 @@ const Calendar = () => {
         })}
       </div>
 
-      {/* Modal */}
       {showModal && (
         <ModalAddEvento
           evento={eventoEmEdicao}
@@ -219,6 +220,8 @@ const Calendar = () => {
         />
       )}
     </div>
+
+
   );
 };
 

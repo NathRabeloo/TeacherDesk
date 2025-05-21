@@ -19,6 +19,7 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ evento, onAdd, onClose 
   const [descricao, setDescricao] = useState(evento?.descricao || "");
   const [data, setData] = useState(evento?.data || "");
   const supabase = createClient();
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
   React.useEffect(() => {
     if (evento) {
@@ -32,7 +33,24 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ evento, onAdd, onClose 
     }
   }, [evento]);
 
-  const handleSubmit = async () => {
+  const DeletarEvento = async () => {
+    if (!evento || !evento.id) return;
+
+    const { error } = await supabase
+      .from("Evento")
+      .update({ deletedAt: new Date().toISOString() })
+      .eq("id", evento.id);
+
+    if (error) {
+      console.error("Erro ao excluir evento:", error.message);
+      alert("Erro ao excluir evento.");
+      return;
+    }
+
+    onClose();
+  };
+
+  const GerenciarEvento = async () => {
     if (!nome || !descricao || !data) {
       alert("Todos os campos devem ser preenchidos.");
       return;
@@ -91,8 +109,6 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ evento, onAdd, onClose 
       <div className="bg-white p-6 rounded-lg shadow-lg w-96">
         <h2 className="text-xl font-semibold mb-4">{evento ? "Editar Evento" : "Adicionar Evento"}</h2>
 
-        {/* Campos do formulário igual ao seu */}
-
         <div className="mb-4">
           <label htmlFor="nome" className="block text-sm font-semibold">Nome</label>
           <input
@@ -132,12 +148,45 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ evento, onAdd, onClose 
           >
             Cancelar
           </button>
+
+          {evento && (
+            <button
+              onClick={() => setShowConfirmDelete(true)}
+              className="bg-red-500 text-white px-4 py-2 rounded-lg"
+            >
+              Excluir
+            </button>
+          )}
+
           <button
-            onClick={handleSubmit}
+            onClick={GerenciarEvento}
             className="bg-green-500 text-white px-4 py-2 rounded-lg"
           >
             {evento ? "Salvar" : "Adicionar"}
           </button>
+
+          {showConfirmDelete && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white p-6 rounded-lg shadow-lg w-80 text-center">
+                <h3 className="text-lg font-semibold mb-4">Tem certeza que deseja excluir?</h3>
+                <div className="flex justify-center gap-4">
+                  <button
+                    onClick={() => setShowConfirmDelete(false)}
+                    className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={DeletarEvento}
+                    className="bg-red-600 text-white px-4 py-2 rounded-lg"
+                  >
+                    Confirmar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
     </div>
