@@ -2,8 +2,8 @@
 
 import React, { useState } from "react";
 import Header from "../../_components/Header";
-import QuizList from "../../_components/QuizList";
-import QuizForm from "../../_components/QuizForm";
+import QuizList from "./components/QuizList";
+import QuizForm from "./components/QuizForm";
 import { FaClipboardList, FaPlus, FaChartBar } from "react-icons/fa";
 
 const QuizPage = () => {
