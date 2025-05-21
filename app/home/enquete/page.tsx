@@ -264,8 +264,6 @@ export default function EnquetePage() {
             <Button variant="destructive" onClick={encerrarEnquete}>
               Encerrar Enquete
             </Button>
-            <Button onClick={criarOutraEnquete}>Criar Outra Enquete</Button>
-            <Button onClick={voltarPaginaFuncionalidades}>Voltar Página de Funcionalidades</Button>
           </div>
         </div>
       )}
