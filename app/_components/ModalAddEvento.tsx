@@ -25,19 +25,24 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ evento, onAdd, onClose 
     if (evento) {
       setNome(evento.nome);
       setDescricao(evento.descricao);
-      setData(evento.data);
+
+      const dateOnly = evento.data.split("T")[0];
+      setData(dateOnly);
     } else {
       setNome("");
       setDescricao("");
       setData("");
     }
+
   }, [evento]);
 
   const DeletarEvento = async () => {
     if (!evento || !evento.id) return;
 
-    const { error } = await supabase
-      .from("Evento")
+    console.log("ID para deletar:", evento.id);
+
+    const { data, error } = await supabase
+      .from("Evento") // ou 'eventos', conforme seu banco
       .update({ deletedAt: new Date().toISOString() })
       .eq("id", evento.id);
 
@@ -46,6 +51,8 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ evento, onAdd, onClose 
       alert("Erro ao excluir evento.");
       return;
     }
+
+    console.log("Evento marcado como deletado:", data);
 
     onClose();
   };
