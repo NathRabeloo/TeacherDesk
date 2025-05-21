@@ -1,44 +1,121 @@
 import React, { useState } from "react";
+import { createClient } from "@/lib/utils/supabase/client";
 
-// Definição da interface do evento
 export interface Evento {
+  id?: number;
   nome: string;
   descricao: string;
   data: string;
 }
 
 interface ModalAddEventoProps {
+  evento?: Evento | null;
   onAdd: (evento: Evento) => void;
   onClose: () => void;
 }
 
-const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ onAdd, onClose }) => {
-  const [nome, setNome] = useState("");
-  const [descricao, setDescricao] = useState("");
-  const [data, setData] = useState("");
+const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ evento, onAdd, onClose }) => {
+  const [nome, setNome] = useState(evento?.nome || "");
+  const [descricao, setDescricao] = useState(evento?.descricao || "");
+  const [data, setData] = useState(evento?.data || "");
+  const supabase = createClient();
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
-  const handleSubmit = () => {
-    // Validação simples
+  React.useEffect(() => {
+    if (evento) {
+      setNome(evento.nome);
+      setDescricao(evento.descricao);
+
+      const dateOnly = evento.data.split("T")[0];
+      setData(dateOnly);
+    } else {
+      setNome("");
+      setDescricao("");
+      setData("");
+    }
+
+  }, [evento]);
+
+  const DeletarEvento = async () => {
+    if (!evento || !evento.id) return;
+
+    console.log("ID para deletar:", evento.id);
+
+    const { data, error } = await supabase
+      .from("Evento") // ou 'eventos', conforme seu banco
+      .update({ deletedAt: new Date().toISOString() })
+      .eq("id", evento.id);
+
+    if (error) {
+      console.error("Erro ao excluir evento:", error.message);
+      alert("Erro ao excluir evento.");
+      return;
+    }
+
+    console.log("Evento marcado como deletado:", data);
+
+    onClose();
+  };
+
+  const GerenciarEvento = async () => {
     if (!nome || !descricao || !data) {
       alert("Todos os campos devem ser preenchidos.");
       return;
     }
 
-    const novoEvento: Evento = {
-      nome,
-      descricao,
-      data,
-    };
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      alert("Usuário não autenticado.");
+      return;
+    }
 
-    onAdd(novoEvento);
-    onClose(); // Fecha o modal após adicionar
+    if (evento) {
+      // Editar evento
+      const { data: updatedData, error } = await supabase
+        .from("Evento")
+        .update({ nome, descricao, data })
+        .eq("id", evento.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Erro ao editar evento:", error.message);
+        alert("Erro ao salvar evento.");
+        return;
+      }
+
+      onAdd(updatedData);
+      onClose();
+    } else {
+      // Criar novo evento (como antes)
+      const { data: insertedData, error } = await supabase
+        .from("Evento")
+        .insert({
+          nome,
+          descricao,
+          data,
+          usuarioId: user.id,
+          deletedAt: null,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Erro ao inserir evento:", error.message);
+        alert("Erro ao salvar evento.");
+        return;
+      }
+
+      onAdd(insertedData);
+      onClose();
+    }
   };
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-        <h2 className="text-xl font-semibold mb-4">Adicionar Evento</h2>
-        
+        <h2 className="text-xl font-semibold mb-4">{evento ? "Editar Evento" : "Adicionar Evento"}</h2>
+
         <div className="mb-4">
           <label htmlFor="nome" className="block text-sm font-semibold">Nome</label>
           <input
@@ -78,12 +155,45 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ onAdd, onClose }) => {
           >
             Cancelar
           </button>
+
+          {evento && (
+            <button
+              onClick={() => setShowConfirmDelete(true)}
+              className="bg-red-500 text-white px-4 py-2 rounded-lg"
+            >
+              Excluir
+            </button>
+          )}
+
           <button
-            onClick={handleSubmit}
+            onClick={GerenciarEvento}
             className="bg-green-500 text-white px-4 py-2 rounded-lg"
           >
-            Adicionar
+            {evento ? "Salvar" : "Adicionar"}
           </button>
+
+          {showConfirmDelete && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white p-6 rounded-lg shadow-lg w-80 text-center">
+                <h3 className="text-lg font-semibold mb-4">Tem certeza que deseja excluir?</h3>
+                <div className="flex justify-center gap-4">
+                  <button
+                    onClick={() => setShowConfirmDelete(false)}
+                    className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={DeletarEvento}
+                    className="bg-red-600 text-white px-4 py-2 rounded-lg"
+                  >
+                    Confirmar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
     </div>
@@ -91,4 +201,5 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ onAdd, onClose }) => {
 };
 
 export default ModalAddEvento;
+
 
