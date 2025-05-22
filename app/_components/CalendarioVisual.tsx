@@ -165,7 +165,7 @@ const Calendar = () => {
       </div>
 
       {/* Barra lateral */}
-      <div className="w-64 pl-4 border-l border-gray-200">
+      <div className="w-64 pl-4 border-gray-200">
         <h3 className="text-lg font-semibold mb-2">Eventos</h3>
         {eventos.map((evento, idx) => {
           const prioridade = getPrioridade(evento.data);
