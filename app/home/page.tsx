@@ -31,7 +31,7 @@ export default async function Home() {
         title={`Bem-vindo, ${userName}!`}
         buttonText="Tutorial TeacherDesk →"
         buttonLink="/home/tutorial"
-        desktopImageLeft="/assets/avatar_ruiva.png"
+        desktopImageLeft="/assets/Avatar/avatar_ruiva.png"
         mobileImage="/assets/avatar_ruiva.png"
       />
       <Grid/>
