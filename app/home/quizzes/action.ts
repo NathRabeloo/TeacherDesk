@@ -13,6 +13,12 @@ interface Question {
   correctAnswer: number;
 }
 
+export async function listarDisciplinas() {
+  const { data, error } = await supabase.from("Disciplina").select("id, nome");
+  if (error) throw error;
+  return data;
+}
+
 export async function saveQuiz(title: string, questions: Question[], disciplinaId: string) {
   if (!title.trim() || questions.some(q => !q.text.trim() || q.options.length < 2)) {
     throw new Error("Preencha o título e todas as perguntas com pelo menos duas opções.");
@@ -20,25 +26,17 @@ export async function saveQuiz(title: string, questions: Question[], disciplinaI
 
   const { data: quiz, error: quizError } = await supabase
     .from("Quiz")
-    .insert({
-      titulo: title,
-      disciplina_id: disciplinaId, // <-- associar disciplina
-    })
+    .insert({ titulo: title, disciplina_id: disciplinaId })
     .select()
     .single();
-
   if (quizError || !quiz) throw quizError;
 
   for (const question of questions) {
     const { data: questionData, error: questionError } = await supabase
       .from("Pergunta")
-      .insert({
-        texto: question.text,
-        quiz_id: quiz.id,
-      })
+      .insert({ texto: question.text, quiz_id: quiz.id })
       .select()
       .single();
-
     if (questionError || !questionData) throw questionError;
 
     const optionsInsert = question.options.map((opt, idx) => ({
@@ -46,15 +44,21 @@ export async function saveQuiz(title: string, questions: Question[], disciplinaI
       correta: idx === question.correctAnswer,
       pergunta_id: questionData.id,
     }));
-
-    const { error: optionError } = await supabase
-      .from("OpcaoPergunta")
-      .insert(optionsInsert);
-
+    const { error: optionError } = await supabase.from("OpcaoPergunta").insert(optionsInsert);
     if (optionError) throw optionError;
   }
 
   return { success: true };
 }
 
+export async function listarQuizzes() {
+  const { data, error } = await supabase.from("Quiz").select("id, titulo");
+  if (error) throw error;
+  return data;
+}
 
+export async function deletarQuiz(quizId: string) {
+  const { error } = await supabase.from("Quiz").delete().eq("id", quizId);
+  if (error) throw error;
+  return { success: true };
+}

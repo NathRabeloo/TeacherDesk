@@ -40,10 +40,14 @@ export default function QuizForm() {
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    const fetchDisciplinas = async () => {
-      const data = await listarDisciplinas();
-      setDisciplinas(data);
-    };
+    async function fetchDisciplinas() {
+      try {
+        const data = await listarDisciplinas();
+        setDisciplinas(data);
+      } catch (error) {
+        alert("Erro ao carregar disciplinas");
+      }
+    }
     fetchDisciplinas();
   }, []);
 
@@ -84,7 +88,7 @@ export default function QuizForm() {
         setQuestions([{ text: "", options: ["", ""], correctAnswer: 0 }]);
       } catch (error: any) {
         console.error(error);
-        alert("Erro ao salvar o quiz.");
+        alert("Erro ao salvar o quiz: " + (error.message || error));
       }
     });
   };
@@ -179,11 +183,7 @@ export default function QuizForm() {
                 ))}
               </RadioGroup>
 
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => handleAddOption(i)}
-              >
+              <Button variant="secondary" size="sm" onClick={() => handleAddOption(i)}>
                 <FaPlus className="mr-1" size={12} /> Adicionar opção
               </Button>
             </div>

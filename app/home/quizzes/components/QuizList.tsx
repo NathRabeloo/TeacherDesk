@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { FaEdit, FaTrash, FaQrcode } from "react-icons/fa";
-import { createClient } from "@supabase/supabase-js";
 import QRCode from "react-qr-code";
 import { Copy } from "lucide-react";
 
@@ -24,11 +23,6 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 interface Quiz {
   id: string;
@@ -52,11 +46,10 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz }) => {
     const fetchQuizzes = async () => {
       setIsLoading(true);
       try {
-        const { data, error } = await supabase
-          .from("Quiz")
-          .select("id, titulo");
-        if (error) throw error;
-        setQuizzes(data || []);
+        const res = await fetch("/api/quizzes");
+        if (!res.ok) throw new Error("Falha ao buscar quizzes");
+        const data = await res.json();
+        setQuizzes(data);
       } catch (error) {
         console.error("Erro ao buscar quizzes:", error);
       } finally {
@@ -70,11 +63,14 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz }) => {
     if (!confirm("Tem certeza que deseja excluir este quiz?")) return;
 
     try {
-      const { error } = await supabase.from("Quiz").delete().eq("id", quizId);
-      if (error) throw error;
-      setQuizzes(quizzes.filter((quiz) => quiz.id !== quizId));
+      const res = await fetch(`/api/quizzes?id=${quizId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Erro ao excluir quiz");
+      setQuizzes((prev) => prev.filter((quiz) => quiz.id !== quizId));
     } catch (error) {
       console.error("Erro ao excluir quiz:", error);
+      alert("Erro ao excluir quiz");
     }
   };
 
@@ -83,7 +79,7 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz }) => {
   );
 
   const qrCodeUrl = selectedQuiz
-    ? `${typeof window !== "undefined" ? window.location.origin : ""}/responder?id=${selectedQuiz.id}`
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}/quiz/${selectedQuiz.id}`
     : "";
 
   const handleCopy = () => {
@@ -102,19 +98,21 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz }) => {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-6">
-      <div>
+    <div className="w-full max-w-4xl mx-auto space-y-6 p-4">
+      <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold">Meus Quizzes</h2>
+        <Button onClick={onCreateQuiz}>Criar novo quiz</Button>
       </div>
 
       <Input
         placeholder="Buscar quizzes..."
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
+        className="max-w-xs"
       />
 
       {isLoading ? (
-        <p className="text-center text-muted-foreground">Carregando...</p>
+        <p className="text-center text-muted-foreground">Carregando quizzes...</p>
       ) : filteredQuizzes.length === 0 ? (
         <div className="text-center py-8 bg-white rounded shadow">
           <p className="text-gray-500">Nenhum quiz encontrado.</p>
@@ -137,7 +135,7 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz }) => {
                   <TableCell>{quiz.titulo}</TableCell>
                   <TableCell>
                     <div className="flex justify-center gap-2">
-                      <Dialog open={isQRCodeOpen} onOpenChange={handleQRCodeDialogChange}>
+                      <Dialog open={isQRCodeOpen && selectedQuiz?.id === quiz.id} onOpenChange={handleQRCodeDialogChange}>
                         <DialogTrigger asChild>
                           <Button
                             size="icon"
@@ -153,16 +151,14 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz }) => {
                         </DialogTrigger>
                         <DialogContent>
                           <DialogHeader>
-                            <DialogTitle>QR Code do Quiz</DialogTitle>
+                            <DialogTitle>QR Code para acesso do quiz</DialogTitle>
                           </DialogHeader>
 
                           <div className="flex flex-col items-center space-y-4">
                             {selectedQuiz && (
                               <>
                                 <QRCode value={qrCodeUrl} size={180} />
-                                <p className="text-sm text-center break-all">
-                                  {qrCodeUrl}
-                                </p>
+                                <p className="text-sm text-center break-all">{qrCodeUrl}</p>
                                 <Button
                                   variant="outline"
                                   onClick={handleCopy}
@@ -176,9 +172,7 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz }) => {
                           </div>
 
                           <DialogFooter>
-                            <Button onClick={() => setIsQRCodeOpen(false)}>
-                              Fechar
-                            </Button>
+                            <Button onClick={() => setIsQRCodeOpen(false)}>Fechar</Button>
                           </DialogFooter>
                         </DialogContent>
                       </Dialog>
@@ -187,15 +181,16 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz }) => {
                         variant="outline"
                         size="icon"
                         onClick={() => onEditQuiz(quiz.id)}
-                        title="Editar Quiz"
+                        title="Editar quiz"
                       >
                         <FaEdit size={16} />
                       </Button>
+
                       <Button
                         variant="destructive"
                         size="icon"
                         onClick={() => handleDelete(quiz.id)}
-                        title="Excluir Quiz"
+                        title="Excluir quiz"
                       >
                         <FaTrash size={16} />
                       </Button>
