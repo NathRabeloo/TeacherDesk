@@ -35,6 +35,7 @@ export default function EnquetePage() {
   const [resultados, setResultados] = useState<Opcao[]>([]);
   const [historicoEnquetes, setHistoricoEnquetes] = useState<EnqueteSalva[]>([]);
   const [mostrarHistorico, setMostrarHistorico] = useState(false);
+  const [copied, setCopied] = useState(false);
 
 
   useEffect(() => {
@@ -76,6 +77,12 @@ export default function EnquetePage() {
   const adicionarOpcao = () => {
     setOpcoes([...opcoes, { texto: "", votos: 0 }]);
   };
+
+  const limparHistorico = () => {
+      localStorage.removeItem(STORAGE_HISTORICO);
+      setHistoricoEnquetes([]);
+      alert("Histórico limpo com sucesso!");
+    };
 
   const atualizarTextoOpcao = (index: number, novoTexto: string) => {
     const novasOpcoes = [...opcoes];
@@ -204,6 +211,9 @@ export default function EnquetePage() {
       conteudo += "\n";
     });
 
+   
+
+
     const blob = new Blob([conteudo], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -260,6 +270,16 @@ export default function EnquetePage() {
             <QRCode value={urlVotacao} size={180} />
           </div>
           <p className="break-all">{urlVotacao}</p>
+           <Button
+      variant="outline"
+      onClick={() => {
+        navigator.clipboard.writeText(urlVotacao);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000); 
+      }}
+    >
+      {copied ? "Link Copiado!" : "Copiar Link"}
+    </Button>
           <div className="flex gap-2 mt-4 flex-wrap">
             <Button variant="destructive" onClick={encerrarEnquete}>
               Encerrar Enquete
@@ -288,6 +308,7 @@ export default function EnquetePage() {
             <Button onClick={exportarResultadosTxt} variant="outline">
               Exportar Resultados (.txt)
             </Button>
+          
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -317,6 +338,7 @@ export default function EnquetePage() {
             <Button onClick={exportarHistoricoTxt} variant="outline">
               Exportar Histórico Completo (.txt)
             </Button>
+              <Button variant="destructive" onClick={limparHistorico}>Limpar Histórico</Button>
           </>
         )}
       </div>
