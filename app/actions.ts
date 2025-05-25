@@ -480,3 +480,85 @@ export const buscarResultados = async (enqueteId: string) => {
 
   return { resultados };
 };
+
+// Criar tutorial (sem autenticação)
+export const criarTutorial = async (formData: FormData) => {
+    const titulo = formData.get("titulo")?.toString();
+    const tipo = formData.get("tipo")?.toString();
+    const descricao = formData.get("descricao")?.toString();
+
+    if (!titulo || !tipo || !descricao) {
+        return { error: "Todos os campos são obrigatórios" };
+    }
+
+    const supabase = createClient();
+
+    const { data, error } = await supabase
+        .from("tutoriais")
+        .insert({ titulo, tipo, descricao })
+        .select();
+
+    if (error) {
+        console.error("Erro ao criar tutorial:", error.message);
+        return { error: error.message };
+    }
+
+    return { success: true, data };
+};
+
+export const listarTutoriais = async () => {
+    const supabase = createClient();
+
+    const { data, error } = await supabase
+        .from("tutoriais")
+        .select("id, titulo, tipo, descricao")
+        .order("id", { ascending: false });
+
+    if (error) {
+        console.error("Erro ao listar tutoriais:", error.message);
+        return [];
+    }
+
+    return data;
+};
+
+export const editarTutorial = async (formData: FormData) => {
+    const id = formData.get("id")?.toString();
+    const titulo = formData.get("titulo")?.toString();
+    const tipo = formData.get("tipo")?.toString();
+    const descricao = formData.get("descricao")?.toString();
+
+    if (!id || !titulo || !tipo || !descricao) {
+        return { error: "Todos os campos são obrigatórios" };
+    }
+
+    const supabase = createClient();
+
+    const { error } = await supabase
+        .from("tutoriais")
+        .update({ titulo, tipo, descricao })
+        .eq("id", id);
+
+    if (error) {
+        console.error("Erro ao editar tutorial:", error.message);
+        return { error: error.message };
+    }
+
+    return { success: true };
+};
+
+export const deletarTutorial = async (tutorialId: string) => {
+    const supabase = createClient();
+
+    const { error } = await supabase
+        .from("tutoriais")
+        .delete()
+        .eq("id", tutorialId);
+
+    if (error) {
+        console.error("Erro ao deletar tutorial:", error.message);
+        return { error: error.message };
+    }
+
+    return { success: true };
+};
