@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/dialog";
 import QRCode from "react-qr-code";
 
-
 type Opcao = { texto: string; votos: number };
 type EnqueteSalva = {
   enqueteId: string;
@@ -36,7 +35,6 @@ export default function EnquetePage() {
   const [historicoEnquetes, setHistoricoEnquetes] = useState<EnqueteSalva[]>([]);
   const [mostrarHistorico, setMostrarHistorico] = useState(false);
   const [copied, setCopied] = useState(false);
-
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -79,10 +77,10 @@ export default function EnquetePage() {
   };
 
   const limparHistorico = () => {
-      localStorage.removeItem(STORAGE_HISTORICO);
-      setHistoricoEnquetes([]);
-      alert("Histórico limpo com sucesso!");
-    };
+    localStorage.removeItem(STORAGE_HISTORICO);
+    setHistoricoEnquetes([]);
+    alert("Histórico limpo com sucesso!");
+  };
 
   const atualizarTextoOpcao = (index: number, novoTexto: string) => {
     const novasOpcoes = [...opcoes];
@@ -211,9 +209,6 @@ export default function EnquetePage() {
       conteudo += "\n";
     });
 
-   
-
-
     const blob = new Blob([conteudo], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -224,12 +219,12 @@ export default function EnquetePage() {
   };
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="p-6 max-w-3xl mx-auto dark:bg-gray-900 dark:text-gray-100">
       <h1 className="text-3xl font-bold mb-6 text-center">Criar Enquete</h1>
 
-      <div className="mb-6 p-4 bg-blue-50 rounded border border-blue-200">
+      <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
         <h2 className="text-xl font-semibold mb-2">Como criar uma enquete:</h2>
-        <ul className="list-disc list-inside text-gray-700">
+        <ul className="list-disc list-inside text-gray-700 dark:text-gray-300">
           <li>Digite a pergunta da enquete no campo indicado.</li>
           <li>Adicione pelo menos duas opções de resposta, preenchendo os campos abaixo.</li>
           <li>Você pode adicionar mais opções clicando em <b>Adicionar Opção</b>.</li>
@@ -245,7 +240,7 @@ export default function EnquetePage() {
             placeholder="Digite a pergunta da enquete"
             value={pergunta}
             onChange={(e) => setPergunta(e.target.value)}
-            className="mb-4"
+            className="mb-4 dark:bg-gray-800 dark:border-gray-700"
           />
           {opcoes.map((opcao, index) => (
             <Input
@@ -253,10 +248,10 @@ export default function EnquetePage() {
               placeholder={`Opção ${index + 1}`}
               value={opcao.texto}
               onChange={(e) => atualizarTextoOpcao(index, e.target.value)}
-              className="mb-2"
+              className="mb-2 dark:bg-gray-800 dark:border-gray-700"
             />
           ))}
-          <Button variant="outline" onClick={adicionarOpcao} className="mb-4">
+          <Button variant="outline" onClick={adicionarOpcao} className="mb-4 dark:border-gray-700 dark:hover:bg-gray-800">
             Adicionar Opção
           </Button>
           <Button onClick={gerarEnquete}>Gerar Enquete</Button>
@@ -266,20 +261,21 @@ export default function EnquetePage() {
       {enqueteAtiva && (
         <div className="space-y-4">
           <p className="text-lg font-semibold">Compartilhe o QR Code para votação:</p>
-          <div className="bg-white p-4 inline-block rounded border">
+          <div className="bg-white dark:bg-gray-800 p-4 inline-block rounded border dark:border-gray-700">
             <QRCode value={urlVotacao} size={180} />
           </div>
           <p className="break-all">{urlVotacao}</p>
-           <Button
-      variant="outline"
-      onClick={() => {
-        navigator.clipboard.writeText(urlVotacao);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000); 
-      }}
-    >
-      {copied ? "Link Copiado!" : "Copiar Link"}
-    </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              navigator.clipboard.writeText(urlVotacao);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000); 
+            }}
+            className="dark:border-gray-700 dark:hover:bg-gray-800"
+          >
+            {copied ? "Link Copiado!" : "Copiar Link"}
+          </Button>
           <div className="flex gap-2 mt-4 flex-wrap">
             <Button variant="destructive" onClick={encerrarEnquete}>
               Encerrar Enquete
@@ -290,11 +286,11 @@ export default function EnquetePage() {
 
       {/* Modal de Resultados */}
       <Dialog open={mostrarResultado} onOpenChange={setMostrarResultado}>
-        <DialogContent>
+        <DialogContent className="dark:bg-gray-900 dark:border-gray-800">
           <DialogHeader>
-            <DialogTitle>Resultado da Enquete</DialogTitle>
+            <DialogTitle className="dark:text-gray-100">Resultado da Enquete</DialogTitle>
           </DialogHeader>
-          <div className="space-y-2">
+          <div className="space-y-2 dark:text-gray-300">
             <p className="font-semibold">{pergunta}</p>
             {(resultados.length > 0 ? resultados : opcoes).map((opcao, index) => (
               <div key={index} className="flex justify-between">
@@ -305,27 +301,26 @@ export default function EnquetePage() {
           </div>
           <DialogFooter className="flex justify-between">
             <Button onClick={() => setMostrarResultado(false)}>Fechar</Button>
-            <Button onClick={exportarResultadosTxt} variant="outline">
+            <Button onClick={exportarResultadosTxt} variant="outline" className="dark:border-gray-700 dark:hover:bg-gray-800">
               Exportar Resultados (.txt)
             </Button>
-          
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Histórico de Enquetes */}
-      <div className="mt-10 border-t pt-6">
+      <div className="mt-10 border-t pt-6 dark:border-gray-800">
         <h2 className="text-2xl font-bold mb-4">Histórico de Enquetes</h2>
         {historicoEnquetes.length === 0 && (
-          <p className="text-gray-600">Nenhuma enquete encerrada ainda.</p>
+          <p className="text-gray-600 dark:text-gray-400">Nenhuma enquete encerrada ainda.</p>
         )}
         {historicoEnquetes.length > 0 && (
           <>
             <ul className="max-h-48 overflow-auto mb-4 space-y-3">
               {historicoEnquetes.map((enq, idx) => (
-                <li key={enq.enqueteId} className="border rounded p-3 bg-gray-50">
-                  <p className="font-semibold">{idx + 1}. {enq.pergunta}</p>
-                  <ul className="pl-4 list-disc text-sm">
+                <li key={enq.enqueteId} className="border rounded p-3 bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
+                  <p className="font-semibold dark:text-gray-300">{idx + 1}. {enq.pergunta}</p>
+                  <ul className="pl-4 list-disc text-sm dark:text-gray-400">
                     {enq.resultados?.map((opt, i) => (
                       <li key={i}>
                         {opt.texto}: {opt.votos} votos
@@ -335,10 +330,10 @@ export default function EnquetePage() {
                 </li>
               ))}
             </ul>
-            <Button onClick={exportarHistoricoTxt} variant="outline">
+            <Button onClick={exportarHistoricoTxt} variant="outline" className="mr-2 dark:border-gray-700 dark:hover:bg-gray-800">
               Exportar Histórico Completo (.txt)
             </Button>
-              <Button variant="destructive" onClick={limparHistorico}>Limpar Histórico</Button>
+            <Button variant="destructive" onClick={limparHistorico}>Limpar Histórico</Button>
           </>
         )}
       </div>
