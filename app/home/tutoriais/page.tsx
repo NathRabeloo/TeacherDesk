@@ -25,6 +25,7 @@ import {
   editarTutorial,
   deletarTutorial,
 } from "../../actions";
+import { EditorDescricao } from "../../_components/EditorDescricao";
 
 const tipoColors: Record<string, string> = {
   tecnico: "bg-blue-500",
@@ -88,6 +89,24 @@ const Tutoriais = () => {
     }
   };
 
+  const handleExcluir = async (tutorial: any) => {
+    const confirma = confirm(`Deseja realmente excluir o tutorial "${tutorial.titulo}"?`);
+    if (!confirma) return;
+
+    const senha = prompt("Digite a senha de admin para confirmar a exclusão:");
+    if (senha !== "admin123") {
+      alert("Senha incorreta! Exclusão cancelada.");
+      return;
+    }
+
+    const result = await deletarTutorial(tutorial.id);
+    if (result.success) {
+      carregarTutoriais();
+    } else {
+      alert("Erro ao excluir o tutorial.");
+    }
+  };
+
   const tutoriaisFiltrados = tutoriais.filter((t) => {
     const matchSearch = t.titulo.toLowerCase().includes(searchQuery.toLowerCase());
     const matchTipo = tipoFiltro ? t.tipo === tipoFiltro : true;
@@ -105,7 +124,16 @@ const Tutoriais = () => {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="md:w-1/2"
         />
-        <Select onValueChange={setTipoFiltro}>
+        <Select
+          value={tipoFiltro}
+          onValueChange={(valor) => {
+            if (valor === tipoFiltro) {
+              setTipoFiltro("");
+            } else {
+              setTipoFiltro(valor);
+            }
+          }}
+        >
           <SelectTrigger className="w-full md:w-1/4">
             <SelectValue placeholder="Filtrar por tipo" />
           </SelectTrigger>
@@ -129,8 +157,36 @@ const Tutoriais = () => {
                 {tutorial.tipo.charAt(0).toUpperCase() + tutorial.tipo.slice(1)}
               </div>
               <div className="flex justify-end gap-2 pt-2">
-                <Button size="sm" variant="secondary" onClick={() => { setTutorialSelecionado(tutorial); setModalVisualizar(true); }}>Visualizar</Button>
-                <Button size="sm" variant="outline" onClick={() => { setTutorialSelecionado(tutorial); setTitulo(tutorial.titulo); setTipo(tutorial.tipo); setDescricao(tutorial.descricao); setModalEditar(true); }}>Editar</Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    setTutorialSelecionado(tutorial);
+                    setModalVisualizar(true);
+                  }}
+                >
+                  Visualizar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setTutorialSelecionado(tutorial);
+                    setTitulo(tutorial.titulo);
+                    setTipo(tutorial.tipo);
+                    setDescricao(tutorial.descricao);
+                    setModalEditar(true);
+                  }}
+                >
+                  Editar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => handleExcluir(tutorial)}
+                >
+                  Excluir
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -143,10 +199,19 @@ const Tutoriais = () => {
           <DialogHeader>
             <DialogTitle>Criar Tutorial</DialogTitle>
           </DialogHeader>
-          <Input placeholder="Título" value={titulo} onChange={(e) => setTitulo(e.target.value)} />
-          <Textarea placeholder="Descrição" value={descricao} onChange={(e) => setDescricao(e.target.value)} />
-          <Select value={tipo} onValueChange={setTipo}>
-            <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
+          <Input
+            placeholder="Título"
+            value={titulo}
+            onChange={(e) => setTitulo(e.target.value)}
+          />
+          <EditorDescricao content={descricao} setContent={setDescricao} />
+          <Select
+            value={tipo}
+            onValueChange={(valor) => setTipo(valor)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Tipo" />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="tecnico">Técnico</SelectItem>
               <SelectItem value="institucional">Institucional</SelectItem>
@@ -163,15 +228,27 @@ const Tutoriais = () => {
 
       {/* Modal Visualizar */}
       <Dialog open={modalVisualizar} onOpenChange={setModalVisualizar}>
-        <DialogContent>
+        <DialogContent className="max-w-3xl w-full p-6 bg-white dark:bg-gray-900 rounded-lg shadow-lg overflow-y-auto max-h-[80vh]">
           <DialogHeader>
-            <DialogTitle>{tutorialSelecionado?.titulo}</DialogTitle>
+            <DialogTitle className="text-3xl font-extrabold mb-4 text-gray-900 dark:text-gray-100">
+              {tutorialSelecionado?.titulo}
+            </DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-gray-700 whitespace-pre-wrap">
-            {tutorialSelecionado?.descricao || "Sem descrição."}
-          </p>
-          <DialogFooter>
-            <Button onClick={() => setModalVisualizar(false)}>Fechar</Button>
+
+          <div
+            className="prose prose-lg prose-indigo max-w-none text-gray-800 dark:prose-invert dark:text-gray-200 leading-relaxed"
+            style={{ wordBreak: "break-word" }}
+            dangerouslySetInnerHTML={{ __html: tutorialSelecionado?.descricao || "Sem descrição." }}
+          />
+
+          <DialogFooter className="mt-6 flex justify-end">
+            <Button
+              variant="outline"
+              className="px-6 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+              onClick={() => setModalVisualizar(false)}
+            >
+              Fechar
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -182,10 +259,17 @@ const Tutoriais = () => {
           <DialogHeader>
             <DialogTitle>Editar Tutorial</DialogTitle>
           </DialogHeader>
-          <Input placeholder="Título" value={titulo} onChange={(e) => setTitulo(e.target.value)} />
-          <Textarea placeholder="Descrição" value={descricao} onChange={(e) => setDescricao(e.target.value)} />
+          <Input
+            placeholder="Título"
+            value={titulo}
+            onChange={(e) => setTitulo(e.target.value)}
+          />
+          <EditorDescricao content={descricao} setContent={setDescricao} />
+
           <Select value={tipo} onValueChange={setTipo}>
-            <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue placeholder="Tipo" />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="tecnico">Técnico</SelectItem>
               <SelectItem value="institucional">Institucional</SelectItem>
