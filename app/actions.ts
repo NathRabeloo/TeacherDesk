@@ -190,10 +190,23 @@ export const criarDisciplina = async (formData: FormData) => {
 export const deletarDisciplina = async (disciplinaId: string) => {
   const supabase = createClient();
 
+  // Verifica se o usuário está autenticado
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (!user || authError) {
+    console.error("Usuário não autenticado:", authError?.message);
+    return { error: "Usuário não autenticado." };
+  }
+
+  // Exclui somente se a disciplina pertencer ao usuário autenticado
   const { error } = await supabase
     .from("Disciplina")
     .delete()
-    .eq("id", disciplinaId);
+    .eq("id", disciplinaId)
+    .eq("user_id", user.id);
 
   if (error) {
     console.error("Erro ao deletar disciplina:", error.message);
