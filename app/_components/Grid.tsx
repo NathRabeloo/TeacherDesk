@@ -1,6 +1,6 @@
 "use client";
 
-import FeatureGrid from "../components/FeatureGrid";
+import FeatureGrid from "./FeatureGrid";
 
 import {
   FaQuestionCircle,

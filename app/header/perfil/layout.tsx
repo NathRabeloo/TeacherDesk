@@ -2,11 +2,10 @@
 "use client";
 
 import React, { useState } from "react";
-import Footer from "../_components/Footer";
-import MenuHeader from "../_components/MenuHeader";
+import Footer from "@/app/_components//Footer";
+import MenuHeader from "@/app/_components/MenuHeader";
 
-export default function HomeLayout({ children }: { children: React.ReactNode }) {
-  const [searchQuery, setSearchQuery] = useState("");
+export default function PerfilLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex flex-col min-h-screen h-screen max-h-screen font-sans bg-gray-100 dark:bg-dark-primary">

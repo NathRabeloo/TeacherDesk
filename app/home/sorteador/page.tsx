@@ -1,132 +1,93 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
-import {
-    FaQuestionCircle,
-    FaPoll,
-    FaRandom,
-    FaChalkboardTeacher,
-    FaTable,
-    FaBook,
-    FaFileAlt,
-    FaCalendarAlt,
-    FaClipboardList
-} from "react-icons/fa";
+import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { FaRandom } from "react-icons/fa";
+import DynamicForm from "@/app/_components/DynamicForm";
 
-// Importando os componentes
+type Sorteio = {
+    titulo: string;
+    descricao: string;
+    tipo: "range" | "list" | "arquivo";
+};
 
-import DynamicForm from "../../components/DynamicForm";
+const sorteios: Sorteio[] = [
+    {
+        titulo: "Sorteio por Intervalo",
+        descricao: "Informe um número mínimo e máximo para sortear.",
+        tipo: "range",
+    },
+    {
+        titulo: "Sorteio por Lista",
+        descricao: "Digite uma lista de itens e sorteie aleatoriamente.",
+        tipo: "list",
+    },
+    {
+        titulo: "Sorteio por Arquivo",
+        descricao: "Carregue um arquivo com os itens a serem sorteados.",
+        tipo: "arquivo",
+    },
+];
 
-interface Item {
-    name: string;
-    icon: JSX.Element;
-    route: string;
-    description: string;
-}
+export default function SorteadorPage() {
+    const [selectedTipo, setSelectedTipo] = useState<"range" | "list" | "arquivo" | null>(null);
 
-const Home = () => {
-    const router = useRouter();
-    const [searchQuery, setSearchQuery] = useState("");
-    const [formType, setFormType] = useState<"range" | "list" | "arquivo">("range");
-
-    // Data atual formatada
-    const currentDate = new Date().toLocaleDateString("pt-BR", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-    });
-    const userName = "Cris";
-
-    const items: Item[] = [
-        { name: "Quizzes", icon: <FaQuestionCircle size={30} />, route: "/quiz", description: "Crie Quizzes para seus alunos" },
-        { name: "Enquetes", icon: <FaPoll size={30} />, route: "/enquete", description: "Faça uma votação em sala de aula" },
-        { name: "Relatórios", icon: <FaFileAlt size={30} />, route: "/relatorios", description: "Gerencie participação com relatórios" },
-        { name: "Sorteador", icon: <FaRandom size={30} />, route: "/sorteador", description: "Sorteie grupos, alunos ou números" },
-        { name: "Tutoriais", icon: <FaChalkboardTeacher size={30} />, route: "/tutoriais", description: "Veja tutoriais disponíveis" },
-        { name: "Calendário", icon: <FaCalendarAlt size={30} />, route: "/calendario", description: "Gerencie compromissos" },
-        { name: "Modelos", icon: <FaTable size={30} />, route: "/modelos", description: "Acesse modelos personalizados" },
-        { name: "Bibliografia", icon: <FaBook size={30} />, route: "/bibliografia", description: "Adicione livros e sites" },
-        { name: "Diário de Plano de aulas", icon: <FaClipboardList size={30} />, route: "/plano-aulas", description: "Gerencie seu plano de aulas" }
-    ];
-
-    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setSearchQuery(e.target.value);
+    const closeModal = () => setSelectedTipo(null);
+    const save = () => {
+        // Implementar ação de salvar
+        console.log("Salvar dados");
+        closeModal();
     };
-
-    const handleItemClick = (item: Item) => {
-        if (item.route) {
-            router.push(item.route);
-        } else {
-            alert(`Você clicou em ${item.name}`);
-        }
-    };
-
-    const filteredItems = items.filter((item) =>
-        item.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
 
     return (
-        <div className="flex flex-col h-screen font-sans bg-gray-100 dark:bg-dark-primary">
-            <div className="flex flex-1">
-           
-                <div className="flex flex-col flex-1">
-                    <div className="flex flex-col flex-1 gap-4 p-6">
-                        <div className="ml-4">
-                           
-                        </div>
-
-                        <div className="mb-2">
-                          
-                        </div>
-
-                        {/* Botão de alternância de tipo de formulário */}
-                        <div className="mb-4 flex gap-4 items-center">
-                            <button
-                                onClick={() => setFormType("range")}
-                                className={`px-4 py-2 rounded-lg font-semibold transition ${formType === "range"
-                                    ? "bg-blue-600 text-white"
-                                    : "bg-white text-blue-600 border border-blue-600"
-                                    }`}
+        <div className="p-6">
+            <h1 className="text-3xl font-bold text-center mb-8">TIPOS DE SORTEIO</h1>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {sorteios.map((sorteio, index) => (
+                    <Dialog key={index} open={selectedTipo === sorteio.tipo} onOpenChange={(open) => !open && closeModal()}>
+                        <DialogTrigger asChild>
+                            <Card
+                                onClick={() => setSelectedTipo(sorteio.tipo)}
+                                className="cursor-pointer hover:shadow-lg transition"
                             >
-                                Sorteio por Números
-                            </button>
+                                <CardContent className="flex flex-col items-center p-6 text-center">
+                                    <FaRandom className="text-4xl text-blue-600 mb-4" />
+                                    <h3 className="text-xl font-semibold mb-2">{sorteio.titulo}</h3>
+                                    <p className="text-gray-600">{sorteio.descricao}</p>
+                                </CardContent>
+                            </Card>
+                        </DialogTrigger>
 
-                            <button
-                                onClick={() => setFormType("list")}
-                                className={`px-4 py-2 rounded-lg font-semibold transition ${formType === "list"
-                                    ? "bg-blue-600 text-white"
-                                    : "bg-white text-blue-600 border border-blue-600"
-                                    }`}
-                            >
-                                Sorteio por Lista
-                            </button>
+                        <DialogContent className="max-w-6xl p-8 space-y-6">
+                            <DialogHeader>
+                                <DialogTitle className="text-2xl font-bold">
+                                    {sorteio.titulo}
+                                </DialogTitle>
+                                <DialogDescription className="text-muted-foreground">
+                                    {sorteio.descricao}
+                                </DialogDescription>
+                            </DialogHeader>
 
-                            <button
-                                onClick={() => setFormType("arquivo")}
-                                className={`px-4 py-2 rounded-lg font-semibold transition ${formType === "arquivo" // ✅ correto
-                                    ? "bg-blue-600 text-white"
-                                    : "bg-white text-blue-600 border border-blue-600"
-                                    }`}
-                            >
-                                Sorteio com Base em Arquivo
-                            </button>
+                            <div className="space-y-4">
+                                <DynamicForm
+                                    formType={sorteio.tipo}
+                                    onSubmit={(data) => {
+                                        console.log("Resultado do sorteio:", data);
+                                    }}
+                                />
+                            </div>
 
-                        </div>
-
-                        <div>
-                            <DynamicForm
-                                formType={formType}
-                                onSubmit={(data) => {
-                                    console.log("Dados enviados:", data);
-                                }}
-                            />
-                        </div>
-                    </div>
-                </div>
+                            <div className="flex justify-end gap-2 pt-4 border-t">
+                                <Button variant="ghost" onClick={closeModal}>
+                                    Cancelar
+                                </Button>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+                ))}
             </div>
         </div>
     );
-};
-
-export default Home;
+}

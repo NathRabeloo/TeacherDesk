@@ -1,11 +1,9 @@
 // "use client";
 
-import Header from "../components/Header";
-
+import Header from "../_components/Header";
 import { createClient } from "@/lib/utils/supabase/server";
 import { redirect } from 'next/navigation';
-
-import Grid from "../components/Grid";
+import Grid from "../_components/Grid";
 
 export default async function Home() {
 
@@ -34,7 +32,6 @@ export default async function Home() {
         buttonText="Tutorial TeacherDesk →"
         buttonLink="/home/tutorial"
         desktopImageLeft="/assets/avatar_ruiva.png"
-        desktopImageRight="/assets/mesa_professora_ruiva.png"
         mobileImage="/assets/avatar_ruiva.png"
       />
       <Grid/>

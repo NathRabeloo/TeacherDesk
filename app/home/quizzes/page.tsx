@@ -1,27 +1,16 @@
 "use client";
 
 import React, { useState } from "react";
-import Header from "../../components/Header";
-import QuizList from "../../components/QuizList";
-import QuizForm from "../../components/QuizForm";
+import Header from "../../_components/Header";
+import QuizList from "./components/QuizList";
+import QuizForm from "./components/QuizForm";
 import { FaClipboardList, FaPlus, FaChartBar } from "react-icons/fa";
 
 const QuizPage = () => {
   const [activeView, setActiveView] = useState<"list" | "create" | "edit">("list");
   const [currentQuizId, setCurrentQuizId] = useState<string | null>(null);
-  const [currentDate, setCurrentDate] = useState<string>(formatDate(new Date()));
 
-  // Função para formatar a data
-  function formatDate(date: Date): string {
-    const options: Intl.DateTimeFormatOptions = { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    };
-    return date.toLocaleDateString('pt-BR', options);
-  }
-
+ 
   // Função para alternar entre as diferentes visualizações
   const handleViewChange = (view: "list" | "create" | "edit", quizId?: string) => {
     setActiveView(view);
@@ -86,57 +75,12 @@ const QuizPage = () => {
   };
 
   // Renderiza o cabeçalho apropriado com base na visualização ativa
-  const renderHeader = () => {
-    switch (activeView) {
-      case "list":
-        return (
-          <Header
-            date={currentDate}
-            title="Biblioteca de Quizzes"
-            buttonText="Criar Novo Quiz"
-            buttonLink="#"
-            desktopImageLeft="/assets/avatar_quiz.png"
-            mobileImage="/assets/avatar_quiz_mobile.png"
-            showOnlyLeftImage={true}
-          />
-        );
-      case "create":
-        return (
-          <Header
-            date={currentDate}
-            title="Criar Novo Quiz"
-            buttonText="Voltar para Lista"
-            buttonLink="#"
-            desktopImageLeft="/assets/avatar_quiz_create.png"
-            mobileImage="/assets/avatar_quiz_create_mobile.png"
-            showOnlyLeftImage={true}
-          />
-        );
-      case "edit":
-        return (
-          <Header
-            date={currentDate}
-            title="Editar Quiz"
-            buttonText="Voltar para Lista"
-            buttonLink="#"
-            desktopImageLeft="/assets/avatar_quiz_edit.png"
-            mobileImage="/assets/avatar_quiz_edit_mobile.png"
-            showOnlyLeftImage={true}
-          />
-        );
-      default:
-        return <Header date={currentDate} />;
-    }
-  };
 
   return (
     <div className="flex min-h-screen bg-blue-50 dark:bg-dark-bg">
-      {/* Sidebar */}
 
       {/* Conteúdo principal */}
       <div className="flex-1 flex flex-col p-2 md:p-4 ml-0 md:ml-4">
-        {/* Header com título dinâmico */}
-        {renderHeader()}
 
         {/* Dark Mode Toggle e Ações */}
         <div className="flex justify-between items-center my-4">
