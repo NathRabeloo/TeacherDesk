@@ -20,7 +20,7 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 
-import { ThemeSwitcher } from "./DarkModeToggle";
+import { ThemeToggle  } from "./DarkModeToggle";
 
 interface MenuItem {
   name: string;
@@ -83,7 +83,7 @@ export default function Offcanvas() {
           <hr className="border-gray-300 dark:border-gray-600 my-4"/>
           <div className="flex items-center lg:justify-between justify-center gap-3 lg:p-3">
             <span className="">Modo Escuro</span>
-            <ThemeSwitcher/>
+            <ThemeToggle />
           </div>
           <button
             onClick={() => handleMenuClick("/logout")}
