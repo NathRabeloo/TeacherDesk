@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { FaPlus, FaTrash } from "react-icons/fa";
+import { FaPlus, FaTrash, FaArrowLeft } from "react-icons/fa";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -16,9 +16,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import { saveQuiz, buscarQuizParaEdicao, atualizarQuiz } from "../action";
 import { listarDisciplinas } from "../../../actions";
-import { saveQuiz } from "../action";
-
 interface Question {
   text: string;
   options: string[];
@@ -30,7 +29,13 @@ interface Disciplina {
   nome: string;
 }
 
-export default function QuizForm() {
+interface QuizFormProps {
+  quizId?: string;
+  onCancel?: () => void;
+  onSave?: (quizData: any) => void;
+}
+
+export default function QuizForm({ quizId, onCancel, onSave }: QuizFormProps) {
   const [title, setTitle] = useState("");
   const [questions, setQuestions] = useState<Question[]>([
     { text: "", options: ["", ""], correctAnswer: 0 },
@@ -38,6 +43,9 @@ export default function QuizForm() {
   const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
   const [disciplinaId, setDisciplinaId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const isEditing = !!quizId;
 
   useEffect(() => {
     async function fetchDisciplinas() {
@@ -50,6 +58,27 @@ export default function QuizForm() {
     }
     fetchDisciplinas();
   }, []);
+
+  const loadQuizData = async (id: string) => {
+    setIsLoading(true);
+    try {
+      const quizData = await buscarQuizParaEdicao(id);
+      setTitle(quizData.titulo);
+      setDisciplinaId(quizData.disciplina_id);
+      setQuestions(quizData.questions);
+    } catch (error) {
+      console.error("Erro ao carregar quiz:", error);
+      alert("Erro ao carregar dados do quiz");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isEditing && quizId) {
+      loadQuizData(quizId);
+    }
+  }, [isEditing, quizId]);
 
   const handleAddQuestion = () => {
     setQuestions([...questions, { text: "", options: ["", ""], correctAnswer: 0 }]);
@@ -70,6 +99,10 @@ export default function QuizForm() {
   const handleRemoveOption = (qIndex: number, optIndex: number) => {
     const updated = [...questions];
     updated[qIndex].options.splice(optIndex, 1);
+    // Se a resposta correta era a opção removida, mudar para a primeira opção
+    if (updated[qIndex].correctAnswer >= optIndex && updated[qIndex].correctAnswer > 0) {
+      updated[qIndex].correctAnswer = updated[qIndex].correctAnswer - 1;
+    }
     setQuestions(updated);
   };
 
@@ -81,11 +114,25 @@ export default function QuizForm() {
 
     startTransition(async () => {
       try {
-        await saveQuiz(title, questions, disciplinaId);
-        alert("Quiz salvo com sucesso!");
-        setTitle("");
-        setDisciplinaId(null);
-        setQuestions([{ text: "", options: ["", ""], correctAnswer: 0 }]);
+        if (isEditing && quizId) {
+          await atualizarQuiz(quizId, title, questions, disciplinaId);
+          alert("Quiz atualizado com sucesso!");
+        } else {
+          await saveQuiz(title, questions, disciplinaId);
+          alert("Quiz salvo com sucesso!");
+        }
+        
+        // Resetar formulário apenas se estiver criando
+        if (!isEditing) {
+          setTitle("");
+          setDisciplinaId(null);
+          setQuestions([{ text: "", options: ["", ""], correctAnswer: 0 }]);
+        }
+        
+        // Chamar callback se fornecido
+        if (onSave) {
+          onSave({ title, questions, disciplinaId });
+        }
       } catch (error: any) {
         console.error(error);
         alert("Erro ao salvar o quiz: " + (error.message || error));
@@ -93,9 +140,26 @@ export default function QuizForm() {
     });
   };
 
+  if (isLoading) {
+    return (
+      <div className="p-4 max-w-2xl mx-auto">
+        <p className="text-center">Carregando dados do quiz...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 max-w-2xl mx-auto space-y-6">
-      <h2 className="text-2xl font-bold">Criar Quiz</h2>
+      <div className="flex items-center gap-4">
+        {onCancel && (
+          <Button variant="ghost" size="icon" onClick={onCancel}>
+            <FaArrowLeft />
+          </Button>
+        )}
+        <h2 className="text-2xl font-bold">
+          {isEditing ? "Editar Quiz" : "Criar Quiz"}
+        </h2>
+      </div>
 
       <div>
         <Label htmlFor="title">Título do Quiz</Label>
@@ -208,9 +272,16 @@ export default function QuizForm() {
           <FaPlus size={14} /> Adicionar pergunta
         </Button>
 
-        <Button onClick={handleSave} disabled={isPending}>
-          {isPending ? "Salvando..." : "Salvar Quiz"}
-        </Button>
+        <div className="flex gap-2">
+          {onCancel && (
+            <Button variant="outline" onClick={onCancel}>
+              Cancelar
+            </Button>
+          )}
+          <Button onClick={handleSave} disabled={isPending}>
+            {isPending ? "Salvando..." : isEditing ? "Atualizar Quiz" : "Salvar Quiz"}
+          </Button>
+        </div>
       </div>
     </div>
   );
