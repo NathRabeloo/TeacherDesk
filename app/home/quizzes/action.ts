@@ -56,9 +56,3 @@ export async function listarQuizzes() {
   if (error) throw error;
   return data;
 }
-
-export async function deletarQuiz(quizId: string) {
-  const { error } = await supabase.from("Quiz").delete().eq("id", quizId);
-  if (error) throw error;
-  return { success: true };
-}

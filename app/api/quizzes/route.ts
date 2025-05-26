@@ -26,3 +26,28 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Erro ao buscar quizzes." }, { status: 500 });
   }
 }
+
+export async function DELETE(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const quizId = searchParams.get("id");
+
+  if (!quizId) {
+    return NextResponse.json({ error: "ID do quiz é obrigatório." }, { status: 400 });
+  }
+
+  try {
+    // Com DELETE CASCADE configurado no banco, basta deletar o quiz
+    // e todas as relações serão removidas automaticamente
+    const { error } = await supabase
+      .from("Quiz")
+      .delete()
+      .eq("id", quizId);
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, message: "Quiz excluído com sucesso." });
+  } catch (error) {
+    console.error("Erro ao excluir quiz:", error);
+    return NextResponse.json({ error: "Erro ao excluir quiz." }, { status: 500 });
+  }
+}
