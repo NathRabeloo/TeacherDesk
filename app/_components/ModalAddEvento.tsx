@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { createClient } from "@/lib/utils/supabase/client";
 
 export interface Evento {
@@ -6,55 +6,61 @@ export interface Evento {
   nome: string;
   descricao: string;
   data: string;
+  prioridade: "alta" | "media" | "baixa";
 }
 
 interface ModalAddEventoProps {
   evento?: Evento | null;
   onAdd: (evento: Evento) => void;
   onClose: () => void;
+  onDelete: (id: number) => void;
 }
 
-const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ evento, onAdd, onClose }) => {
+const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ evento, onAdd, onClose, onDelete }) => {
   const [nome, setNome] = useState(evento?.nome || "");
   const [descricao, setDescricao] = useState(evento?.descricao || "");
   const [data, setData] = useState(evento?.data || "");
+  const [prioridade, setPrioridade] = useState<"alta" | "media" | "baixa">(evento?.prioridade || "baixa");
   const supabase = createClient();
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (evento) {
       setNome(evento.nome);
       setDescricao(evento.descricao);
-
+      setPrioridade(evento.prioridade);
       const dateOnly = evento.data.split("T")[0];
       setData(dateOnly);
     } else {
       setNome("");
       setDescricao("");
       setData("");
+      setPrioridade("baixa");
     }
-
   }, [evento]);
 
   const DeletarEvento = async () => {
     if (!evento || !evento.id) return;
 
-    console.log("ID para deletar:", evento.id);
+    try {
+      const { data, error } = await supabase
+        .from("Evento")
+        .update({ deletedAt: new Date().toISOString() })
+        .eq("id", evento.id);
 
-    const { data, error } = await supabase
-      .from("Evento") // ou 'eventos', conforme seu banco
-      .update({ deletedAt: new Date().toISOString() })
-      .eq("id", evento.id);
+      if (error) {
+        console.error("Erro ao excluir evento:", error.message);
+        alert("Erro ao excluir evento.");
+        return;
+      }
 
-    if (error) {
-      console.error("Erro ao excluir evento:", error.message);
+      // Notifica o componente pai para remover o evento da lista
+      onDelete(evento.id);
+      onClose();
+    } catch (err) {
+      console.error("Erro inesperado ao excluir evento:", err);
       alert("Erro ao excluir evento.");
-      return;
     }
-
-    console.log("Evento marcado como deletado:", data);
-
-    onClose();
   };
 
   const GerenciarEvento = async () => {
@@ -73,7 +79,7 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ evento, onAdd, onClose 
       // Editar evento
       const { data: updatedData, error } = await supabase
         .from("Evento")
-        .update({ nome, descricao, data })
+        .update({ nome, descricao, data, prioridade })
         .eq("id", evento.id)
         .select()
         .single();
@@ -87,13 +93,14 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ evento, onAdd, onClose 
       onAdd(updatedData);
       onClose();
     } else {
-      // Criar novo evento (como antes)
+      // Criar novo evento
       const { data: insertedData, error } = await supabase
         .from("Evento")
         .insert({
           nome,
           descricao,
           data,
+          prioridade,
           usuarioId: user.id,
           deletedAt: null,
         })
@@ -148,6 +155,20 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ evento, onAdd, onClose 
           />
         </div>
 
+        <div className="mb-4">
+          <label htmlFor="prioridade" className="block text-sm font-semibold">Prioridade</label>
+          <select
+            id="prioridade"
+            className="w-full p-2 border rounded-lg mt-1"
+            value={prioridade}
+            onChange={(e) => setPrioridade(e.target.value as "alta" | "media" | "baixa")}
+          >
+            <option value="alta">Alta</option>
+            <option value="media">Média</option>
+            <option value="baixa">Baixa</option>
+          </select>
+        </div>
+
         <div className="flex justify-between">
           <button
             onClick={onClose}
@@ -171,35 +192,33 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ evento, onAdd, onClose 
           >
             {evento ? "Salvar" : "Adicionar"}
           </button>
+        </div>
 
-          {showConfirmDelete && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white p-6 rounded-lg shadow-lg w-80 text-center">
-                <h3 className="text-lg font-semibold mb-4">Tem certeza que deseja excluir?</h3>
-                <div className="flex justify-center gap-4">
-                  <button
-                    onClick={() => setShowConfirmDelete(false)}
-                    className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={DeletarEvento}
-                    className="bg-red-600 text-white px-4 py-2 rounded-lg"
-                  >
-                    Confirmar
-                  </button>
-                </div>
+        {showConfirmDelete && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-80 text-center">
+              <h3 className="text-lg font-semibold mb-4">Tem certeza que deseja excluir?</h3>
+              <div className="flex justify-center gap-4">
+                <button
+                  onClick={() => setShowConfirmDelete(false)}
+                  className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={DeletarEvento}
+                  className="bg-red-600 text-white px-4 py-2 rounded-lg"
+                >
+                  Confirmar
+                </button>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-        </div>
       </div>
     </div>
   );
 };
 
 export default ModalAddEvento;
-
-
