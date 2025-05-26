@@ -36,8 +36,6 @@ export async function DELETE(req: Request) {
   }
 
   try {
-    // Com DELETE CASCADE configurado no banco, basta deletar o quiz
-    // e todas as relações serão removidas automaticamente
     const { error } = await supabase
       .from("Quiz")
       .delete()
