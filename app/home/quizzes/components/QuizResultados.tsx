@@ -274,7 +274,7 @@ export default function QuizResultados({ quizId, onBack }: QuizResultadosProps) 
                     <TableHead className="text-center">Respostas</TableHead>
                     <TableHead className="text-center">Acertos</TableHead>
                     <TableHead className="text-center">% Acerto</TableHead>
-                    <TableHead className="text-center">Dificuldade</TableHead>
+                    <TableHead className="text-center">Compreensão</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
