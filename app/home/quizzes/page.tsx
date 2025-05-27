@@ -1,132 +1,78 @@
 "use client";
 
 import React, { useState } from "react";
-import Header from "../../_components/Header";
 import QuizList from "./components/QuizList";
-import QuizForm from "./components/QuizForm";
-import { FaClipboardList, FaPlus, FaChartBar } from "react-icons/fa";
+import QuizResultados from "./components/QuizResultados";
 
-const QuizPage = () => {
-  const [activeView, setActiveView] = useState<"list" | "create" | "edit">("list");
-  const [currentQuizId, setCurrentQuizId] = useState<string | null>(null);
+// Componente principal que gerencia as diferentes views
+export default function DashboardPrincipal() {
+  const [currentView, setCurrentView] = useState<'list' | 'results' | 'create' | 'edit'>('list');
+  const [selectedQuizId, setSelectedQuizId] = useState<string>('');
 
- 
-  // Função para alternar entre as diferentes visualizações
-  const handleViewChange = (view: "list" | "create" | "edit", quizId?: string) => {
-    setActiveView(view);
-    if (quizId) {
-      setCurrentQuizId(quizId);
-    } else if (view === "create") {
-      setCurrentQuizId(null);
-    }
-  };
-
-  // Função para lidar com a criação de um novo quiz
   const handleCreateQuiz = () => {
-    handleViewChange("create");
+    setCurrentView('create');
+    // Aqui você implementaria a lógica para mostrar o formulário de criação
   };
 
-  // Função para lidar com a edição de um quiz existente
   const handleEditQuiz = (quizId: string) => {
-    handleViewChange("edit", quizId);
+    setSelectedQuizId(quizId);
+    setCurrentView('edit');
+    // Aqui você implementaria a lógica para mostrar o formulário de edição
   };
 
-  // Função para salvar o quiz (criar ou editar)
-  const handleSaveQuiz = (quizData: any) => {
-    console.log("Quiz salvo:", quizData);
-    // Aqui você implementaria a chamada para sua API para salvar o quiz
-    // Após salvar, voltar para a visualização da lista
-    handleViewChange("list");
+  const handleViewResults = (quizId: string) => {
+    setSelectedQuizId(quizId);
+    setCurrentView('results');
   };
 
-  // Função para cancelar a criação/edição e voltar para a lista
-  const handleCancel = () => {
-    handleViewChange("list");
+  const handleBackToList = () => {
+    setCurrentView('list');
+    setSelectedQuizId('');
   };
-
-  // Renderiza o conteúdo principal com base na visualização ativa
-  const renderMainContent = () => {
-    switch (activeView) {
-      case "list":
-        return (
-          <QuizList
-            onCreateQuiz={handleCreateQuiz}
-            onEditQuiz={handleEditQuiz}
-          />
-        );
-      case "create":
-        return (
-          <QuizForm
-            onCancel={handleCancel}
-            onSave={handleSaveQuiz}
-          />
-        );
-      case "edit":
-        return (
-          <QuizForm
-            quizId={currentQuizId || undefined}
-            onCancel={handleCancel}
-            onSave={handleSaveQuiz}
-          />
-        );
-      default:
-        return <div>Conteúdo não encontrado</div>;
-    }
-  };
-
-  // Renderiza o cabeçalho apropriado com base na visualização ativa
 
   return (
-    <div className="flex min-h-screen bg-blue-50 dark:bg-dark-bg">
+    <div className="min-h-screen bg-gray-50 p-6">
+      {currentView === 'list' && (
+        <QuizList
+          onCreateQuiz={handleCreateQuiz}
+          onEditQuiz={handleEditQuiz}
+          onViewResults={handleViewResults}
+        />
+      )}
 
-      {/* Conteúdo principal */}
-      <div className="flex-1 flex flex-col p-2 md:p-4 ml-0 md:ml-4">
+      {currentView === 'results' && selectedQuizId && (
+        <QuizResultados
+          quizId={selectedQuizId}
+          onBack={handleBackToList}
+        />
+      )}
 
-        {/* Dark Mode Toggle e Ações */}
-        <div className="flex justify-between items-center my-4">
-          <div className="flex items-center gap-2">
-            {/* Botões de navegação */}
-            <button
-              onClick={() => handleViewChange("list")}
-              className={`flex items-center gap-2 p-2 rounded-lg ${
-                activeView === "list" 
-                  ? "bg-blue-500 text-white" 
-                  : "bg-blue-100 dark:bg-dark-card text-blue-800 dark:text-dark-text"
-              }`}
-            >
-              <FaClipboardList />
-              <span className="hidden md:inline">Lista</span>
-            </button>
-            <button
-              onClick={handleCreateQuiz}
-              className={`flex items-center gap-2 p-2 rounded-lg ${
-                activeView === "create" 
-                  ? "bg-blue-500 text-white" 
-                  : "bg-blue-100 dark:bg-dark-card text-blue-800 dark:text-dark-text"
-              }`}
-            >
-              <FaPlus />
-              <span className="hidden md:inline">Criar</span>
-            </button>
-            <button
-              className="flex items-center gap-2 p-2 rounded-lg bg-blue-100 dark:bg-dark-card text-blue-800 dark:text-dark-text"
-            >
-              <FaChartBar />
-              <span className="hidden md:inline">Relatórios</span>
-            </button>
-          </div>
-
-
+      {currentView === 'create' && (
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-2xl font-bold mb-6">Criar Novo Quiz</h1>
+          <p className="text-gray-600">Formulário de criação de quiz aqui...</p>
+          <button
+            onClick={handleBackToList}
+            className="mt-4 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+          >
+            Voltar para lista
+          </button>
         </div>
+      )}
 
-        {/* Conteúdo principal baseado na view ativa */}
-        <div className="bg-white dark:bg-dark-primary rounded-lg p-4 flex-1 mb-4 shadow-md">
-          {renderMainContent()}
+      {currentView === 'edit' && selectedQuizId && (
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-2xl font-bold mb-6">Editar Quiz</h1>
+          <p className="text-gray-600">Quiz ID: {selectedQuizId}</p>
+          <p className="text-gray-600">Formulário de edição de quiz aqui...</p>
+          <button
+            onClick={handleBackToList}
+            className="mt-4 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+          >
+            Voltar para lista
+          </button>
         </div>
-
-      </div>
+      )}
     </div>
   );
-};
-
-export default QuizPage;
+}
