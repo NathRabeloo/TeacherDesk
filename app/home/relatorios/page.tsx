@@ -1,60 +1,47 @@
-"use client";
-
-import React from "react";
+// app/relatorios/page.tsx
+import { createClient } from "@/lib/utils/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Checkbox } from "@/components/ui/checkbox";
-import dynamic from "next/dynamic";
 
-const ClientOnlyChart = dynamic(() => import("../../_components/ClientOnlyChart"), {
-  ssr: false,
-});
+export default async function RelatoriosPage() {
+  const supabase = createClient();
 
-export default function RelatoriosPage() {
-  const tarefas = [
-    { id: 1, titulo: "Criar quiz para aula 3", feito: true },
-    { id: 2, titulo: "Corrigir atividades semanais", feito: false },
-    { id: 3, titulo: "Agendar reunião com coordenação", feito: false },
-  ];
+  // Total de quizzes
+  const { count: totalQuizzes } = await supabase
+    .from("Quiz")
+    .select("*", { count: "exact", head: true });
 
-  const tarefasStats = [
-    { name: "Concluídas", valor: tarefas.filter((t) => t.feito).length },
-    { name: "Pendentes", valor: tarefas.filter((t) => !t.feito).length },
-  ];
+  // Total de planos
+  const { count: totalPlanos } = await supabase
+    .from("PlanoAula")
+    .select("*", { count: "exact", head: true });
 
-  const quizzesCriados = 12;
-  const participacao = 78; 
-  const metas = [
-    { titulo: "Criar 10 quizzes no mês", progresso: 100 },
-    { titulo: "Concluir 15 tarefas pedagógicas", progresso: 60 },
-  ];
+  // Enquetes e votos
+  const { count: totalEnquetes } = await supabase
+    .from("enquetes")
+    .select("*", { count: "exact", head: true });
+
+  const { count: totalVotos } = await supabase
+    .from("respostas_enquete")
+    .select("*", { count: "exact", head: true });
+
+  const participacao =
+    totalEnquetes && totalEnquetes > 0
+      ? Math.min(Math.round((totalVotos / totalEnquetes) * 100), 100)
+      : 0;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
       <Card>
         <CardContent className="p-4">
-          <h2 className="text-xl font-bold mb-4">To-do</h2>
-          <ul className="space-y-2">
-            {tarefas.map((tarefa) => (
-              <li key={tarefa.id} className="flex items-center space-x-2">
-                <Checkbox checked={tarefa.feito} />
-                <span className={tarefa.feito ? "line-through text-gray-400" : ""}>{tarefa.titulo}</span>
-              </li>
-            ))}
-          </ul>
+          <h2 className="text-xl font-bold mb-4">Quizzes Criados</h2>
+          <div className="text-5xl font-bold text-center text-blue-600">{totalQuizzes}</div>
         </CardContent>
       </Card>
 
       <Card>
         <CardContent className="p-4">
-          <h2 className="text-xl font-bold mb-4">Tarefas Realizadas</h2>
-          <ClientOnlyChart data={tarefasStats} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="p-4">
-          <h2 className="text-xl font-bold mb-4">Participação nas Aulas</h2>
+          <h2 className="text-xl font-bold mb-4">Participação nas Enquetes</h2>
           <div className="text-center">
             <div className="text-4xl font-semibold">{participacao}%</div>
             <Progress value={participacao} className="mt-2" />
@@ -64,8 +51,8 @@ export default function RelatoriosPage() {
 
       <Card>
         <CardContent className="p-4">
-          <h2 className="text-xl font-bold mb-4">Quizzes Criados</h2>
-          <div className="text-5xl font-bold text-center text-blue-600">{quizzesCriados}</div>
+          <h2 className="text-xl font-bold mb-4">Diários de Aula Criados</h2>
+          <div className="text-5xl font-bold text-center text-green-600">{totalPlanos}</div>
         </CardContent>
       </Card>
 
@@ -73,12 +60,14 @@ export default function RelatoriosPage() {
         <CardContent className="p-4">
           <h2 className="text-xl font-bold mb-4">Metas</h2>
           <ul className="space-y-4">
-            {metas.map((meta, index) => (
-              <li key={index}>
-                <div className="text-sm font-medium mb-1">{meta.titulo}</div>
-                <Progress value={meta.progresso} />
-              </li>
-            ))}
+            <li>
+              <div className="text-sm font-medium mb-1">Criar 10 quizzes no mês</div>
+              <Progress value={((totalQuizzes ?? 0) / 10) * 100} />
+            </li>
+            <li>
+              <div className="text-sm font-medium mb-1">Registrar 5 planos de aula</div>
+              <Progress value={((totalPlanos ?? 0) / 5) * 100} />
+            </li>
           </ul>
         </CardContent>
       </Card>
