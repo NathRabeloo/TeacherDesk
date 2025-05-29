@@ -89,13 +89,6 @@ const QuizDashboard = () => {
               <FaPlus />
               <span className="hidden md:inline">Criar</span>
             </button>
-            <button
-              onClick={() => handleViewChange("results")}
-              className="flex items-center gap-2 p-2 rounded-lg bg-blue-100 dark:bg-dark-card text-blue-800 dark:text-dark-text"
-            >
-              <FaChartBar />
-              <span className="hidden md:inline">Relatórios</span>
-            </button>
           </div>
         </div>
 
