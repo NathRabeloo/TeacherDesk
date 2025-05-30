@@ -6,63 +6,60 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { FaFileDownload } from 'react-icons/fa'
 
-type Modelo = {
-  titulo: string
-  descricao: string
-  link: string
-}
+// Base URL do bucket público
+const BASE_URL = "https://klrdcdnkvdtjoiuwgcaw.supabase.co/storage/v1/object/public/arquivos-modelos/";
 
 export default function Modelos() {
-  const modelosOriginais: Modelo[] = [
+  const arquivos = [
     {
-      titulo: 'Modelo de Slides',
-      descricao: 'Modelo de slides com o ícone da instituição para apresentações.',
-      link: '/modelos/slides.pptx',
+      titulo: "Ementa Modelo",
+      descricao: "Documento modelo para a ementa das disciplinas.",
+      nomeArquivo: "Ementa_Modelo.docx",
     },
     {
-      titulo: 'Documento da Secretaria',
-      descricao: 'Modelo de documento oficial da secretaria para comunicados.',
-      link: '/modelos/documento_secretaria.docx',
+      titulo: "Slide Modelo",
+      descricao: "Modelo de slide institucional para apresentações.",
+      nomeArquivo: "Slide_Modelo.pptx",
     },
     {
-      titulo: 'Relatório de Aulas',
-      descricao: 'Modelo de relatório para registrar as atividades das aulas.',
-      link: '/modelos/relatorio_aulas.pdf',
+      titulo: "Relatório de Aulas",
+      descricao: "Modelo de relatório para registrar as atividades das aulas.",
+      nomeArquivo: "Relatorio_Aulas.pdf",
     },
     {
-      titulo: 'Plano de Aula Padrão',
-      descricao: 'Estrutura básica para criação de planos de aula.',
-      link: '/modelos/plano_padrao.docx',
+      titulo: "Plano de Aula Padrão",
+      descricao: "Estrutura básica para criação de planos de aula.",
+      nomeArquivo: "Plano_Aula_Padrao.docx",
     },
     {
-      titulo: 'Atividades Complementares',
-      descricao: 'Modelo para planejar atividades extracurriculares.',
-      link: '/modelos/atividades_complementares.pdf',
+      titulo: "Atividades Complementares",
+      descricao: "Modelo para planejar atividades extracurriculares.",
+      nomeArquivo: "Atividades_Complementares.pdf",
     },
     {
-      titulo: 'Avaliação Diagnóstica',
-      descricao: 'Modelo para avaliações iniciais dos alunos.',
-      link: '/modelos/avaliacao_diagnostica.docx',
+      titulo: "Avaliação Diagnóstica",
+      descricao: "Modelo para avaliações iniciais dos alunos.",
+      nomeArquivo: "Avaliacao_Diagnostica.docx",
     },
     {
-      titulo: 'Ficha de Observação',
-      descricao: 'Documento para registrar observações em sala.',
-      link: '/modelos/ficha_observacao.pdf',
+      titulo: "Ficha de Observação",
+      descricao: "Documento para registrar observações em sala.",
+      nomeArquivo: "Ficha_Observacao.pdf",
     },
     {
-      titulo: 'Agenda de Reuniões',
-      descricao: 'Modelo para organização de reuniões pedagógicas.',
-      link: '/modelos/agenda_reunioes.docx',
+      titulo: "Agenda de Reuniões",
+      descricao: "Modelo para organização de reuniões pedagógicas.",
+      nomeArquivo: "Agenda_Reunioes.docx",
     },
     {
-      titulo: 'Cronograma Semestral',
-      descricao: 'Modelo de planejamento semestral de atividades.',
-      link: '/modelos/cronograma_semestral.xlsx',
+      titulo: "Cronograma Semestral",
+      descricao: "Modelo de planejamento semestral de atividades.",
+      nomeArquivo: "Cronograma_Semestral.xlsx",
     },
     {
-      titulo: 'Plano Individual de Ensino',
-      descricao: 'Modelo de apoio ao ensino personalizado.',
-      link: '/modelos/plano_individual.pdf',
+      titulo: "Plano Individual de Ensino",
+      descricao: "Modelo de apoio ao ensino personalizado.",
+      nomeArquivo: "Plano_Individual.pdf",
     },
   ]
 
@@ -70,16 +67,19 @@ export default function Modelos() {
   const [busca, setBusca] = useState('')
   const itensPorPagina = 12
 
-  const modelosFiltrados = modelosOriginais.filter((modelo) =>
-    modelo.titulo.toLowerCase().includes(busca.toLowerCase())
+  // Filtra os arquivos com base no título
+  const arquivosFiltrados = arquivos.filter((arquivo) =>
+    arquivo.titulo.toLowerCase().includes(busca.toLowerCase())
   )
 
-  const totalPaginas = Math.ceil(modelosFiltrados.length / itensPorPagina)
-  const modelosPaginados = modelosFiltrados.slice(
+  // Calcula o total de páginas e pega os arquivos da página atual
+  const totalPaginas = Math.ceil(arquivosFiltrados.length / itensPorPagina)
+  const arquivosPaginados = arquivosFiltrados.slice(
     (paginaAtual - 1) * itensPorPagina,
     paginaAtual * itensPorPagina
   )
 
+  // Muda a página da lista de arquivos
   const mudarPagina = (novaPagina: number) => {
     if (novaPagina >= 1 && novaPagina <= totalPaginas) {
       setPaginaAtual(novaPagina)
@@ -104,16 +104,16 @@ export default function Modelos() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {modelosPaginados.map((modelo, index) => (
+          {arquivosPaginados.map((arquivo, index) => (
             <Card key={index} className="h-full">
               <CardContent className="flex flex-col justify-between p-6 h-full text-center">
                 <div>
                   <FaFileDownload className="text-5xl text-blue-600 mb-4 mx-auto" />
-                  <h3 className="text-xl font-semibold mb-2">{modelo.titulo}</h3>
-                  <p className="text-gray-600 mb-4 text-sm">{modelo.descricao}</p>
+                  <h3 className="text-xl font-semibold mb-2">{arquivo.titulo}</h3>
+                  <p className="text-gray-600 mb-4 text-sm">{arquivo.descricao}</p>
                 </div>
                 <a
-                  href={modelo.link}
+                  href={`${BASE_URL}${encodeURIComponent(arquivo.nomeArquivo)}`}
                   download
                   className="w-full mt-auto bg-blue-400 text-white text-sm py-2 px-4 rounded-md hover:bg-blue-500"
                 >
