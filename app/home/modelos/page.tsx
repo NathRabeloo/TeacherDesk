@@ -36,7 +36,7 @@ export default function Modelos() {
                 rel="noopener noreferrer"
                 className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors"
               >
-                Abrir
+                Baixar
               </a>
             </CardContent>
           </Card>
