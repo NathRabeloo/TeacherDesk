@@ -40,6 +40,7 @@ O **TeacherDesk** oferece diversas funcionalidades que buscam simplificar e dina
 
 O desenvolvimento do **TeacherDesk** utilizou as seguintes tecnologias amplamente adotadas no mercado:
 
+<<<<<<< HEAD
 * **Frontend**: React.js, Next.js
 * **Backend**: Node.js
 * **Banco de Dados**: Supabase
@@ -49,6 +50,17 @@ O desenvolvimento do **TeacherDesk** utilizou as seguintes tecnologias amplament
 ## Guia de Configuração e Execução do Projeto
 
 Este projeto utiliza **Next.js** com **React** para o frontend, **Node.js** no backend, e **Supabase** como banco de dados.
+=======
+- **Linguagem de Programação**: Typescript
+- **Framework**: Node.js, Next.js, Tailwind, Supabase
+- **Banco de Dados**: PostgreeSQL
+- **Outras Tecnologias**: Add
+
+## Guia de Configuração e Execução do Projeto
+
+Este projeto utiliza **Next.js** com **TypeScript**, **Supabase** como ORM, e **PostgreSQL** como banco de dados.
+
+>>>>>>> f7a6461c479f9a9786834a45e09f91a2a568e148
 
 ### Passos para Configuração do Ambiente no Windows
 
@@ -87,6 +99,7 @@ Pressione **Enter** para finalizar.
 
 #### Instalar Dependências
 
+<<<<<<< HEAD
 No diretório do projeto, execute:
 
 ```
@@ -119,6 +132,13 @@ npm install pg
 O Tailwind CSS foi incluído durante a criação do projeto, mas, caso precise configurá-lo manualmente, siga os passos abaixo:
 
 1. **Instale o Tailwind CSS e suas dependências**:
+=======
+### Configurar Tailwind CSS
+
+O Tailwind CSS já foi incluído durante a criação do projeto com `create-next-app`, mas, caso precise configurá-lo manualmente, siga os passos abaixo:
+
+1. **Instale o Tailwind CSS e suas dependências:**
+>>>>>>> f7a6461c479f9a9786834a45e09f91a2a568e148
 
    ```
    npm install -D tailwindcss postcss autoprefixer

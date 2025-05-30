@@ -37,15 +37,6 @@ type Disciplina = {
   nome: string
 }
 
-const disciplinaColors: Record<string, string> = {
-  matematica: 'bg-blue-500',
-  portugues: 'bg-pink-400',
-  historia: 'bg-yellow-500',
-  geografia: 'bg-green-600',
-  ciencias: 'bg-purple-500',
-  outra: 'bg-gray-500',
-}
-
 export default function PlanoAulasPage() {
   const router = useRouter()
   const [planos, setPlanos] = useState<Plano[]>([])
@@ -55,6 +46,9 @@ export default function PlanoAulasPage() {
   const [modalAberto, setModalAberto] = useState(false)
   const [novoTitulo, setNovoTitulo] = useState('')
   const [novaDisciplinaId, setNovaDisciplinaId] = useState<string | null>(null)
+
+  const [paginaAtual, setPaginaAtual] = useState(1)
+  const itensPorPagina = 9
 
   useEffect(() => {
     const carregar = async () => {
@@ -79,6 +73,13 @@ export default function PlanoAulasPage() {
     return matchSearch && matchDisciplina
   })
 
+  const totalPaginas = Math.ceil(planosFiltrados.length / itensPorPagina)
+
+  const planosPaginados = planosFiltrados.slice(
+    (paginaAtual - 1) * itensPorPagina,
+    paginaAtual * itensPorPagina
+  )
+
   const getDisciplinaNome = (id: string) => {
     const disc = disciplinas.find((d) => d.id === id)
     return disc ? disc.nome : 'Desconhecida'
@@ -93,6 +94,7 @@ export default function PlanoAulasPage() {
     const formData = new FormData()
     formData.append('titulo', novoTitulo)
     formData.append('disciplina_id', novaDisciplinaId)
+    formData.append('cor', 'bg-orange-300') // cor fixa laranja claro
 
     const { success, data } = await criarPlanoAula(formData)
 
@@ -102,6 +104,7 @@ export default function PlanoAulasPage() {
       setModalAberto(false)
       setNovoTitulo('')
       setNovaDisciplinaId(null)
+      setPaginaAtual(1)
       router.push(`/plano-aulas/${novoPlano.id}`)
     } else {
       alert('Erro ao criar plano')
@@ -109,82 +112,116 @@ export default function PlanoAulasPage() {
   }
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen dark:bg-dark-primary">
-      <h1 className="text-2xl font-bold mb-4">Planos de Aula</h1>
+    <div className="min-h-screen bg-blue-100 flex justify-center items-start py-10">
+      <div className="bg-white rounded-3xl shadow-md w-full max-w-[90rem] p-6">
+        <h1 className="text-2xl font-bold mb-6 text-center">Diários de Aula</h1>
 
-      <div className="flex flex-col md:flex-row gap-4 mb-6 items-center">
-        <Input
-          placeholder="Buscar planos..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="md:w-1/2"
-        />
-        <Select onValueChange={setDisciplinaFiltro}>
-          <SelectTrigger className="w-full md:w-1/4">
-            <SelectValue placeholder="Filtrar por disciplina" />
-          </SelectTrigger>
-          <SelectContent>
-            {disciplinas.map((disc) => (
-              <SelectItem key={disc.id} value={disc.id}>
-                {disc.nome}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button onClick={() => setModalAberto(true)}>Adicionar Plano</Button>
-      </div>
+        <div className="flex flex-col md:flex-row gap-4 mb-6 items-center justify-center">
+          <Input
+            placeholder="Buscar planos..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value)
+              setPaginaAtual(1)
+            }}
+            className="md:w-1/2"
+          />
+          <Select
+            onValueChange={(value) => {
+              setDisciplinaFiltro(value)
+              setPaginaAtual(1)
+            }}
+          >
+            <SelectTrigger className="w-full md:w-1/4">
+              <SelectValue placeholder="Filtrar por disciplina" />
+            </SelectTrigger>
+            <SelectContent>
+              {disciplinas.map((disc) => (
+                <SelectItem key={disc.id} value={disc.id}>
+                  {disc.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button onClick={() => setModalAberto(true)}>Adicionar Diário</Button>
+        </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {planosFiltrados.map((plano) => (
-          <Card key={plano.id} className="flex items-center justify-center h-40">
-            <CardContent className="p-4 w-full h-full bg-white dark:bg-dark-card rounded-lg shadow">
-              <div className="space-y-2 text-center">
-                <h2 className="text-md font-semibold line-clamp-2">{plano.titulo}</h2>
-                <div
-                  className={`rounded-full text-white text-sm font-semibold px-3 py-1 ${
-                    disciplinaColors[getDisciplinaNome(plano.disciplina_id).toLowerCase()] || 'bg-gray-500'
-                  }`}
-                >
-                  {getDisciplinaNome(plano.disciplina_id)}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 mb-6">
+          {planosPaginados.map((plano) => (
+            <Card key={plano.id} className="h-full">
+              <CardContent className="p-4 bg-white rounded-lg shadow h-full flex flex-col justify-between">
+                <div className="space-y-2 text-center">
+                  <h2 className="text-md font-semibold line-clamp-2">{plano.titulo}</h2>
+                  <div className="rounded-full text-white text-sm font-semibold px-3 py-1 bg-orange-400">
+                    {getDisciplinaNome(plano.disciplina_id)}
+                  </div>
                 </div>
-              </div>
-              <Link href={`/plano-aulas/${plano.id}`}>
-                <Button variant="outline" className="w-full mt-2">Acessar Diário</Button>
-              </Link>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                <Link href={`/plano-aulas/${plano.id}`}>
+                  <Button className="w-full mt-4 bg-blue-400 text-white hover:bg-blue-500">
+                    Acessar Diário
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
-      <Dialog open={modalAberto} onOpenChange={setModalAberto}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Adicionar Novo Plano</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Input
-              placeholder="Título"
-              value={novoTitulo}
-              onChange={(e) => setNovoTitulo(e.target.value)}
-            />
-            <Select onValueChange={setNovaDisciplinaId}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Disciplina" />
-              </SelectTrigger>
-              <SelectContent>
-                {disciplinas.map((disc) => (
-                  <SelectItem key={disc.id} value={disc.id}>
-                    {disc.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <DialogFooter>
-            <Button onClick={adicionarPlano}>Salvar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        <div className="flex justify-center items-center gap-4">
+          <Button
+            onClick={() => setPaginaAtual((prev) => Math.max(1, prev - 1))}
+            disabled={paginaAtual === 1}
+            variant="outline"
+          >
+            Anterior
+          </Button>
+          <span className="font-semibold">
+            Página {paginaAtual} de {totalPaginas}
+          </span>
+          <Button
+            onClick={() =>
+              setPaginaAtual((prev) => Math.min(totalPaginas, prev + 1))
+            }
+            disabled={paginaAtual === totalPaginas}
+            variant="outline"
+          >
+            Próxima
+          </Button>
+        </div>
+
+        <Dialog open={modalAberto} onOpenChange={setModalAberto}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Adicionar Novo Diário</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Input
+                placeholder="Título"
+                value={novoTitulo}
+                onChange={(e) => setNovoTitulo(e.target.value)}
+              />
+              <Select
+                value={novaDisciplinaId ?? ''}
+                onValueChange={setNovaDisciplinaId}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Disciplina" />
+                </SelectTrigger>
+                <SelectContent>
+                  {disciplinas.map((disc) => (
+                    <SelectItem key={disc.id} value={disc.id}>
+                      {disc.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <Button onClick={adicionarPlano}>Salvar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+      </div>
     </div>
   )
 }

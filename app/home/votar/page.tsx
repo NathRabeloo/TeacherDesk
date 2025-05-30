@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ type Opcao = {
   votos: number;
 };
 
-export default function VotarPage() {
+function VotarPageInner() {
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
 
@@ -63,7 +64,6 @@ export default function VotarPage() {
 
       if (!res.ok) throw new Error(data.error || "Erro ao registrar voto");
 
-      // Atualiza votos localmente para dar feedback imediato
       setOpcoes((oldOpcoes) =>
         oldOpcoes.map((opcao) =>
           opcao.id === opcaoId ? { ...opcao, votos: opcao.votos + 1 } : opcao
@@ -107,5 +107,13 @@ export default function VotarPage() {
         <p className="mt-4 text-green-600 font-semibold">Obrigado pelo seu voto!</p>
       )}
     </div>
+  );
+}
+
+export default function VotarPage() {
+  return (
+    <Suspense fallback={<p className="p-6 text-center">Carregando enquete...</p>}>
+      <VotarPageInner />
+    </Suspense>
   );
 }

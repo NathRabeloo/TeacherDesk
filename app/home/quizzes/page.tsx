@@ -4,47 +4,33 @@ import React, { useState } from "react";
 import Header from "../../_components/Header";
 import QuizList from "./components/QuizList";
 import QuizForm from "./components/QuizForm";
+import QuizResultados from "./components/QuizResultados";
 import { FaClipboardList, FaPlus, FaChartBar } from "react-icons/fa";
 
-const QuizPage = () => {
-  const [activeView, setActiveView] = useState<"list" | "create" | "edit">("list");
+type ViewType = "list" | "create" | "edit" | "results";
+
+const QuizDashboard = () => {
+  const [activeView, setActiveView] = useState<ViewType>("list");
   const [currentQuizId, setCurrentQuizId] = useState<string | null>(null);
 
- 
-  // Função para alternar entre as diferentes visualizações
-  const handleViewChange = (view: "list" | "create" | "edit", quizId?: string) => {
+  const handleViewChange = (view: ViewType, quizId?: string) => {
     setActiveView(view);
-    if (quizId) {
-      setCurrentQuizId(quizId);
-    } else if (view === "create") {
-      setCurrentQuizId(null);
-    }
+    setCurrentQuizId(quizId ?? null);
   };
 
-  // Função para lidar com a criação de um novo quiz
-  const handleCreateQuiz = () => {
-    handleViewChange("create");
-  };
+  const handleCreateQuiz = () => handleViewChange("create");
 
-  // Função para lidar com a edição de um quiz existente
-  const handleEditQuiz = (quizId: string) => {
-    handleViewChange("edit", quizId);
-  };
+  const handleEditQuiz = (quizId: string) => handleViewChange("edit", quizId);
 
-  // Função para salvar o quiz (criar ou editar)
+  const handleViewResults = (quizId: string) => handleViewChange("results", quizId);
+
   const handleSaveQuiz = (quizData: any) => {
     console.log("Quiz salvo:", quizData);
-    // Aqui você implementaria a chamada para sua API para salvar o quiz
-    // Após salvar, voltar para a visualização da lista
     handleViewChange("list");
   };
 
-  // Função para cancelar a criação/edição e voltar para a lista
-  const handleCancel = () => {
-    handleViewChange("list");
-  };
+  const handleCancel = () => handleViewChange("list");
 
-  // Renderiza o conteúdo principal com base na visualização ativa
   const renderMainContent = () => {
     switch (activeView) {
       case "list":
@@ -52,15 +38,11 @@ const QuizPage = () => {
           <QuizList
             onCreateQuiz={handleCreateQuiz}
             onEditQuiz={handleEditQuiz}
+            onViewResults={handleViewResults}
           />
         );
       case "create":
-        return (
-          <QuizForm
-            onCancel={handleCancel}
-            onSave={handleSaveQuiz}
-          />
-        );
+        return <QuizForm onCancel={handleCancel} onSave={handleSaveQuiz} />;
       case "edit":
         return (
           <QuizForm
@@ -69,28 +51,27 @@ const QuizPage = () => {
             onSave={handleSaveQuiz}
           />
         );
+      case "results":
+        return currentQuizId ? (
+          <QuizResultados quizId={currentQuizId} onBack={handleCancel} />
+        ) : (
+          <p>Quiz não encontrado</p>
+        );
       default:
-        return <div>Conteúdo não encontrado</div>;
+        return <p>Conteúdo não encontrado</p>;
     }
   };
 
-  // Renderiza o cabeçalho apropriado com base na visualização ativa
-
   return (
     <div className="flex min-h-screen bg-blue-50 dark:bg-dark-bg">
-
-      {/* Conteúdo principal */}
       <div className="flex-1 flex flex-col p-2 md:p-4 ml-0 md:ml-4">
-
-        {/* Dark Mode Toggle e Ações */}
         <div className="flex justify-between items-center my-4">
           <div className="flex items-center gap-2">
-            {/* Botões de navegação */}
             <button
               onClick={() => handleViewChange("list")}
               className={`flex items-center gap-2 p-2 rounded-lg ${
-                activeView === "list" 
-                  ? "bg-blue-500 text-white" 
+                activeView === "list"
+                  ? "bg-blue-500 text-white"
                   : "bg-blue-100 dark:bg-dark-card text-blue-800 dark:text-dark-text"
               }`}
             >
@@ -100,33 +81,23 @@ const QuizPage = () => {
             <button
               onClick={handleCreateQuiz}
               className={`flex items-center gap-2 p-2 rounded-lg ${
-                activeView === "create" 
-                  ? "bg-blue-500 text-white" 
+                activeView === "create"
+                  ? "bg-blue-500 text-white"
                   : "bg-blue-100 dark:bg-dark-card text-blue-800 dark:text-dark-text"
               }`}
             >
               <FaPlus />
               <span className="hidden md:inline">Criar</span>
             </button>
-            <button
-              className="flex items-center gap-2 p-2 rounded-lg bg-blue-100 dark:bg-dark-card text-blue-800 dark:text-dark-text"
-            >
-              <FaChartBar />
-              <span className="hidden md:inline">Relatórios</span>
-            </button>
           </div>
-
-
         </div>
 
-        {/* Conteúdo principal baseado na view ativa */}
         <div className="bg-white dark:bg-dark-primary rounded-lg p-4 flex-1 mb-4 shadow-md">
           {renderMainContent()}
         </div>
-
       </div>
     </div>
   );
 };
 
-export default QuizPage;
+export default QuizDashboard;

@@ -74,7 +74,7 @@ const Header: React.FC<HeaderProps> = ({
           />
         ) : title !== "Bibliografia" && (
           <img
-            src="/assets/avatar_ruiva.png"
+            src="/assets/avatar/avatar_ruiva.png"
             alt="Avatar Ruiva"
             className={`absolute ${showOnlyLeftImage ? 'right-10' : 'left-1/2 -translate-x-1/2'} bottom-[-0px] max-h-[180px] object-contain`}
           />

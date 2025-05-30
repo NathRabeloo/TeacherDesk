@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { FaEdit, FaTrash, FaQrcode } from "react-icons/fa";
-import { createClient } from "@supabase/supabase-js";
+import { FaEdit, FaTrash, FaQrcode, FaChartBar } from "react-icons/fa";
 import QRCode from "react-qr-code";
 import { Copy } from "lucide-react";
+import { createClient } from "@supabase/supabase-js";
 
 import {
   Table,
@@ -16,14 +16,8 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -33,15 +27,24 @@ const supabase = createClient(
 interface Quiz {
   id: string;
   titulo: string;
+  disciplina_id: string;
+}
+
+interface Disciplina {
+  id: string;
+  nome: string;
 }
 
 interface QuizListProps {
   onCreateQuiz: () => void;
   onEditQuiz: (quizId: string) => void;
+  onViewResults?: (quizId: string) => void; // Adicionando prop para visualizar resultados
 }
 
-const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz }) => {
+const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewResults }) => {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
+  const [selectedDisciplina, setSelectedDisciplina] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
@@ -49,14 +52,30 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz }) => {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
+    const fetchDisciplinas = async () => {
+      try {
+        const res = await fetch("/api/disciplinas");
+        if (!res.ok) throw new Error("Erro ao buscar disciplinas");
+        const data = await res.json();
+        setDisciplinas(data);
+      } catch (error) {
+        console.error("Erro ao buscar disciplinas:", error);
+      }
+    };
+    fetchDisciplinas();
+  }, []);
+
+  useEffect(() => {
     const fetchQuizzes = async () => {
       setIsLoading(true);
       try {
-        const { data, error } = await supabase
-          .from("Quiz")
-          .select("id, titulo");
-        if (error) throw error;
-        setQuizzes(data || []);
+        const query = selectedDisciplina
+          ? `/api/quizzes?disciplinaId=${selectedDisciplina}`
+          : `/api/quizzes`;
+        const res = await fetch(query);
+        if (!res.ok) throw new Error("Falha ao buscar quizzes");
+        const data = await res.json();
+        setQuizzes(data);
       } catch (error) {
         console.error("Erro ao buscar quizzes:", error);
       } finally {
@@ -64,17 +83,17 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz }) => {
       }
     };
     fetchQuizzes();
-  }, []);
+  }, [selectedDisciplina]);
 
   const handleDelete = async (quizId: string) => {
     if (!confirm("Tem certeza que deseja excluir este quiz?")) return;
-
     try {
-      const { error } = await supabase.from("Quiz").delete().eq("id", quizId);
-      if (error) throw error;
-      setQuizzes(quizzes.filter((quiz) => quiz.id !== quizId));
+      const res = await fetch(`/api/quizzes?id=${quizId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Erro ao excluir quiz");
+      setQuizzes((prev) => prev.filter((quiz) => quiz.id !== quizId));
     } catch (error) {
       console.error("Erro ao excluir quiz:", error);
+      alert("Erro ao excluir quiz");
     }
   };
 
@@ -107,11 +126,33 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz }) => {
         <h2 className="text-xl font-bold">Meus Quizzes</h2>
       </div>
 
-      <Input
-        placeholder="Buscar quizzes..."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-      />
+      <div className="flex gap-4">
+        <Input
+          placeholder="Buscar quiz..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="max-w-xs"
+        />
+
+        <Select
+          onValueChange={(value) => setSelectedDisciplina(value === "all" ? null : value)}
+          value={selectedDisciplina ?? "all"}
+        >
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Filtrar por Disciplina" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as Disciplinas</SelectItem>
+            {disciplinas.map((disciplina) => (
+              <SelectItem key={disciplina.id} value={disciplina.id}>
+                {disciplina.nome}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Button onClick={onCreateQuiz}>Criar novo quiz</Button>
+      </div>
 
       {isLoading ? (
         <p className="text-center text-muted-foreground">Carregando...</p>
@@ -128,6 +169,7 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz }) => {
             <TableHeader>
               <TableRow>
                 <TableHead>Título</TableHead>
+                <TableHead>Disciplina</TableHead>
                 <TableHead className="text-center">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -136,68 +178,49 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz }) => {
                 <TableRow key={quiz.id}>
                   <TableCell>{quiz.titulo}</TableCell>
                   <TableCell>
+                    {disciplinas.find((d) => d.id === quiz.disciplina_id)?.nome ?? "N/A"}
+                  </TableCell>
+                  <TableCell>
                     <div className="flex justify-center gap-2">
-                      <Dialog open={isQRCodeOpen} onOpenChange={handleQRCodeDialogChange}>
-                        <DialogTrigger asChild>
-                          <Button
-                            size="icon"
-                            variant="secondary"
-                            onClick={() => {
-                              setSelectedQuiz(quiz);
-                              setIsQRCodeOpen(true);
-                            }}
-                            title="Gerar QR Code"
-                          >
-                            <FaQrcode size={14} />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>QR Code do Quiz</DialogTitle>
-                          </DialogHeader>
-
-                          <div className="flex flex-col items-center space-y-4">
-                            {selectedQuiz && (
-                              <>
-                                <QRCode value={qrCodeUrl} size={180} />
-                                <p className="text-sm text-center break-all">
-                                  {qrCodeUrl}
-                                </p>
-                                <Button
-                                  variant="outline"
-                                  onClick={handleCopy}
-                                  className="flex items-center gap-2"
-                                >
-                                  <Copy size={16} />
-                                  {copied ? "Copiado!" : "Copiar link"}
-                                </Button>
-                              </>
-                            )}
-                          </div>
-
-                          <DialogFooter>
-                            <Button onClick={() => setIsQRCodeOpen(false)}>
-                              Fechar
-                            </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-
                       <Button
-                        variant="outline"
                         size="icon"
+                        variant="outline"
                         onClick={() => onEditQuiz(quiz.id)}
                         title="Editar Quiz"
                       >
-                        <FaEdit size={16} />
+                        <FaEdit />
                       </Button>
+                      
+                      {onViewResults && (
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          onClick={() => onViewResults(quiz.id)}
+                          title="Ver Resultados"
+                        >
+                          <FaChartBar />
+                        </Button>
+                      )}
+                      
                       <Button
-                        variant="destructive"
                         size="icon"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedQuiz(quiz);
+                          setIsQRCodeOpen(true);
+                        }}
+                        title="Gerar QR Code"
+                      >
+                        <FaQrcode />
+                      </Button>
+                      
+                      <Button
+                        size="icon"
+                        variant="outline"
                         onClick={() => handleDelete(quiz.id)}
                         title="Excluir Quiz"
                       >
-                        <FaTrash size={16} />
+                        <FaTrash />
                       </Button>
                     </div>
                   </TableCell>
@@ -207,6 +230,38 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz }) => {
           </Table>
         </div>
       )}
+
+      {/* Dialog do QR Code */}
+      <Dialog open={isQRCodeOpen} onOpenChange={handleQRCodeDialogChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>QR Code do Quiz</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center space-y-4">
+            {selectedQuiz && (
+              <>
+                <QRCode value={qrCodeUrl} size={180} />
+                <p className="text-sm text-center break-all">
+                  {qrCodeUrl}
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={handleCopy}
+                  className="flex items-center gap-2"
+                >
+                  <Copy size={16} />
+                  {copied ? "Copiado!" : "Copiar link"}
+                </Button>
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setIsQRCodeOpen(false)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
