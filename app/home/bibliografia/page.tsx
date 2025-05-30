@@ -1,10 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { FaBook } from "react-icons/fa"; // Importe o FaBook aqui
+import { FaBook, FaPlus } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 
 interface BibliografiaItem {
@@ -18,10 +24,10 @@ const Bibliografia = () => {
   const [modalAberto, setModalAberto] = useState(false);
   const [titulo, setTitulo] = useState("");
   const [link, setLink] = useState("");
-  const [contadorId, setContadorId] = useState(1); // Para gerenciar os IDs únicos
-  const router = useRouter();
+  const [contadorId, setContadorId] = useState(1);
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const itensPorPagina = 12;
 
-  // Função para carregar os dados do LocalStorage
   useEffect(() => {
     const storedData = localStorage.getItem("bibliografia");
     if (storedData) {
@@ -31,12 +37,10 @@ const Bibliografia = () => {
     }
   }, []);
 
-  // Função para salvar os dados no LocalStorage
   const salvarBibliografia = (dados: BibliografiaItem[]) => {
     localStorage.setItem("bibliografia", JSON.stringify(dados));
   };
 
-  // Função para adicionar livro
   const adicionarBibliografia = () => {
     if (titulo && link) {
       const novoItem = {
@@ -47,61 +51,104 @@ const Bibliografia = () => {
       const novosDados = [...bibliografia, novoItem];
       setBibliografia(novosDados);
       salvarBibliografia(novosDados);
-      setContadorId(contadorId + 1); // Incrementa o contador de IDs
+      setContadorId(contadorId + 1);
       setModalAberto(false);
       setTitulo("");
       setLink("");
     }
   };
 
+  const livrosVisiveis = bibliografia.slice(
+    (paginaAtual - 1) * itensPorPagina,
+    paginaAtual * itensPorPagina
+  );
+
+  const totalPaginas = Math.ceil(bibliografia.length / itensPorPagina);
+
   return (
-    <div className="p-6 bg-gray-100 min-h-screen dark:bg-dark-primary">
-      <h1 className="text-2xl font-bold mb-4">Bibliografia</h1>
+    <div className="min-h-screen bg-blue-100 flex justify-center items-start py-10 px-4">
+      <div className="w-full max-w-6xl bg-white rounded-3xl shadow-lg p-8">
+        <h1 className="text-3xl font-bold text-center mb-8">Bibliografia</h1>
 
-      {/* Botão para abrir o modal */}
-      <Button onClick={() => setModalAberto(true)} className="mb-6">
-        Adicionar Livro
-      </Button>
+        <div className="flex justify-end mb-6">
+          <Button onClick={() => setModalAberto(true)} className="flex items-center gap-2">
+            <FaPlus className="w-4 h-4" />
+            Adicionar Livro
+          </Button>
+        </div>
 
-      {/* Exibição dos livros */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {bibliografia.map((item) => (
-          <div
-            key={item.id}
-            className="bg-white dark:bg-dark-card p-4 rounded-lg shadow-md text-center cursor-pointer hover:bg-gray-200 dark:hover:bg-dark-hover"
-            onClick={() => router.push(item.link)}
-          >
-            <FaBook size={40} className="text-blue-500 mb-2" />
-            <p className="font-semibold text-lg">{item.titulo}</p>
+        {/* Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {livrosVisiveis.map((item) => (
+            <div
+              key={item.id}
+              className="bg-white p-4 rounded-xl shadow-md text-center hover:shadow-lg transition-shadow flex flex-col items-center"
+            >
+              <FaBook size={40} className="text-blue-500 mb-2" />
+              <p className="font-semibold text-lg mb-2 truncate w-full">{item.titulo}</p>
+              <Button
+                asChild
+                className="w-full mt-auto bg-blue-400 text-white hover:bg-blue-500"
+              >
+                <a
+                  href={item.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Abrir Livro
+                </a>
+              </Button>
+
+            </div>
+          ))}
+        </div>
+
+        {/* Paginação */}
+        {totalPaginas > 1 && (
+          <div className="flex justify-center mt-10 space-x-2">
+            {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((pagina) => (
+              <button
+                key={pagina}
+                onClick={() => setPaginaAtual(pagina)}
+                className={`px-4 py-2 rounded-lg border font-medium ${pagina === paginaAtual
+                    ? "bg-blue-500 text-white"
+                    : "bg-white text-blue-500 border-blue-300"
+                  }`}
+              >
+                {pagina}
+              </button>
+            ))}
           </div>
-        ))}
+        )}
+
+        {/* Modal */}
+        <Dialog open={modalAberto} onOpenChange={setModalAberto}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Adicionar Livro</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Input
+                placeholder="Título do livro"
+                value={titulo}
+                onChange={(e) => setTitulo(e.target.value)}
+              />
+              <Input
+                placeholder="Link do livro"
+                value={link}
+                onChange={(e) => setLink(e.target.value)}
+              />
+            </div>
+            <DialogFooter>
+              <Button onClick={adicionarBibliografia}>Salvar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
-
-      {/* Modal para adicionar livro */}
-      <Dialog open={modalAberto} onOpenChange={setModalAberto}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Adicionar Livro</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Input
-              placeholder="Título do livro"
-              value={titulo}
-              onChange={(e) => setTitulo(e.target.value)}
-            />
-            <Input
-              placeholder="Link do livro"
-              value={link}
-              onChange={(e) => setLink(e.target.value)}
-            />
-          </div>
-          <DialogFooter>
-            <Button onClick={adicionarBibliografia}>Salvar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
 
 export default Bibliografia;
+
+
