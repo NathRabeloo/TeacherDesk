@@ -63,60 +63,72 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ evento, onAdd, onClose,
     }
   };
 
-  const GerenciarEvento = async () => {
-    if (!nome || !descricao || !data) {
-      alert("Todos os campos devem ser preenchidos.");
+const GerenciarEvento = async () => {
+  if (!nome || !descricao || !data) {
+    alert("Todos os campos devem ser preenchidos.");
+    return;
+  }
+
+  const dataSelecionada = new Date(data);
+  const hoje = new Date();
+
+  // Zera horas, minutos, segundos e milissegundos para comparar apenas a data.
+  dataSelecionada.setHours(0, 0, 0, 0);
+  hoje.setHours(0, 0, 0, 0);
+
+  if (dataSelecionada < hoje) {
+    alert("Não é possível selecionar uma data anterior à data atual.");
+    return;
+  }
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    alert("Usuário não autenticado.");
+    return;
+  }
+
+  if (evento) {
+    // Editar evento
+    const { data: updatedData, error } = await supabase
+      .from("Evento")
+      .update({ nome, descricao, data, prioridade })
+      .eq("id", evento.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Erro ao editar evento:", error.message);
+      alert("Erro ao salvar evento.");
       return;
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      alert("Usuário não autenticado.");
+    onAdd(updatedData);
+    onClose();
+  } else {
+    // Criar novo evento
+    const { data: insertedData, error } = await supabase
+      .from("Evento")
+      .insert({
+        nome,
+        descricao,
+        data,
+        prioridade,
+        usuarioId: user.id,
+        deletedAt: null,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Erro ao inserir evento:", error.message);
+      alert("Erro ao salvar evento.");
       return;
     }
 
-    if (evento) {
-      // Editar evento
-      const { data: updatedData, error } = await supabase
-        .from("Evento")
-        .update({ nome, descricao, data, prioridade })
-        .eq("id", evento.id)
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Erro ao editar evento:", error.message);
-        alert("Erro ao salvar evento.");
-        return;
-      }
-
-      onAdd(updatedData);
-      onClose();
-    } else {
-      // Criar novo evento
-      const { data: insertedData, error } = await supabase
-        .from("Evento")
-        .insert({
-          nome,
-          descricao,
-          data,
-          prioridade,
-          usuarioId: user.id,
-          deletedAt: null,
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Erro ao inserir evento:", error.message);
-        alert("Erro ao salvar evento.");
-        return;
-      }
-
-      onAdd(insertedData);
-      onClose();
-    }
-  };
+    onAdd(insertedData);
+    onClose();
+  }
+};
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50">
