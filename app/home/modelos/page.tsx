@@ -20,47 +20,7 @@ export default function Modelos() {
       titulo: "Slide Modelo",
       descricao: "Modelo de slide institucional para apresentações.",
       nomeArquivo: "Slide_Modelo.pptx",
-    },
-    {
-      titulo: "Relatório de Aulas",
-      descricao: "Modelo de relatório para registrar as atividades das aulas.",
-      nomeArquivo: "Relatorio_Aulas.pdf",
-    },
-    {
-      titulo: "Plano de Aula Padrão",
-      descricao: "Estrutura básica para criação de planos de aula.",
-      nomeArquivo: "Plano_Aula_Padrao.docx",
-    },
-    {
-      titulo: "Atividades Complementares",
-      descricao: "Modelo para planejar atividades extracurriculares.",
-      nomeArquivo: "Atividades_Complementares.pdf",
-    },
-    {
-      titulo: "Avaliação Diagnóstica",
-      descricao: "Modelo para avaliações iniciais dos alunos.",
-      nomeArquivo: "Avaliacao_Diagnostica.docx",
-    },
-    {
-      titulo: "Ficha de Observação",
-      descricao: "Documento para registrar observações em sala.",
-      nomeArquivo: "Ficha_Observacao.pdf",
-    },
-    {
-      titulo: "Agenda de Reuniões",
-      descricao: "Modelo para organização de reuniões pedagógicas.",
-      nomeArquivo: "Agenda_Reunioes.docx",
-    },
-    {
-      titulo: "Cronograma Semestral",
-      descricao: "Modelo de planejamento semestral de atividades.",
-      nomeArquivo: "Cronograma_Semestral.xlsx",
-    },
-    {
-      titulo: "Plano Individual de Ensino",
-      descricao: "Modelo de apoio ao ensino personalizado.",
-      nomeArquivo: "Plano_Individual.pdf",
-    },
+    }
   ]
 
   const [paginaAtual, setPaginaAtual] = useState(1)
