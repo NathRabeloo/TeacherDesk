@@ -6,7 +6,6 @@ import { FaFileDownload } from 'react-icons/fa';
 const BASE_URL = "https://klrdcdnkvdtjoiuwgcaw.supabase.co/storage/v1/object/public/arquivos-modelos/";
 
 export default function Modelos() {
-  // Lista de arquivos
   const arquivos = [
     {
       titulo: "Ementa Modelo",
@@ -18,7 +17,7 @@ export default function Modelos() {
       descricao: "Modelo de slide institucional para apresentações.",
       nomeArquivo: "Slide_Modelo.pptx",
     },
-    // Futuramente só adicionar mais objetos aqui!
+    // Pode adicionar mais arquivos aqui...
   ];
 
   return (
@@ -33,7 +32,8 @@ export default function Modelos() {
               <p className="text-gray-600 mb-4">{arquivo.descricao}</p>
               <a
                 href={`${BASE_URL}${encodeURIComponent(arquivo.nomeArquivo)}`}
-                download
+                target="_blank"
+                rel="noopener noreferrer"
                 className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors"
               >
                 Baixar
