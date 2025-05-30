@@ -38,7 +38,7 @@ export async function saveQuiz(title: string, questions: Question[], disciplinaI
       .select()
       .single();
     if (questionError || !questionData) throw questionError;
-
+//teste
     const optionsInsert = question.options.map((opt, idx) => ({
       texto: opt,
       correta: idx === question.correctAnswer,

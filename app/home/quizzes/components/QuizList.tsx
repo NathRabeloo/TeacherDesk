@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { FaEdit, FaTrash, FaQrcode } from "react-icons/fa";
+import { FaEdit, FaTrash, FaQrcode, FaChartBar } from "react-icons/fa";
 import QRCode from "react-qr-code";
 import { Copy } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
@@ -38,9 +38,10 @@ interface Disciplina {
 interface QuizListProps {
   onCreateQuiz: () => void;
   onEditQuiz: (quizId: string) => void;
+  onViewResults?: (quizId: string) => void; // Adicionando prop para visualizar resultados
 }
 
-const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz }) => {
+const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewResults }) => {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
   const [selectedDisciplina, setSelectedDisciplina] = useState<string | null>(null);
@@ -50,19 +51,20 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz }) => {
   const [isQRCodeOpen, setIsQRCodeOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
- useEffect(() => {
-  const fetchDisciplinas = async () => {
-    try {
-      const res = await fetch("/api/disciplinas");
-      if (!res.ok) throw new Error("Erro ao buscar disciplinas");
-      const data = await res.json();
-      setDisciplinas(data);
-    } catch (error) {
-      console.error("Erro ao buscar disciplinas:", error);
-    }
-  };
-  fetchDisciplinas();
-}, []);
+  useEffect(() => {
+    const fetchDisciplinas = async () => {
+      try {
+        const res = await fetch("/api/disciplinas");
+        if (!res.ok) throw new Error("Erro ao buscar disciplinas");
+        const data = await res.json();
+        setDisciplinas(data);
+      } catch (error) {
+        console.error("Erro ao buscar disciplinas:", error);
+      }
+    };
+    fetchDisciplinas();
+  }, []);
+
   useEffect(() => {
     const fetchQuizzes = async () => {
       setIsLoading(true);
@@ -188,44 +190,18 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz }) => {
                       >
                         <FaEdit />
                       </Button>
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        onClick={() => handleDelete(quiz.id)}
-                        title="Excluir Quiz"
-                      >
-                        <FaTrash />
-                      </Button>
-                      <Dialog open={isQRCodeOpen} onOpenChange={handleQRCodeDialogChange}>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>QR Code do Quiz</DialogTitle>
-                          </DialogHeader>
-                          <div className="flex flex-col items-center space-y-4">
-                            {selectedQuiz && (
-                              <>
-                                <QRCode value={qrCodeUrl} size={180} />
-                                <p className="text-sm text-center break-all">
-                                  {qrCodeUrl}
-                                </p>
-                                <Button
-                                  variant="outline"
-                                  onClick={handleCopy}
-                                  className="flex items-center gap-2"
-                                >
-                                  <Copy size={16} />
-                                  {copied ? "Copiado!" : "Copiar link"}
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                          <DialogFooter>
-                            <Button onClick={() => setIsQRCodeOpen(false)}>
-                              Fechar
-                            </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
+                      
+                      {onViewResults && (
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          onClick={() => onViewResults(quiz.id)}
+                          title="Ver Resultados"
+                        >
+                          <FaChartBar />
+                        </Button>
+                      )}
+                      
                       <Button
                         size="icon"
                         variant="outline"
@@ -237,6 +213,15 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz }) => {
                       >
                         <FaQrcode />
                       </Button>
+                      
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={() => handleDelete(quiz.id)}
+                        title="Excluir Quiz"
+                      >
+                        <FaTrash />
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -245,6 +230,38 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz }) => {
           </Table>
         </div>
       )}
+
+      {/* Dialog do QR Code */}
+      <Dialog open={isQRCodeOpen} onOpenChange={handleQRCodeDialogChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>QR Code do Quiz</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center space-y-4">
+            {selectedQuiz && (
+              <>
+                <QRCode value={qrCodeUrl} size={180} />
+                <p className="text-sm text-center break-all">
+                  {qrCodeUrl}
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={handleCopy}
+                  className="flex items-center gap-2"
+                >
+                  <Copy size={16} />
+                  {copied ? "Copiado!" : "Copiar link"}
+                </Button>
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setIsQRCodeOpen(false)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
