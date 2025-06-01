@@ -157,18 +157,28 @@ export const criarPlanoAula = async (formData: FormData) => {
 };
 
 // Listar todos Planos de Aula
-export const listarPlanosAula = async () => {
+export async function listarPlanosAula() {
   const supabase = createClient();
 
-  const { data, error } = await supabase.from("PlanoAula").select("*");
+  // Obtém usuário atual
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (!user || userError) {
+    console.error("Usuário não autenticado:", userError?.message);
+    throw new Error("Usuário não autenticado");
+  }
+
+  const { data, error } = await supabase
+    .from('PlanoAula')
+    .select('*')
+    .eq('user_id', user.id);
 
   if (error) {
     console.error("Erro ao listar planos de aula:", error.message);
-    return [];
+    throw error;
   }
 
-  return data; 
-};
+  return data;
+}
 
 // Buscar Plano de Aula por ID
 export const buscarPlanoAula = async (id: string) => {
@@ -205,24 +215,27 @@ export async function buscarPlanoAulaPorId(id: string) {
 export const editarPlanoAula = async (formData: FormData) => {
   const planoId = formData.get("id")?.toString();
   const titulo = formData.get("titulo")?.toString();
+  const disciplinaId = formData.get("disciplina_id")?.toString();
 
-  if (!planoId || !titulo ) {
+  if (!planoId || !titulo || !disciplinaId) {
     return { error: "Todos os campos são obrigatórios" };
   }
 
   const supabase = createClient();
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("PlanoAula")
-    .update({ titulo })
-    .eq("id", planoId);
+    .update({ titulo, disciplina_id: disciplinaId })
+    .eq("id", planoId)
+    .select('id, titulo, disciplina_id, disciplina(nome)')  // trago dados da disciplina relacionada
+    .single();
 
   if (error) {
     console.error("Erro ao editar plano de aula:", error.message);
     return { error: error.message };
   }
 
-  return { success: true };
+  return { success: true, data };
 };
 
 // Deletar Plano de Aula
