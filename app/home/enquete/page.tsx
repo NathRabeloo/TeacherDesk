@@ -53,7 +53,6 @@ export default function EnquetePage() {
     }
   }, []);
 
-  // Salva enquete ativa no localStorage
   useEffect(() => {
     if (enqueteAtiva && enqueteId) {
       localStorage.setItem(
@@ -65,7 +64,6 @@ export default function EnquetePage() {
     }
   }, [enqueteAtiva, enqueteId, pergunta, opcoes, urlVotacao]);
 
-  // Salva histórico atualizado no localStorage
   const atualizarHistorico = (enquete: EnqueteSalva) => {
     const novoHistorico = [enquete, ...historicoEnquetes.filter(e => e.enqueteId !== enquete.enqueteId)];
     setHistoricoEnquetes(novoHistorico);
@@ -138,7 +136,6 @@ export default function EnquetePage() {
     setResultados(data.resultados);
     setMostrarResultado(true);
 
-    // Atualiza histórico com resultados
     atualizarHistorico({
       enqueteId,
       pergunta,
@@ -147,17 +144,12 @@ export default function EnquetePage() {
       urlVotacao,
     });
 
-    // Enquete encerrada, remove ativa
     setEnqueteAtiva(false);
     setPergunta("");
     setOpcoes([{ texto: "", votos: 0 }]);
     setEnqueteId(null);
     setUrlVotacao("");
     localStorage.removeItem(STORAGE_KEY);
-  };
-
-  const voltarPaginaFuncionalidades = () => {
-    window.location.href = "/home/funcionalidades";
   };
 
   const criarOutraEnquete = () => {
@@ -219,123 +211,160 @@ export default function EnquetePage() {
   };
 
   return (
-    <div className="p-6 max-w-3xl mx-auto dark:bg-gray-900 dark:text-gray-100">
-      <h1 className="text-3xl font-bold mb-6 text-center">Criar Enquete</h1>
+    <div className="min-h-screen bg-blue-200 flex justify-center py-6 px-4">
+      <div className="bg-white rounded-lg shadow-md w-full max-w-3xl p-6 dark:bg-gray-900 dark:text-gray-100 flex flex-col">
+        <h1 className="text-3xl font-bold mb-6 text-center">Criar Enquete</h1>
 
-      <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
-        <h2 className="text-xl font-semibold mb-2">Como criar uma enquete:</h2>
-        <ul className="list-disc list-inside text-gray-700 dark:text-gray-300">
-          <li>Digite a pergunta da enquete no campo indicado.</li>
-          <li>Adicione pelo menos duas opções de resposta, preenchendo os campos abaixo.</li>
-          <li>Você pode adicionar mais opções clicando em <b>Adicionar Opção</b>.</li>
-          <li>Após preencher, clique em <b>Gerar Enquete</b> para criar a enquete e obter o QR Code para votação.</li>
-          <li>Compartilhe o QR Code ou o link para que as pessoas possam votar.</li>
-          <li>Quando quiser, encerre a enquete para ver e exportar os resultados.</li>
-        </ul>
-      </div>
-
-      {!enqueteAtiva && (
-        <>
-          <Input
-            placeholder="Digite a pergunta da enquete"
-            value={pergunta}
-            onChange={(e) => setPergunta(e.target.value)}
-            className="mb-4 dark:bg-gray-800 dark:border-gray-700"
-          />
-          {opcoes.map((opcao, index) => (
-            <Input
-              key={index}
-              placeholder={`Opção ${index + 1}`}
-              value={opcao.texto}
-              onChange={(e) => atualizarTextoOpcao(index, e.target.value)}
-              className="mb-2 dark:bg-gray-800 dark:border-gray-700"
-            />
-          ))}
-          <Button variant="outline" onClick={adicionarOpcao} className="mb-4 dark:border-gray-700 dark:hover:bg-gray-800">
-            Adicionar Opção
-          </Button>
-          <Button onClick={gerarEnquete}>Gerar Enquete</Button>
-        </>
-      )}
-
-      {enqueteAtiva && (
-        <div className="space-y-4">
-          <p className="text-lg font-semibold">Compartilhe o QR Code para votação:</p>
-          <div className="bg-white dark:bg-gray-800 p-4 inline-block rounded border dark:border-gray-700">
-            <QRCode value={urlVotacao} size={180} />
-          </div>
-          <p className="break-all">{urlVotacao}</p>
-          <Button
-            variant="outline"
-            onClick={() => {
-              navigator.clipboard.writeText(urlVotacao);
-              setCopied(true);
-              setTimeout(() => setCopied(false), 2000); 
-            }}
-            className="dark:border-gray-700 dark:hover:bg-gray-800"
-          >
-            {copied ? "Link Copiado!" : "Copiar Link"}
-          </Button>
-          <div className="flex gap-2 mt-4 flex-wrap">
-            <Button variant="destructive" onClick={encerrarEnquete}>
-              Encerrar Enquete
-            </Button>
-          </div>
+        <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
+          <h2 className="text-xl font-semibold mb-2">Como criar uma enquete:</h2>
+          <ul className="list-disc list-inside text-gray-700 dark:text-gray-300">
+            <li>Digite a pergunta da enquete no campo indicado.</li>
+            <li>Adicione pelo menos duas opções de resposta, preenchendo os campos abaixo.</li>
+            <li>Você pode adicionar mais opções clicando em <b>Adicionar Opção</b>.</li>
+            <li>Após preencher, clique em <b>Gerar Enquete</b> para criar a enquete e obter o QR Code para votação.</li>
+            <li>Compartilhe o QR Code ou o link para que as pessoas possam votar.</li>
+            <li>Quando quiser, encerre a enquete para ver e exportar os resultados.</li>
+          </ul>
         </div>
-      )}
 
-      {/* Modal de Resultados */}
-      <Dialog open={mostrarResultado} onOpenChange={setMostrarResultado}>
-        <DialogContent className="dark:bg-gray-900 dark:border-gray-800">
-          <DialogHeader>
-            <DialogTitle className="dark:text-gray-100">Resultado da Enquete</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2 dark:text-gray-300">
-            <p className="font-semibold">{pergunta}</p>
-            {(resultados.length > 0 ? resultados : opcoes).map((opcao, index) => (
-              <div key={index} className="flex justify-between">
-                <span>{opcao.texto}</span>
-                <span>{opcao.votos} votos</span>
-              </div>
-            ))}
-          </div>
-          <DialogFooter className="flex justify-between">
-            <Button onClick={() => setMostrarResultado(false)}>Fechar</Button>
-            <Button onClick={exportarResultadosTxt} variant="outline" className="dark:border-gray-700 dark:hover:bg-gray-800">
-              Exportar Resultados (.txt)
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Histórico de Enquetes */}
-      <div className="mt-10 border-t pt-6 dark:border-gray-800">
-        <h2 className="text-2xl font-bold mb-4">Histórico de Enquetes</h2>
-        {historicoEnquetes.length === 0 && (
-          <p className="text-gray-600 dark:text-gray-400">Nenhuma enquete encerrada ainda.</p>
-        )}
-        {historicoEnquetes.length > 0 && (
+        {!enqueteAtiva && (
           <>
-            <ul className="max-h-48 overflow-auto mb-4 space-y-3">
-              {historicoEnquetes.map((enq, idx) => (
-                <li key={enq.enqueteId} className="border rounded p-3 bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
-                  <p className="font-semibold dark:text-gray-300">{idx + 1}. {enq.pergunta}</p>
-                  <ul className="pl-4 list-disc text-sm dark:text-gray-400">
-                    {enq.resultados?.map((opt, i) => (
-                      <li key={i}>
-                        {opt.texto}: {opt.votos} votos
-                      </li>
-                    ))}
-                  </ul>
-                </li>
-              ))}
-            </ul>
-            <Button onClick={exportarHistoricoTxt} variant="outline" className="mr-2 dark:border-gray-700 dark:hover:bg-gray-800">
-              Exportar Histórico Completo (.txt)
-            </Button>
-            <Button variant="destructive" onClick={limparHistorico}>Limpar Histórico</Button>
+            <Input
+              placeholder="Digite a pergunta da enquete"
+              value={pergunta}
+              onChange={(e) => setPergunta(e.target.value)}
+              className="mb-4 dark:bg-gray-800 dark:border-gray-700"
+            />
+            {opcoes.map((opcao, index) => (
+              <Input
+                key={index}
+                placeholder={`Opção ${index + 1}`}
+                value={opcao.texto}
+                onChange={(e) => atualizarTextoOpcao(index, e.target.value)}
+                className="mb-2 dark:bg-gray-800 dark:border-gray-700"
+              />
+            ))}
+            <div className="flex gap-2 mt-4">
+              <Button
+                variant="outline"
+                onClick={adicionarOpcao}
+                className="flex-1 bg-orange-400 text-white text-sm py-2 px-4 rounded-md hover:bg-orange-500"
+              >
+                Adicionar Opção
+              </Button>
+              <Button
+                onClick={gerarEnquete}
+                className="flex-1 bg-blue-400 text-white text-sm py-2 px-4 rounded-md hover:bg-blue-500"
+              >
+                Gerar Enquete
+              </Button>
+            </div>
           </>
         )}
+
+        {enqueteAtiva && (
+          <>
+            <p className="mb-4 text-center font-semibold dark:text-gray-300">
+              Enquete ativa! Compartilhe o QR Code para que as pessoas votem:
+            </p>
+            <div className="flex justify-center mb-6 bg-white p-4 rounded border border-gray-300 dark:bg-gray-800 dark:border-gray-700">
+              <QRCode value={urlVotacao} size={180} />
+            </div>
+            <Input
+              readOnly
+              value={urlVotacao}
+              className="mb-4 dark:bg-gray-800 dark:border-gray-700"
+            />
+            <Button
+              onClick={() => {
+                navigator.clipboard.writeText(urlVotacao);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              }}
+              className="mb-6 w-full"
+            >
+              {copied ? "Link copiado!" : "Copiar Link"}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={encerrarEnquete}
+              className="w-full"
+            >
+              Encerrar Enquete
+            </Button>
+          </>
+        )}
+
+        <Dialog open={mostrarResultado} onOpenChange={setMostrarResultado}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Resultados da Enquete</DialogTitle>
+            </DialogHeader>
+            {resultados.length > 0 ? (
+              <ul className="space-y-2 mt-4">
+                {resultados.map((opcao, idx) => (
+                  <li key={idx} className="text-lg font-medium">
+                    {opcao.texto}: {opcao.votos} votos
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>Nenhum resultado disponível.</p>
+            )}
+            <DialogFooter className="flex flex-col gap-2 mt-6">
+              <Button onClick={exportarResultadosTxt} className="w-full">
+                Exportar Resultados (.txt)
+              </Button>
+              <Button variant="outline" onClick={criarOutraEnquete} className="w-full">
+                Criar Outra Enquete
+              </Button>
+              <Button variant="secondary" onClick={() => setMostrarResultado(false)} className="w-full">
+                Fechar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <div className="mt-10 flex flex-col">
+          <h2 className="text-xl font-semibold mb-4 text-center">Histórico de Enquetes</h2>
+          {historicoEnquetes.length === 0 && (
+            <p className="text-center text-gray-600 dark:text-gray-400">Nenhuma enquete encerrada ainda.</p>
+          )}
+          {historicoEnquetes.map((enquete, idx) => (
+            <div
+              key={enquete.enqueteId}
+              className="mb-4 border rounded p-3 bg-gray-50 dark:bg-gray-800 dark:border-gray-700"
+            >
+              <p className="font-semibold">{enquete.pergunta}</p>
+              <ul className="ml-4 list-disc mt-1">
+                {enquete.resultados?.map((opcao, i) => (
+                  <li key={i}>
+                    {opcao.texto}: {opcao.votos} votos
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+
+          {historicoEnquetes.length > 0 && (
+            <>
+              <div className="flex gap-2 mt-4">
+                <Button
+                  onClick={exportarHistoricoTxt}
+                  className="flex-1 bg-blue-400 text-white text-sm py-2 px-4 rounded-md hover:bg-blue-500"
+                >
+                  Exportar Histórico (.txt)
+                </Button>
+                <Button
+                  onClick={limparHistorico}
+                  className="flex-1 bg-orange-400 text-white text-sm py-2 px-4 rounded-md hover:bg-orange-500"
+                >
+                  Limpar Histórico
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

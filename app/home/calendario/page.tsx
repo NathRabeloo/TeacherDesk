@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 
-// Importando os componentes
 import CalendarioVisual from "../../_components/CalendarioVisual";
 
 const Calendario = () => {
