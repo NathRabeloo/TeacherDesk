@@ -15,14 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 
-const AVATARS = [
-  "/assets/Avatar/Avatar1.JPG",
-  "/assets/Avatar/Avatar2.JPG",
-  "/assets/Avatar/Avatar3.JPG",
-  "/assets/Avatar/Avatar4.JPG",
-  "/assets/Avatar/Avatar5.JPG",
-  "/assets/Avatar/avatar_ruiva.png",
-];
+const AVATARS = ['masc1', 'masc2', 'masc3', 'fem1', 'fem2', 'fem3'];
 
 export default function MeuPerfil() {
   const [user, setUser] = useState<any>(null);
@@ -39,31 +32,48 @@ export default function MeuPerfil() {
         router.push("/sign-in");
       } else {
         setUser(data.user);
-        const { data: profile } = await supabase
-          .from("users")
-          .select("avatar_url")
-          .eq("id", data.user.id)
+
+        // Busca o avatar atual na tabela AvatarUsers
+        const { data: avatarData, error: avatarError } = await supabase
+          .from("AvatarUsers")
+          .select("avatar")
+          .eq("user_id", data.user.id)
           .single();
-        setAvatarSelecionado(profile?.avatar_url ?? null);
+
+        if (avatarError && avatarError.code !== "PGRST116") {
+          console.error("Erro ao buscar avatar:", avatarError.message);
+        }
+
+        setAvatarSelecionado(avatarData?.avatar ?? null);
       }
     }
+
     fetchUser();
   }, [router, supabase]);
 
   const salvarAvatar = async () => {
-    if (!avatarSelecionado || !user) return;
+    if (!avatarSelecionado || !user) {
+      console.warn("Avatar ou user ausente:", avatarSelecionado, user);
+      return;
+    }
 
-    const { error } = await supabase
-      .from("users")
-      .update({ avatar_url: avatarSelecionado })
-      .eq("id", user.id);
+    console.log("Tentando salvar avatar:", avatarSelecionado, "para user:", user.id);
+
+    const { data, error } = await supabase
+      .from("AvatarUsers")
+      .upsert(
+        { avatar: avatarSelecionado, user_id: user.id },
+        { onConflict: 'user_id' }
+      );
 
     if (error) {
-      console.error("Erro ao salvar avatar:", error.message);
+      console.error("Erro ao salvar avatar:", error);
     } else {
-      // Fechamento da modal via DialogClose automático
+      console.log("Avatar salvo com sucesso:", data);
     }
   };
+
+
 
   if (!user) {
     return <p>Carregando...</p>;
@@ -75,7 +85,7 @@ export default function MeuPerfil() {
         <Card className="p-4 bg-white dark:bg-[var(--card)] text-black dark:text-[var(--card-foreground)]">
           <div className="flex flex-col md:flex-row items-center gap-6">
             <img
-              src={avatarSelecionado ?? "/avatars/default.png"}
+              src={avatarSelecionado ? `/assets/Avatar/${avatarSelecionado}.png` : "/assets/Avatar/default.png"}
               alt="Avatar"
               className="w-24 h-24 rounded-full object-cover bg-gray-300 dark:bg-gray-700"
             />
@@ -104,20 +114,19 @@ export default function MeuPerfil() {
               <DialogTitle>Escolha seu Avatar</DialogTitle>
             </DialogHeader>
 
-            <div className="grid grid-cols-5 gap-4 p-4">
+            <div className="grid grid-cols-3 gap-4 p-4 place-items-center">
               {AVATARS.map((avatar) => (
                 <button
                   key={avatar}
                   onClick={() => setAvatarSelecionado(avatar)}
-                  className={`rounded-full border-4 transition-colors focus:outline-none ${
-                    avatarSelecionado === avatar
+                  className={`rounded-full border-4 transition-colors focus:outline-none ${avatarSelecionado === avatar
                       ? "border-[var(--primary)]"
                       : "border-transparent hover:border-[var(--primary)]"
-                  }`}
+                    }`}
                 >
                   <img
-                    src={avatar}
-                    alt="Avatar"
+                    src={`/assets/Avatar/${avatar}.png`}
+                    alt={`Avatar ${avatar}`}
                     className="w-16 h-16 rounded-full object-cover"
                   />
                 </button>
@@ -150,11 +159,3 @@ export default function MeuPerfil() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
