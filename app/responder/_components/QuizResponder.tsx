@@ -43,8 +43,10 @@ type Participante = {
 };
 
 export default function ResponderQuizPage() {
+  const [mounted, setMounted] = useState(false);
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
+  
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [participante, setParticipante] = useState<Participante>({ nome: "", ra: "" });
   const [participanteId, setParticipanteId] = useState<string | null>(null);
@@ -53,12 +55,20 @@ export default function ResponderQuizPage() {
   const [acertos, setAcertos] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{nome?: string, ra?: string}>({});
+  const [quizLoaded, setQuizLoaded] = useState(false);
+
+  // Garantir que o componente está montado no cliente
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
-    if (!id) return;
+    if (!mounted || !id) return;
 
     async function fetchQuiz() {
       try {
+        setLoading(true);
+        
         const { data: quizData, error: quizError } = await supabase
           .from("Quiz")
           .select("id, titulo")
@@ -66,6 +76,7 @@ export default function ResponderQuizPage() {
           .single();
 
         if (quizError || !quizData) {
+          console.error("Quiz não encontrado:", quizError);
           alert("Quiz não encontrado.");
           return;
         }
@@ -73,26 +84,33 @@ export default function ResponderQuizPage() {
         const { data: perguntasData, error: perguntasError } = await supabase
           .from("Pergunta")
           .select("id, texto")
-          .eq("quiz_id", id);
+          .eq("quiz_id", id)
+          .order("id");
 
         if (perguntasError) {
+          console.error("Erro ao carregar perguntas:", perguntasError);
           alert("Erro ao carregar perguntas.");
           return;
         }
 
         const perguntasComOpcoes: Pergunta[] = await Promise.all(
-          perguntasData.map(async (pergunta) => {
+          (perguntasData || []).map(async (pergunta) => {
             const { data: opcoesData, error: opcoesError } = await supabase
               .from("OpcaoPergunta")
               .select("id, texto, correta")
-              .eq("pergunta_id", pergunta.id);
+              .eq("pergunta_id", pergunta.id)
+              .order("id");
 
             if (opcoesError) {
-              alert("Erro ao carregar opções.");
-              return { ...pergunta, opcoes: [] };
+              console.error("Erro ao carregar opções:", opcoesError);
+              return { ...pergunta, opcoes: [], respostaSelecionada: null };
             }
 
-            return { ...pergunta, opcoes: opcoesData || [], respostaSelecionada: null };
+            return { 
+              ...pergunta, 
+              opcoes: opcoesData || [], 
+              respostaSelecionada: null 
+            };
           })
         );
 
@@ -101,14 +119,17 @@ export default function ResponderQuizPage() {
           titulo: quizData.titulo, 
           perguntas: perguntasComOpcoes 
         });
+        setQuizLoaded(true);
       } catch (error) {
         console.error("Erro ao carregar quiz:", error);
         alert("Erro ao carregar o quiz.");
+      } finally {
+        setLoading(false);
       }
     }
 
     fetchQuiz();
-  }, [id]);
+  }, [mounted, id]);
 
   const validarParticipante = () => {
     const newErrors: {nome?: string, ra?: string} = {};
@@ -119,10 +140,27 @@ export default function ResponderQuizPage() {
     
     if (!participante.ra.trim()) {
       newErrors.ra = "RA é obrigatório";
+    } else if (!/^\d{13}$/.test(participante.ra.trim())) {
+      newErrors.ra = "RA deve conter exatamente 13 dígitos numéricos";
     }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleRAChange = (value: string) => {
+    // Remove caracteres não numéricos
+    const numbersOnly = value.replace(/\D/g, '');
+    
+    // Limita a 13 dígitos
+    const limitedValue = numbersOnly.slice(0, 13);
+    
+    setParticipante(prev => ({ ...prev, ra: limitedValue }));
+    
+    // Remove erro se o RA estiver válido
+    if (errors.ra && /^\d{13}$/.test(limitedValue)) {
+      setErrors(prev => ({ ...prev, ra: undefined }));
+    }
   };
 
   const iniciarQuiz = async () => {
@@ -142,6 +180,7 @@ export default function ResponderQuizPage() {
         .single();
 
       if (participanteError || !participanteData) {
+        console.error("Erro ao registrar participante:", participanteError);
         throw new Error("Erro ao registrar participante");
       }
 
@@ -158,10 +197,17 @@ export default function ResponderQuizPage() {
   const selecionarResposta = (perguntaIndex: number, opcaoId: string) => {
     if (!quiz || votado) return;
 
-    const novasPerguntas = [...quiz.perguntas];
-    novasPerguntas[perguntaIndex].respostaSelecionada = opcaoId;
+    setQuiz(prevQuiz => {
+      if (!prevQuiz) return prevQuiz;
+      
+      const novasPerguntas = [...prevQuiz.perguntas];
+      novasPerguntas[perguntaIndex] = {
+        ...novasPerguntas[perguntaIndex],
+        respostaSelecionada: opcaoId
+      };
 
-    setQuiz({ ...quiz, perguntas: novasPerguntas });
+      return { ...prevQuiz, perguntas: novasPerguntas };
+    });
   };
 
   const enviarRespostas = async () => {
@@ -183,12 +229,17 @@ export default function ResponderQuizPage() {
         
         if (isCorreta) correctCount++;
 
-        await supabase.from("Resposta").insert({
+        const { error: respostaError } = await supabase.from("Resposta").insert({
           participante_id: participanteId,
           pergunta_id: pergunta.id,
           opcao_id: pergunta.respostaSelecionada,
           correta: isCorreta
         });
+
+        if (respostaError) {
+          console.error("Erro ao salvar resposta:", respostaError);
+          throw respostaError;
+        }
       }
 
       setAcertos(correctCount);
@@ -202,8 +253,62 @@ export default function ResponderQuizPage() {
     }
   };
 
-  if (!id) return <p className="p-6">Quiz não encontrado.</p>;
-  if (!quiz) return <p className="p-6">Carregando quiz...</p>;
+  // Aguardar montagem no cliente
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+        <div className="max-w-md mx-auto">
+          <Card className="shadow-lg">
+            <CardContent className="p-6 text-center">
+              <p>Carregando...</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (!id) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+        <div className="max-w-md mx-auto">
+          <Card className="shadow-lg">
+            <CardContent className="p-6 text-center">
+              <p>Quiz não encontrado.</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (!quizLoaded || loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+        <div className="max-w-md mx-auto">
+          <Card className="shadow-lg">
+            <CardContent className="p-6 text-center">
+              <p>Carregando quiz...</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (!quiz) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+        <div className="max-w-md mx-auto">
+          <Card className="shadow-lg">
+            <CardContent className="p-6 text-center">
+              <p>Quiz não encontrado.</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   if (etapa === "info") {
     return (
@@ -229,8 +334,8 @@ export default function ResponderQuizPage() {
                   placeholder="Digite seu nome completo"
                   value={participante.nome}
                   onChange={(e) => {
-                    setParticipante({ ...participante, nome: e.target.value });
-                    if (errors.nome) setErrors({ ...errors, nome: undefined });
+                    setParticipante(prev => ({ ...prev, nome: e.target.value }));
+                    if (errors.nome) setErrors(prev => ({ ...prev, nome: undefined }));
                   }}
                   className={errors.nome ? "border-red-500" : ""}
                 />
@@ -246,16 +351,20 @@ export default function ResponderQuizPage() {
                 </Label>
                 <Input
                   id="ra"
-                  placeholder="Digite seu RA"
+                  placeholder="Digite seu RA (13 dígitos)"
                   value={participante.ra}
-                  onChange={(e) => {
-                    setParticipante({ ...participante, ra: e.target.value });
-                    if (errors.ra) setErrors({ ...errors, ra: undefined });
-                  }}
+                  onChange={(e) => handleRAChange(e.target.value)}
                   className={errors.ra ? "border-red-500" : ""}
+                  maxLength={13}
+                  inputMode="numeric"
                 />
                 {errors.ra && (
                   <p className="text-red-500 text-sm mt-1">{errors.ra}</p>
+                )}
+                {participante.ra && !errors.ra && (
+                  <p className="text-gray-500 text-sm mt-1">
+                    {participante.ra.length}/13 dígitos
+                  </p>
                 )}
               </div>
 
@@ -333,7 +442,7 @@ export default function ResponderQuizPage() {
               <Button 
                 onClick={enviarRespostas} 
                 className="w-full"
-                disabled={loading}
+                disabled={loading || votado}
               >
                 {loading ? "Enviando..." : "Finalizar Quiz"}
               </Button>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { FaPlus, FaTrash, FaArrowLeft } from "react-icons/fa";
+import { useRouter } from "next/navigation";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import {
 
 import { saveQuiz, buscarQuizParaEdicao, atualizarQuiz } from "../action";
 import { listarDisciplinas } from "../../../actions";
+
 interface Question {
   text: string;
   options: string[];
@@ -44,6 +46,7 @@ export default function QuizForm({ quizId, onCancel, onSave }: QuizFormProps) {
   const [disciplinaId, setDisciplinaId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   const isEditing = !!quizId;
 
@@ -52,12 +55,18 @@ export default function QuizForm({ quizId, onCancel, onSave }: QuizFormProps) {
       try {
         const data = await listarDisciplinas();
         setDisciplinas(data);
-      } catch (error) {
-        alert("Erro ao carregar disciplinas");
+      } catch (error: any) {
+        console.error("Erro ao carregar disciplinas:", error);
+        if (error.message?.includes("não autenticado")) {
+          alert("Sessão expirada. Faça login novamente.");
+          router.push("/sign-in");
+        } else {
+          alert("Erro ao carregar disciplinas");
+        }
       }
     }
     fetchDisciplinas();
-  }, []);
+  }, [router]);
 
   const loadQuizData = async (id: string) => {
     setIsLoading(true);
@@ -66,9 +75,17 @@ export default function QuizForm({ quizId, onCancel, onSave }: QuizFormProps) {
       setTitle(quizData.titulo);
       setDisciplinaId(quizData.disciplina_id);
       setQuestions(quizData.questions);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao carregar quiz:", error);
-      alert("Erro ao carregar dados do quiz");
+      if (error.message?.includes("não autenticado")) {
+        alert("Sessão expirada. Faça login novamente.");
+        router.push("/sign-in");
+      } else if (error.message?.includes("não tem permissão")) {
+        alert("Você não tem permissão para editar este quiz.");
+        if (onCancel) onCancel();
+      } else {
+        alert("Erro ao carregar dados do quiz");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -135,7 +152,14 @@ export default function QuizForm({ quizId, onCancel, onSave }: QuizFormProps) {
         }
       } catch (error: any) {
         console.error(error);
-        alert("Erro ao salvar o quiz: " + (error.message || error));
+        if (error.message?.includes("não autenticado")) {
+          alert("Sessão expirada. Faça login novamente.");
+          router.push("/sign-in");
+        } else if (error.message?.includes("não tem permissão")) {
+          alert("Você não tem permissão para realizar esta ação.");
+        } else {
+          alert("Erro ao salvar o quiz: " + (error.message || error));
+        }
       }
     });
   };
