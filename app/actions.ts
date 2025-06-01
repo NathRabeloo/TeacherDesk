@@ -121,24 +121,23 @@ export const signOutAction = async () => {
   return redirect("/sign-in");
 };
 
-//Plano de aula começa aqui
-// Função para criar plano de aula
+// --- Plano de Aula CRUD ---
+
+// Criar Plano de Aula
 export const criarPlanoAula = async (formData: FormData) => {
   const titulo = formData.get("titulo")?.toString();
   const disciplina_id = formData.get("disciplina_id")?.toString();  
   const supabase = createClient();
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
-
   if (!user || userError) {
-    console.error("Erro ao obter usuário:", userError?.message);
+    console.error("Usuário não autenticado:", userError?.message);
     return { error: "Usuário não autenticado" };
   }
 
   if (!titulo || !disciplina_id) {
     return { error: "Título e Disciplina são obrigatórios" };  
   }
-
 
   const { data, error } = await supabase
     .from("PlanoAula")
@@ -154,9 +153,10 @@ export const criarPlanoAula = async (formData: FormData) => {
     return { error: error.message };
   }
 
-  console.log("Plano de aula criado:", data);
   return { success: true, data };
 };
+
+// Listar todos Planos de Aula
 export const listarPlanosAula = async () => {
   const supabase = createClient();
 
@@ -170,24 +170,38 @@ export const listarPlanosAula = async () => {
   return data; 
 };
 
-
-//Função para deletar Plano de Aula
-export const deletarPlanoAula = async (planoId: string) => {
+// Buscar Plano de Aula por ID
+export const buscarPlanoAula = async (id: string) => {
   const supabase = createClient();
 
-  const { error } = await supabase
-    .from("PlanoAula")
-    .delete()
-    .eq("id", planoId);
+  const { data, error } = await supabase
+    .from('PlanoAula')
+    .select('id, titulo, disciplina_id, disciplina!inner(nome)')
+    .eq('id', id)
+    .single();
 
   if (error) {
-    console.error("Erro ao deletar plano de aula:", error.message);
     return { error: error.message };
   }
 
-  return { success: true };
+  // Ajusta para facilitar uso
+  const plano = data ? {
+    ...data,
+    disciplina_nome: Array.isArray(data.disciplina) && data.disciplina.length > 0 ? data.disciplina[0].nome : ''
+  } : null;
+
+  return { data: plano };
 };
 
+export async function buscarPlanoAulaPorId(id: string) {
+  // Exemplo com fetch para sua API:
+  const res = await fetch(`/api/plano-aulas/${id}`)
+  if (!res.ok) return null
+  const data = await res.json()
+  return data
+}
+
+// Editar Plano de Aula
 export const editarPlanoAula = async (formData: FormData) => {
   const planoId = formData.get("id")?.toString();
   const titulo = formData.get("titulo")?.toString();
@@ -211,23 +225,101 @@ export const editarPlanoAula = async (formData: FormData) => {
   return { success: true };
 };
 
-// Adicione esta função ao seu arquivo actions.ts
-export const buscarPlanoAula = async (planoId: string) => {
+// Deletar Plano de Aula
+export const deletarPlanoAula = async (planoId: string) => {
   const supabase = createClient();
-  
-  const { data, error } = await supabase
-    .from('PlanoAula')
-    .select('*')
-    .eq('id', planoId)
-    .single();
+
+  const { error } = await supabase
+    .from("PlanoAula")
+    .delete()
+    .eq("id", planoId);
 
   if (error) {
-    console.error('Erro ao buscar plano:', error);
+    console.error("Erro ao deletar plano de aula:", error.message);
     return { error: error.message };
   }
 
-  return { data };
+  return { success: true };
 };
+
+// --- Registro de Aula CRUD ---
+
+// Criar Registro de Aula
+export async function inserirRegistroAula(
+  planoAulaId: string,
+  dados: { data: string; conteudo: string, observacoes: string }
+) {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('RegistroAula')
+    .insert([
+      {
+        plano_aula_id: planoAulaId, // corrigido aqui
+        data: dados.data,
+        conteudo: dados.conteudo,
+        observacoes: dados.observacoes,
+      },
+    ])
+    .single()
+
+  if (error) {
+    console.error('Erro ao inserir registro:', error)
+    throw error
+  }
+
+  return data
+}
+
+// Editar Registro de Aula
+export async function editarRegistroAula(
+  id: string,
+  dados: { data: string; conteudo: string; observacoes: string }
+) {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('RegistroAula')
+    .update({
+      data: dados.data,
+      conteudo: dados.conteudo,
+      observacoes: dados.observacoes,
+    })
+    .eq('id', id)
+    .single()
+
+  if (error) {
+    console.error('Erro ao editar registro:', error)
+    throw error
+  }
+
+  return data
+}
+
+
+export async function deletarRegistroAula(id: string) {
+  const supabase = createClient();
+  const { error } = await supabase.from('RegistroAula').delete().eq('id', id)
+
+  if (error) {
+    console.error('Erro ao deletar registro:', error)
+    throw error
+  }
+}
+
+export async function listarRegistrosPorPlanoId(planoId: string) {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('RegistroAula')
+    .select('*')
+    .eq('plano_aula_id', planoId) // corrigido aqui
+    .order('data', { ascending: false })
+
+  if (error) {
+    console.error('Erro ao listar registros:', error)
+    return { data: [] }
+  }
+
+  return { data }
+}
 
 // Função para listar disciplinas do usuário
 export const listarDisciplinas = async () => {
@@ -324,30 +416,6 @@ export const deletarDisciplina = async (disciplinaId: string) => {
   return { success: true };
 };
 
-export const criarRegistroAula = async (formData: FormData) => {
-  const supabase = createClient();
-
-  const planoAulaId = formData.get("planoAulaId") as string;
-  const titulo = formData.get("titulo") as string;
-  const descricao = formData.get("descricao") as string;
-  const dataHora = formData.get("dataHora") as string;
-
-  const { error } = await supabase.from("registroAula").insert([
-    {
-      planoAulaId,
-      titulo,
-      descricao,
-      dataHora,
-    },
-  ]);
-
-  if (error) {
-    console.error("Erro ao criar registro:", error.message);
-    return { error: error.message };
-  }
-
-  return { success: true };
-};
 
 //Aqui inicia os referentes a Enquete
 export const criarEnquete = async (formData: FormData) => {

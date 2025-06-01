@@ -64,12 +64,8 @@ export default function PlanoAulasPage() {
   }, [])
 
   const planosFiltrados = planos.filter((plano) => {
-    const matchSearch = plano.titulo
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase())
-    const matchDisciplina = disciplinaFiltro
-      ? plano.disciplina_id === disciplinaFiltro
-      : true
+    const matchSearch = plano.titulo.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchDisciplina = disciplinaFiltro ? plano.disciplina_id === disciplinaFiltro : true
     return matchSearch && matchDisciplina
   })
 
@@ -98,9 +94,9 @@ export default function PlanoAulasPage() {
 
     const { success, data } = await criarPlanoAula(formData)
 
-    if (success && data.length > 0) {
+    if (success && data && data.length > 0) {
       const novoPlano = data[0]
-      setPlanos([...planos, novoPlano])
+      setPlanos((prev) => [novoPlano, ...prev]) // Adiciona no topo
       setModalAberto(false)
       setNovoTitulo('')
       setNovaDisciplinaId(null)
@@ -126,23 +122,25 @@ export default function PlanoAulasPage() {
             }}
             className="md:w-1/2"
           />
-          <Select
-            onValueChange={(value) => {
-              setDisciplinaFiltro(value)
-              setPaginaAtual(1)
-            }}
-          >
-            <SelectTrigger className="w-full md:w-1/4">
-              <SelectValue placeholder="Filtrar por disciplina" />
-            </SelectTrigger>
-            <SelectContent>
-              {disciplinas.map((disc) => (
-                <SelectItem key={disc.id} value={disc.id}>
-                  {disc.nome}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+         <Select
+  value={disciplinaFiltro || 'todas'}
+  onValueChange={(value) => {
+    setDisciplinaFiltro(value === 'todas' ? '' : value)
+    setPaginaAtual(1)
+  }}
+>
+  <SelectTrigger className="w-full md:w-1/4">
+    <SelectValue placeholder="Filtrar por disciplina" />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="todas">Todas</SelectItem>  {/* não pode ser "" */}
+    {disciplinas.map((disc) => (
+      <SelectItem key={disc.id} value={disc.id}>
+        {disc.nome}
+      </SelectItem>
+    ))}
+  </SelectContent>
+</Select>
           <Button onClick={() => setModalAberto(true)}>Adicionar Diário</Button>
         </div>
 
@@ -156,7 +154,7 @@ export default function PlanoAulasPage() {
                     {getDisciplinaNome(plano.disciplina_id)}
                   </div>
                 </div>
-                <Link href={`/plano-aulas/${plano.id}`}>
+                <Link href={`/home/plano-aulas/${plano.id}`}>
                   <Button className="w-full mt-4 bg-blue-400 text-white hover:bg-blue-500">
                     Acessar Diário
                   </Button>
@@ -178,9 +176,7 @@ export default function PlanoAulasPage() {
             Página {paginaAtual} de {totalPaginas}
           </span>
           <Button
-            onClick={() =>
-              setPaginaAtual((prev) => Math.min(totalPaginas, prev + 1))
-            }
+            onClick={() => setPaginaAtual((prev) => Math.min(totalPaginas, prev + 1))}
             disabled={paginaAtual === totalPaginas}
             variant="outline"
           >
@@ -220,9 +216,7 @@ export default function PlanoAulasPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
       </div>
     </div>
   )
 }
-
