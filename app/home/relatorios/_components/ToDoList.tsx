@@ -7,10 +7,14 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
+type Task = {
+  id: number;
+  text: string;
+  done: boolean;
+};
+
 export function TodoList() {
-  const [tasks, setTasks] = useState([
-  
-  ]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState("");
 
   const addTask = () => {

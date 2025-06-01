@@ -21,7 +21,7 @@ export default async function RelatoriosPage() {
 
   // Total de enquetes
   const { count: totalEnquetesUsuario } = await supabase
-    .from("Enquete")
+    .from("enquetes")
     .select("*", { count: "exact", head: true })
     .eq("user_id", userId);
 
