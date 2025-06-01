@@ -1,87 +1,139 @@
-"use client";
-
-import React from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { createClient } from "@/lib/utils/supabase/server";
+import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Checkbox } from "@/components/ui/checkbox";
-import dynamic from "next/dynamic";
+import { TodoList } from "./_components/ToDoList";
+import { ListaMetas } from "./_components/ListaMetas";
+import GraficoEventos from "./_components/GraficoEventos";
+import GraficoDesempenhoDisciplina from "./_components/GraficoDesempenhoDisciplina";
 
-const ClientOnlyChart = dynamic(() => import("../../_components/ClientOnlyChart"), {
-  ssr: false,
-});
+export default async function RelatoriosPage() {
+  const supabase = createClient();
 
-export default function RelatoriosPage() {
-  const tarefas = [
-    { id: 1, titulo: "Criar quiz para aula 3", feito: true },
-    { id: 2, titulo: "Corrigir atividades semanais", feito: false },
-    { id: 3, titulo: "Agendar reunião com coordenação", feito: false },
-  ];
+  // Obter usuário logado
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id;
 
-  const tarefasStats = [
-    { name: "Concluídas", valor: tarefas.filter((t) => t.feito).length },
-    { name: "Pendentes", valor: tarefas.filter((t) => !t.feito).length },
-  ];
+  // Total de quizzes
+  const { count: totalQuizzesUsuario } = await supabase
+    .from("Quiz")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId);
 
-  const quizzesCriados = 12;
-  const participacao = 78; 
-  const metas = [
-    { titulo: "Criar 10 quizzes no mês", progresso: 100 },
-    { titulo: "Concluir 15 tarefas pedagógicas", progresso: 60 },
-  ];
+  // Total de enquetes
+  const { count: totalEnquetesUsuario } = await supabase
+    .from("enquetes")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId);
+
+  // Total de planos de aula
+  const { count: totalPlanosUsuario } = await supabase
+    .from("PlanoAula")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId);
+
+  // Total de votos em enquetes
+  const { count: totalVotos } = await supabase
+    .from("respostas_enquete")
+    .select("*", { count: "exact", head: true });
+
+  // Total de respostas em quizzes
+  const { count: totalRespostasQuiz } = await supabase
+    .from("Resposta")
+    .select("*", { count: "exact", head: true });
+
+  // Total de acertos em quizzes
+  const { count: totalAcertosQuiz } = await supabase
+    .from("Resposta")
+    .select("*", { count: "exact", head: true })
+    .eq("correta", true); // corrigido: coluna se chama "correta"
+
+  // Eventos (para agrupamento por prioridade)
+  const { data: eventos, error: eventosErro } = await supabase
+    .from("Evento")
+    .select("prioridade");
+
+  const eventosAgrupados = (eventos || []).reduce((acc, evento) => {
+    const prioridade = evento.prioridade || "Sem Prioridade";
+    acc[prioridade] = (acc[prioridade] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const dadosEventos = Object.entries(eventosAgrupados).map(([prioridade, quantidade]) => ({
+    prioridade,
+    quantidade,
+  }));
+
+  // Desempenho por disciplina
+  const { data: desempenhoDisciplinas } = await supabase
+    .from("dashboard_resumo")
+    .select("disciplina, percentual_acerto_geral");
+
+  const dadosDesempenho = (desempenhoDisciplinas || []).map((d) => ({
+    disciplina: d.disciplina,
+    taxa_acerto: parseFloat(d.percentual_acerto_geral),
+  }));
+
+  // Cálculos
+  const respostasQuiz = totalRespostasQuiz ?? 0;
+  const acertosQuiz = totalAcertosQuiz ?? 0;
+  const taxaAcertosGeral = respostasQuiz > 0 ? (acertosQuiz / respostasQuiz) * 100 : 0;
+
+  const participacao =
+    totalEnquetesUsuario && totalEnquetesUsuario > 0
+      ? Math.min(Math.round(((totalVotos ?? 0) / totalEnquetesUsuario) * 100), 100)
+      : 0;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
+      <Card><TodoList /></Card>
+
       <Card>
-        <CardContent className="p-4">
-          <h2 className="text-xl font-bold mb-4">To-do</h2>
-          <ul className="space-y-2">
-            {tarefas.map((tarefa) => (
-              <li key={tarefa.id} className="flex items-center space-x-2">
-                <Checkbox checked={tarefa.feito} />
-                <span className={tarefa.feito ? "line-through text-gray-400" : ""}>{tarefa.titulo}</span>
-              </li>
-            ))}
-          </ul>
-        </CardContent>
+        <ListaMetas
+          dados={{
+            quizzes: totalQuizzesUsuario ?? 0,
+            planos: totalPlanosUsuario ?? 0,
+            enquetes: totalEnquetesUsuario ?? 0,
+            respostas_enquete: totalVotos ?? 0,
+            respostas_quiz: totalRespostasQuiz ?? 0,
+          }}
+        />
       </Card>
 
       <Card>
-        <CardContent className="p-4">
-          <h2 className="text-xl font-bold mb-4">Tarefas Realizadas</h2>
-          <ClientOnlyChart data={tarefasStats} />
-        </CardContent>
+        <div className="p-4">
+          <h2 className="text-xl font-bold mb-4">Seus Planos de Aula Criados</h2>
+          <div className="text-5xl font-bold text-center text-green-600">{totalPlanosUsuario}</div>
+        </div>
       </Card>
 
       <Card>
-        <CardContent className="p-4">
-          <h2 className="text-xl font-bold mb-4">Participação nas Aulas</h2>
-          <div className="text-center">
-            <div className="text-4xl font-semibold">{participacao}%</div>
-            <Progress value={participacao} className="mt-2" />
+        <div className="p-4">
+          <h2 className="text-xl font-bold mb-4">Taxa de Acerto Geral nos Quizzes</h2>
+          <div className="text-5xl font-bold text-center text-green-600">
+            {taxaAcertosGeral.toFixed(2)}%
           </div>
-        </CardContent>
+        </div>
       </Card>
 
       <Card>
-        <CardContent className="p-4">
-          <h2 className="text-xl font-bold mb-4">Quizzes Criados</h2>
-          <div className="text-5xl font-bold text-center text-blue-600">{quizzesCriados}</div>
-        </CardContent>
+        <div className="p-4">
+          <h2 className="text-xl font-bold mb-4">Eventos por Prioridade</h2>
+          <div className="w-full max-w-[300px] mx-auto">
+            <GraficoEventos dados={dadosEventos} />
+          </div>
+        </div>
       </Card>
 
-      <Card>
-        <CardContent className="p-4">
-          <h2 className="text-xl font-bold mb-4">Metas</h2>
-          <ul className="space-y-4">
-            {metas.map((meta, index) => (
-              <li key={index}>
-                <div className="text-sm font-medium mb-1">{meta.titulo}</div>
-                <Progress value={meta.progresso} />
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
+   <Card>
+  <div className="p-4">
+    <h2 className="text-xl font-bold mb-4">Desempenho por Disciplina</h2>
+    <div className="w-full max-w-[600px] h-[400px] mx-auto">
+      <GraficoDesempenhoDisciplina dados={dadosDesempenho} />
+    </div>
+  </div>
+</Card>
+
+
     </div>
   );
 }

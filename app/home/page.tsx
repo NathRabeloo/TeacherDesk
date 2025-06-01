@@ -6,7 +6,6 @@ import { redirect } from 'next/navigation';
 import Grid from "../_components/Grid";
 
 export default async function Home() {
-
   const supabase = createClient();
 
   const {
@@ -17,6 +16,19 @@ export default async function Home() {
     return redirect("/sign-in");
   }
 
+  // ✅ Puxar avatar do banco
+  const { data: avatarData, error: avatarError } = await supabase
+    .from("AvatarUsers")
+    .select("avatar")
+    .eq("user_id", user.id)
+    .single();
+
+  if (avatarError && avatarError.code !== "PGRST116") {
+    console.error("Erro ao buscar avatar:", avatarError.message);
+  }
+
+  const avatarSelecionado = avatarData?.avatar ?? "default";
+
   const currentDate = new Date().toLocaleDateString("pt-BR", {
     day: "numeric",
     month: "long",
@@ -25,17 +37,16 @@ export default async function Home() {
   const userName = user.user_metadata.name;
 
   return (
-    <div  className="max-h-screen">
+    <div className="max-h-screen">
       <Header
         date={currentDate}
         title={`Bem-vindo, ${userName}!`}
         buttonText="Tutorial TeacherDesk →"
         buttonLink="/home/tutorial"
-        desktopImageLeft="/assets/Avatar/avatar_ruiva.png"
-        mobileImage="/assets/avatar_ruiva.png"
+        desktopImageLeft={`/assets/Avatar/${avatarSelecionado}.png`}
+        mobileImage={`/assets/Avatar/${avatarSelecionado}.png`}
       />
-      <Grid/>
+      <Grid />
     </div>
   );
-
 }
