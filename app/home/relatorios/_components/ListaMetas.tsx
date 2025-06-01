@@ -104,7 +104,7 @@ export function ListaMetas({
                 </div>
                 <button
                   onClick={() => removerMeta(meta.id)}
-                  className="text-red-600 text-sm ml-4"
+                  className="text-red-800 text-sm ml-4"
                 >
                   Remover
                 </button>

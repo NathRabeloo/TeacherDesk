@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 
 export function TodoList() {
   const [tasks, setTasks] = useState([
-    { id: 1, text: "Criar 1 quiz essa semana", done: false },
+  
   ]);
   const [newTask, setNewTask] = useState("");
 
@@ -61,7 +61,7 @@ export function TodoList() {
         </Button>
         <Button
           onClick={clearCompletedTasks}
-          className="bg--900 hover:bg-yellow-700 text-white"
+          className="bg-gray-800 hover:bg-gray-700 text-white"
           disabled={completedTasks.length === 0}
         >
           Limpar concluídas

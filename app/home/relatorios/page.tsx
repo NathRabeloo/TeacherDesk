@@ -1,50 +1,86 @@
 import { createClient } from "@/lib/utils/supabase/server";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { TodoList } from "./ToDoList";
-import { ListaMetas } from "./ListaMetas";
+import { TodoList } from "./_components/ToDoList";
+import { ListaMetas } from "./_components/ListaMetas";
+import GraficoEventos from "./_components/GraficoEventos";
+import GraficoDesempenhoDisciplina from "./_components/GraficoDesempenhoDisciplina";
 
 export default async function RelatoriosPage() {
   const supabase = createClient();
 
-  // Buscar o total de quizzes
-  const { count: totalQuizzes } = await supabase
-    .from("Quiz") // Usando o nome correto da tabela
-    .select("*", { count: "exact", head: true });
+  // Obter usuário logado
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id;
 
-  // Buscar o total de planos de aula
-  const { count: totalPlanos } = await supabase
-    .from("PlanoAula") // Usando o nome correto da tabela
-    .select("*", { count: "exact", head: true });
+  // Total de quizzes
+  const { count: totalQuizzesUsuario } = await supabase
+    .from("Quiz")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId);
 
-  // Buscar o total de enquetes
-  const { count: totalEnquetes } = await supabase
-    .from("Enquete") // Usando o nome correto da tabela
-    .select("*", { count: "exact", head: true });
+  // Total de enquetes
+  const { count: totalEnquetesUsuario } = await supabase
+    .from("Enquete")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId);
 
-  // Buscar o total de votos nas enquetes
+  // Total de planos de aula
+  const { count: totalPlanosUsuario } = await supabase
+    .from("PlanoAula")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId);
+
+  // Total de votos em enquetes
   const { count: totalVotos } = await supabase
-    .from("respostas_enquete") // Usando o nome correto da tabela
+    .from("respostas_enquete")
     .select("*", { count: "exact", head: true });
 
-  // Buscar o total de respostas nos quizzes
+  // Total de respostas em quizzes
   const { count: totalRespostasQuiz } = await supabase
-    .from("Resposta") // Usando o nome correto da tabela
+    .from("Resposta")
     .select("*", { count: "exact", head: true });
 
-  // Buscar o total de acertos no quiz
+  // Total de acertos em quizzes
   const { count: totalAcertosQuiz } = await supabase
-    .from("Resposta") // Usando o nome correto da tabela
-    .select("*")
-    .eq("acertou", true); // Supondo que você tenha um campo 'acertou' que armazena se a resposta foi correta
+    .from("Resposta")
+    .select("*", { count: "exact", head: true })
+    .eq("correta", true); // corrigido: coluna se chama "correta"
 
-  // Calcular a taxa de acertos geral
-  const taxaAcertosGeral = totalRespostasQuiz > 0 ? (totalAcertosQuiz / totalRespostasQuiz) * 100 : 0;
+  // Eventos (para agrupamento por prioridade)
+  const { data: eventos, error: eventosErro } = await supabase
+    .from("Evento")
+    .select("prioridade");
 
-  // Calcular a participação nas enquetes
+  const eventosAgrupados = (eventos || []).reduce((acc, evento) => {
+    const prioridade = evento.prioridade || "Sem Prioridade";
+    acc[prioridade] = (acc[prioridade] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const dadosEventos = Object.entries(eventosAgrupados).map(([prioridade, quantidade]) => ({
+    prioridade,
+    quantidade,
+  }));
+
+  // Desempenho por disciplina
+  const { data: desempenhoDisciplinas } = await supabase
+    .from("dashboard_resumo")
+    .select("disciplina, percentual_acerto_geral");
+
+  const dadosDesempenho = (desempenhoDisciplinas || []).map((d) => ({
+    disciplina: d.disciplina,
+    taxa_acerto: parseFloat(d.percentual_acerto_geral),
+  }));
+
+  // Cálculos
+  const respostasQuiz = totalRespostasQuiz ?? 0;
+  const acertosQuiz = totalAcertosQuiz ?? 0;
+  const taxaAcertosGeral = respostasQuiz > 0 ? (acertosQuiz / respostasQuiz) * 100 : 0;
+
   const participacao =
-    totalEnquetes && totalEnquetes > 0
-      ? Math.min(Math.round((totalVotos / totalEnquetes) * 100), 100)
+    totalEnquetesUsuario && totalEnquetesUsuario > 0
+      ? Math.min(Math.round(((totalVotos ?? 0) / totalEnquetesUsuario) * 100), 100)
       : 0;
 
   return (
@@ -54,41 +90,22 @@ export default async function RelatoriosPage() {
       <Card>
         <ListaMetas
           dados={{
-            quizzes: totalQuizzes ?? 0,
-            planos: totalPlanos ?? 0,
-            enquetes: totalEnquetes ?? 0,
+            quizzes: totalQuizzesUsuario ?? 0,
+            planos: totalPlanosUsuario ?? 0,
+            enquetes: totalEnquetesUsuario ?? 0,
             respostas_enquete: totalVotos ?? 0,
-            respostas_quiz: totalRespostasQuiz ?? 0, // Passando o total de respostas do quiz
-            taxa_acerto_quiz: taxaAcertosGeral.toFixed(2) + "%", // Passando a taxa de acerto geral
+            respostas_quiz: totalRespostasQuiz ?? 0,
           }}
         />
       </Card>
 
       <Card>
         <div className="p-4">
-          <h2 className="text-xl font-bold mb-4">Quizzes Criados</h2>
-          <div className="text-5xl font-bold text-center text-blue-600">{totalQuizzes}</div>
+          <h2 className="text-xl font-bold mb-4">Seus Planos de Aula Criados</h2>
+          <div className="text-5xl font-bold text-center text-green-600">{totalPlanosUsuario}</div>
         </div>
       </Card>
 
-      <Card>
-        <div className="p-4">
-          <h2 className="text-xl font-bold mb-4">Participação nas Enquetes</h2>
-          <div className="text-center">
-            <div className="text-4xl font-semibold">{participacao}%</div>
-            <Progress value={participacao} className="mt-2" />
-          </div>
-        </div>
-      </Card>
-
-      <Card>
-        <div className="p-4">
-          <h2 className="text-xl font-bold mb-4">Diários de Aula Criados</h2>
-          <div className="text-5xl font-bold text-center text-green-600">{totalPlanos}</div>
-        </div>
-      </Card>
-
-      {/* Adicionando Relatório de Desempenho nos Quizzes */}
       <Card>
         <div className="p-4">
           <h2 className="text-xl font-bold mb-4">Taxa de Acerto Geral nos Quizzes</h2>
@@ -98,13 +115,25 @@ export default async function RelatoriosPage() {
         </div>
       </Card>
 
-      {/* Relatório de Respostas nos Quizzes */}
       <Card>
         <div className="p-4">
-          <h2 className="text-xl font-bold mb-4">Total de Respostas nos Quizzes</h2>
-          <div className="text-5xl font-bold text-center text-blue-600">{totalRespostasQuiz}</div>
+          <h2 className="text-xl font-bold mb-4">Eventos por Prioridade</h2>
+          <div className="w-full max-w-[300px] mx-auto">
+            <GraficoEventos dados={dadosEventos} />
+          </div>
         </div>
       </Card>
+
+   <Card>
+  <div className="p-4">
+    <h2 className="text-xl font-bold mb-4">Desempenho por Disciplina</h2>
+    <div className="w-full max-w-[600px] h-[400px] mx-auto">
+      <GraficoDesempenhoDisciplina dados={dadosDesempenho} />
+    </div>
+  </div>
+</Card>
+
+
     </div>
   );
 }
