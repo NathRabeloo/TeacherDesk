@@ -221,7 +221,7 @@ export default function PlanoAulasPage() {
           <Button disabled={paginaAtual === 1 || loading} onClick={() => setPaginaAtual((p) => Math.max(1, p - 1))}>
             Anterior
           </Button>
-          {[...Array(totalPaginas).keys()].map((i) => (
+          {Array.from({ length: totalPaginas }, (_, i) => (
             <Button
               key={i}
               variant={paginaAtual === i + 1 ? 'default' : 'outline'}
