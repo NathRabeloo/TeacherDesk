@@ -10,8 +10,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { FaBook, FaPlus } from "react-icons/fa";
-import { useRouter } from "next/navigation";
+import { FaBook, FaPlus, FaSearch, FaExternalLinkAlt, FaEdit, FaTrash } from "react-icons/fa";
+import {
+  criarBibliografia,
+  listarBibliografias,
+  editarBibliografia,
+  deletarBibliografia,
+} from "@/app/actions";
 
 interface BibliografiaItem {
   id: number;
@@ -19,128 +24,319 @@ interface BibliografiaItem {
   link: string;
 }
 
-const Bibliografia = () => {
+const Bibliografia: React.FC = () => {
   const [bibliografia, setBibliografia] = useState<BibliografiaItem[]>([]);
   const [modalAberto, setModalAberto] = useState(false);
+  const [modalConfirmarExcluirAberto, setModalConfirmarExcluirAberto] = useState(false);
+  const [modalConfirmarLinkAberto, setModalConfirmLink] = useState<BibliografiaItem | null>(null);
+
   const [titulo, setTitulo] = useState("");
   const [link, setLink] = useState("");
-  const [contadorId, setContadorId] = useState(1);
+  const [idEditando, setIdEditando] = useState<number | null>(null);
+
   const [paginaAtual, setPaginaAtual] = useState(1);
+  const [busca, setBusca] = useState("");
+  const [senhaExcluir, setSenhaExcluir] = useState("");
+  const [itemParaExcluir, setItemParaExcluir] = useState<BibliografiaItem | null>(null);
+
   const itensPorPagina = 12;
 
   useEffect(() => {
-    const storedData = localStorage.getItem("bibliografia");
-    if (storedData) {
-      const parsedData = JSON.parse(storedData);
-      setBibliografia(parsedData);
-      setContadorId(parsedData.length ? parsedData[parsedData.length - 1].id + 1 : 1);
-    }
+    carregarBibliografia();
   }, []);
 
-  const salvarBibliografia = (dados: BibliografiaItem[]) => {
-    localStorage.setItem("bibliografia", JSON.stringify(dados));
-  };
+  async function carregarBibliografia() {
+    // Agora sem passar disciplinaId
+    const { data, error } = await listarBibliografias();
+    if (error) {
+      console.error("Erro ao listar bibliografias:", error);
+    } else {
+      setBibliografia(data ?? []);
+    }
+  }
 
-  const adicionarBibliografia = () => {
-    if (titulo && link) {
-      const novoItem = {
-        id: contadorId,
-        titulo,
-        link,
-      };
-      const novosDados = [...bibliografia, novoItem];
-      setBibliografia(novosDados);
-      salvarBibliografia(novosDados);
-      setContadorId(contadorId + 1);
+  const handleSalvar = async () => {
+    if (!titulo.trim() || !link.trim()) {
+      alert("Título e link são obrigatórios!");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("titulo", titulo);
+    formData.append("link", link);
+    // Removido disciplina_id pois não usa mais
+
+    let res;
+    if (idEditando) {
+      formData.append("id", idEditando.toString());
+      res = await editarBibliografia(formData);
+    } else {
+      res = await criarBibliografia(formData);
+    }
+
+    if (res?.success) {
+      await carregarBibliografia();
       setModalAberto(false);
       setTitulo("");
       setLink("");
+      setIdEditando(null);
+    } else {
+      console.error("Erro ao salvar:", res?.error);
+      alert("Erro ao salvar bibliografia: " + res?.error);
     }
   };
 
-  const livrosVisiveis = bibliografia.slice(
+  const abrirLinkConfirmado = () => {
+    if (modalConfirmarLinkAberto) {
+      window.open(modalConfirmarLinkAberto.link, "_blank", "noopener,noreferrer");
+      setModalConfirmLink(null);
+    }
+  };
+
+  const abrirModalEditar = (item: BibliografiaItem) => {
+    setIdEditando(item.id);
+    setTitulo(item.titulo);
+    setLink(item.link);
+    setModalAberto(true);
+  };
+
+  const abrirModalExcluir = (item: BibliografiaItem) => {
+    setItemParaExcluir(item);
+    setSenhaExcluir("");
+    setModalConfirmarExcluirAberto(true);
+  };
+
+  const confirmarExcluir = async () => {
+    if (senhaExcluir !== "admin123") {
+      alert("Senha incorreta para exclusão!");
+      return;
+    }
+    if (!itemParaExcluir) return;
+
+    const res = await deletarBibliografia(itemParaExcluir.id.toString());
+    if (res?.success) {
+      await carregarBibliografia();
+      setModalConfirmarExcluirAberto(false);
+      setItemParaExcluir(null);
+      setSenhaExcluir("");
+    } else {
+      alert("Erro ao excluir: " + res?.error);
+    }
+  };
+
+  // Filtra a bibliografia conforme o texto da busca
+  const livrosFiltrados = bibliografia.filter((item) =>
+    item.titulo.toLowerCase().includes(busca.toLowerCase())
+  );
+
+  // Itens da página atual
+  const livrosVisiveis = livrosFiltrados.slice(
     (paginaAtual - 1) * itensPorPagina,
     paginaAtual * itensPorPagina
   );
 
-  const totalPaginas = Math.ceil(bibliografia.length / itensPorPagina);
+  const totalPaginas = Math.ceil(livrosFiltrados.length / itensPorPagina);
 
   return (
-    <div className="min-h-screen bg-blue-100 flex justify-center items-start py-10 px-4">
-      <div className="w-full max-w-6xl bg-white rounded-3xl shadow-lg p-8">
-        <h1 className="text-3xl font-bold text-center mb-8">Bibliografia</h1>
+    <div className="min-h-screen bg-gradient-to-b from-blue-200 via-blue-100 to-white flex justify-center items-start py-12 px-6">
+      <div className="w-full max-w-7xl bg-white rounded-3xl shadow-xl p-10">
+        <h1 className="text-4xl font-extrabold text-center mb-10 text-blue-900">
+          Bibliografia
+        </h1>
 
-        <div className="flex justify-end mb-6">
-          <Button onClick={() => setModalAberto(true)} className="flex items-center gap-2">
-            <FaPlus className="w-4 h-4" />
+        {/* Barra de pesquisa */}
+        <div className="flex justify-between items-center mb-8 max-w-md mx-auto relative">
+          <Input
+            placeholder="Buscar título..."
+            value={busca}
+            onChange={(e) => {
+              setBusca(e.target.value);
+              setPaginaAtual(1);
+            }}
+            className="pl-10"
+          />
+          <FaSearch className="absolute left-3 top-3 text-blue-400 pointer-events-none" />
+        </div>
+
+        {/* Botão Adicionar */}
+        <div className="flex justify-center mb-10">
+          <Button
+            onClick={() => {
+              setModalAberto(true);
+              setIdEditando(null);
+              setTitulo("");
+              setLink("");
+            }}
+            className="flex items-center gap-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-full shadow-lg transition-shadow"
+          >
+            <FaPlus size={20} />
             Adicionar Livro
           </Button>
         </div>
 
-        {/* Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {livrosVisiveis.map((item) => (
-            <div
-              key={item.id}
-              className="bg-white p-4 rounded-xl shadow-md text-center hover:shadow-lg transition-shadow flex flex-col items-center"
-            >
-              <FaBook size={40} className="text-blue-500 mb-2" />
-              <p className="font-semibold text-lg mb-2 truncate w-full">{item.titulo}</p>
-              <Button
-                asChild
-                className="w-full mt-auto bg-blue-400 text-white hover:bg-blue-500"
+        {/* Lista de livros */}
+        {livrosVisiveis.length === 0 ? (
+          <p className="text-center text-gray-500">Nenhum livro encontrado.</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+            {livrosVisiveis.map((item) => (
+              <div
+                key={item.id}
+                className="bg-white p-6 rounded-2xl shadow-md hover:shadow-xl transition-shadow flex flex-col"
               >
-                <a
-                  href={item.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Abrir Livro
-                </a>
-              </Button>
+                <div className="flex items-center mb-4 gap-3">
+                  <FaBook size={36} className="text-blue-600" />
+                  <h2 className="text-lg font-semibold text-gray-900 truncate">
+                    {item.titulo}
+                  </h2>
+                </div>
 
-            </div>
-          ))}
-        </div>
+                <div className="flex flex-col justify-between gap-3">
+                  <Button
+                    onClick={() => setModalConfirmLink(item)}
+                    className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-lg py-2 flex items-center justify-center gap-2 hover:brightness-110 transition"
+                  >
+                    Abrir Livro
+                    <FaExternalLinkAlt />
+                  </Button>
 
-        {/* Paginação */}
-        {totalPaginas > 1 && (
-          <div className="flex justify-center mt-10 space-x-2">
-            {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((pagina) => (
-              <button
-                key={pagina}
-                onClick={() => setPaginaAtual(pagina)}
-                className={`px-4 py-2 rounded-lg border font-medium ${pagina === paginaAtual
-                    ? "bg-blue-500 text-white"
-                    : "bg-white text-blue-500 border-blue-300"
-                  }`}
-              >
-                {pagina}
-              </button>
+                  <Button
+                    variant="outline"
+                    onClick={() => abrirModalEditar(item)}
+                    className="w-20 flex items-center justify-center gap-2 text-blue-700 border-blue-700 hover:bg-blue-100"
+                  >
+                    <FaEdit />
+                    Editar
+                  </Button>
+
+                  <Button
+                    variant="destructive"
+                    onClick={() => abrirModalExcluir(item)}
+                    className="w-20 flex items-center justify-center gap-2"
+                  >
+                    <FaTrash />
+                    Excluir
+                  </Button>
+                </div>
+              </div>
             ))}
           </div>
         )}
 
-        {/* Modal */}
+        {/* Paginação */}
+        {totalPaginas > 1 && (
+          <div className="flex justify-center mt-14 space-x-3">
+            {Array.from({ length: totalPaginas }, (_, i) => i + 1).map(
+              (pagina) => (
+                <button
+                  key={pagina}
+                  onClick={() => setPaginaAtual(pagina)}
+                  className={`w-10 h-10 rounded-full border font-semibold text-lg flex items-center justify-center transition
+                    ${pagina === paginaAtual
+                      ? "bg-blue-600 text-white border-blue-700"
+                      : "bg-white text-blue-600 border-blue-300 hover:bg-blue-100"
+                    }`}
+                >
+                  {pagina}
+                </button>
+              )
+            )}
+          </div>
+        )}
+
+        {/* Modal Adicionar / Editar Livro */}
         <Dialog open={modalAberto} onOpenChange={setModalAberto}>
-          <DialogContent>
+          <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Adicionar Livro</DialogTitle>
+              <DialogTitle className="text-2xl font-bold text-blue-800">
+                {idEditando ? "Editar Livro" : "Adicionar Livro"}
+              </DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
+            <div className="space-y-5 mt-2">
               <Input
                 placeholder="Título do livro"
                 value={titulo}
                 onChange={(e) => setTitulo(e.target.value)}
+                autoFocus
               />
               <Input
-                placeholder="Link do livro"
+                placeholder="Link do livro (URL completa)"
                 value={link}
                 onChange={(e) => setLink(e.target.value)}
               />
             </div>
             <DialogFooter>
-              <Button onClick={adicionarBibliografia}>Salvar</Button>
+              <Button onClick={handleSalvar} className="w-full">
+                {idEditando ? "Salvar Alterações" : "Salvar"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal Confirmar Abrir Link */}
+        <Dialog
+          open={!!modalConfirmarLinkAberto}
+          onOpenChange={() => setModalConfirmLink(null)}
+        >
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-blue-800">
+                Confirmar abertura do link
+              </DialogTitle>
+            </DialogHeader>
+
+            {modalConfirmarLinkAberto && (
+              <div className="mb-6">
+                <p className="font-semibold text-gray-700 mb-2">
+                  Título:
+                </p>
+                <p className="mb-4 text-blue-900 truncate">{modalConfirmarLinkAberto.titulo}</p>
+
+                <p className="font-semibold text-gray-700 mb-2">Link:</p>
+                <p className="text-blue-600 break-words">
+                  {modalConfirmarLinkAberto.link}
+                </p>
+              </div>
+            )}
+
+            <DialogFooter className="space-x-3">
+              <Button variant="outline" onClick={() => setModalConfirmLink(null)}>
+                Cancelar
+              </Button>
+              <Button onClick={abrirLinkConfirmado}>Abrir Link</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal Confirmar Exclusão */}
+        <Dialog
+          open={modalConfirmarExcluirAberto}
+          onOpenChange={setModalConfirmarExcluirAberto}
+        >
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-red-600">
+                Confirmar exclusão
+              </DialogTitle>
+            </DialogHeader>
+            <p className="mb-4 text-gray-700">
+              Para excluir, digite a senha de confirmação:
+            </p>
+            <Input
+              type="password"
+              placeholder="Senha para excluir"
+              value={senhaExcluir}
+              onChange={(e) => setSenhaExcluir(e.target.value)}
+              autoFocus
+              className="mb-6"
+            />
+            <DialogFooter className="space-x-3">
+              <Button variant="outline" onClick={() => setModalConfirmarExcluirAberto(false)}>
+                Cancelar
+              </Button>
+              <Button variant="destructive" onClick={confirmarExcluir}>
+                Excluir
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -150,5 +346,3 @@ const Bibliografia = () => {
 };
 
 export default Bibliografia;
-
-

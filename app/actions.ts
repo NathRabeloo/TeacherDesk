@@ -643,3 +643,89 @@ export const deletarTutorial = async (tutorialId: string) => {
 
     return { success: true };
 };
+
+// Criar Bibliografia
+export const criarBibliografia = async (formData: FormData) => {
+  const titulo = formData.get("titulo")?.toString();
+  const link = formData.get("link")?.toString();
+
+  if (!titulo || !link) {
+    return { error: "Todos os campos são obrigatórios" };
+  }
+
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("Bibliografia")
+    .insert([{ titulo, link }])
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Erro ao criar bibliografia:", error.message);
+    return { error: error.message };
+  }
+
+  return { success: true, data };
+};
+
+// Listar Bibliografias
+export const listarBibliografias = async () => {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("Bibliografia")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Erro ao listar bibliografias:", error.message);
+    return { error: error.message };
+  }
+
+  return { data };
+};
+
+// Editar Bibliografia
+export const editarBibliografia = async (formData: FormData) => {
+  const id = formData.get("id")?.toString();
+  const titulo = formData.get("titulo")?.toString();
+  const link = formData.get("link")?.toString();
+
+  if (!id || !titulo || !link) {
+    return { error: "Todos os campos são obrigatórios" };
+  }
+
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("Bibliografia")
+    .update({ titulo, link })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Erro ao editar bibliografia:", error.message);
+    return { error: error.message };
+  }
+
+  return { success: true, data };
+};
+
+// Deletar Bibliografia
+export const deletarBibliografia = async (id: string) => {
+  const supabase = createClient();
+
+  const { error } = await supabase
+    .from("Bibliografia")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error("Erro ao deletar bibliografia:", error.message);
+    return { error: error.message };
+  }
+
+  return { success: true };
+};

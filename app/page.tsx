@@ -10,7 +10,7 @@ const MainPage = () => {
   };
 
   const handleAlunoRedirect = () => {
-    router.push('/home/bibliografia/');
+    router.push('/bibliografia_publica/');
   };
 
   return (
