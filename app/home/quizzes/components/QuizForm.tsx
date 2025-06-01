@@ -185,8 +185,46 @@ export default function QuizForm({ quizId, onCancel, onSave }: QuizFormProps) {
         </h2>
       </div>
 
+      {/* Seção de Instruções */}
+      {!isEditing && (
+        <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
+          <h3 className="text-xl font-semibold mb-3 text-blue-700 dark:text-blue-300">
+            📋 Como criar um quiz:
+          </h3>
+          <ol className="list-decimal list-inside text-gray-700 dark:text-gray-300 space-y-2">
+            <li>
+              <b>Defina o título:</b> Digite um título descritivo para seu quiz no campo abaixo.
+            </li>
+            <li>
+              <b>Selecione a disciplina:</b> Escolha a disciplina relacionada ao quiz no menu suspenso.
+            </li>
+            <li>
+              <b>Crie as perguntas:</b> Para cada pergunta:
+              <ul className="list-disc list-inside ml-6 mt-1 space-y-1">
+                <li>Digite o texto da pergunta</li>
+                <li>Adicione pelo menos 2 opções de resposta</li>
+                <li>Marque a opção correta clicando no botão de seleção</li>
+                <li>Use "Adicionar opção" para mais alternativas</li>
+              </ul>
+            </li>
+            <li>
+              <b>Adicione mais perguntas:</b> Clique em "Adicionar pergunta" conforme necessário.
+            </li>
+            <li>
+              <b>Salve o quiz:</b> Clique em "Salvar Quiz" para finalizar.
+            </li>
+          </ol>
+          
+          <div className="mt-4 p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded border border-yellow-300 dark:border-yellow-700">
+            <p className="text-sm text-yellow-800 dark:text-yellow-200">
+              💡 <b>Dica:</b> Certifique-se de que todas as perguntas tenham pelo menos 2 opções e uma resposta correta marcada antes de salvar.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div>
-        <Label htmlFor="title">Título do Quiz</Label>
+        <Label htmlFor="title">Título do Quiz *</Label>
         <Input
           id="title"
           placeholder="Digite o título do quiz"
@@ -197,7 +235,7 @@ export default function QuizForm({ quizId, onCancel, onSave }: QuizFormProps) {
       </div>
 
       <div>
-        <Label htmlFor="disciplina">Disciplina</Label>
+        <Label htmlFor="disciplina">Disciplina *</Label>
         <Select value={disciplinaId ?? ""} onValueChange={(val) => setDisciplinaId(val)}>
           <SelectTrigger className="mt-1">
             <SelectValue placeholder="Selecione uma disciplina" />
@@ -215,11 +253,23 @@ export default function QuizForm({ quizId, onCancel, onSave }: QuizFormProps) {
       {questions.map((q, i) => (
         <Card key={i} className="border">
           <CardHeader>
-            <CardTitle>Pergunta {i + 1}</CardTitle>
+            <CardTitle className="flex items-center justify-between">
+              <span>Pergunta {i + 1}</span>
+              {questions.length > 1 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => handleRemoveQuestion(i)}
+                  title="Remover pergunta"
+                >
+                  <FaTrash size={14} />
+                </Button>
+              )}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor={`question-${i}`}>Texto da pergunta</Label>
+              <Label htmlFor={`question-${i}`}>Texto da pergunta *</Label>
               <Input
                 id={`question-${i}`}
                 placeholder="Digite a pergunta"
@@ -234,7 +284,10 @@ export default function QuizForm({ quizId, onCancel, onSave }: QuizFormProps) {
             </div>
 
             <div className="space-y-2">
-              <Label>Opções</Label>
+              <Label>Opções de resposta *</Label>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Marque a opção correta clicando no botão ao lado:
+              </p>
               <RadioGroup
                 value={String(q.correctAnswer)}
                 onValueChange={(val) => {
@@ -245,7 +298,11 @@ export default function QuizForm({ quizId, onCancel, onSave }: QuizFormProps) {
               >
                 {q.options.map((opt, j) => (
                   <div key={j} className="flex items-center gap-2">
-                    <RadioGroupItem value={String(j)} id={`q${i}-opt${j}`} />
+                    <RadioGroupItem 
+                      value={String(j)} 
+                      id={`q${i}-opt${j}`}
+                      className="text-green-600"
+                    />
                     <Input
                       id={`q${i}-opt${j}`}
                       placeholder={`Opção ${j + 1}`}
@@ -271,28 +328,33 @@ export default function QuizForm({ quizId, onCancel, onSave }: QuizFormProps) {
                 ))}
               </RadioGroup>
 
-              <Button variant="secondary" size="sm" onClick={() => handleAddOption(i)}>
-                <FaPlus className="mr-1" size={12} /> Adicionar opção
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                onClick={() => handleAddOption(i)}
+                className="flex items-center gap-2"
+              >
+                <FaPlus size={12} /> Adicionar opção
               </Button>
-            </div>
-
-            <div>
-              {questions.length > 1 && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => handleRemoveQuestion(i)}
-                >
-                  Remover pergunta
-                </Button>
+              
+              {q.correctAnswer !== undefined && q.options[q.correctAnswer] && (
+                <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 rounded border border-green-200 dark:border-green-800">
+                  <p className="text-sm text-green-700 dark:text-green-300">
+                    ✓ <b>Resposta correta:</b> {q.options[q.correctAnswer] || "Opção não preenchida"}
+                  </p>
+                </div>
               )}
             </div>
           </CardContent>
         </Card>
       ))}
 
-      <div className="flex justify-between items-center mt-4">
-        <Button variant="outline" onClick={handleAddQuestion} className="flex items-center gap-2">
+      <div className="flex justify-between items-center mt-6">
+        <Button 
+          variant="outline" 
+          onClick={handleAddQuestion} 
+          className="flex items-center gap-2"
+        >
           <FaPlus size={14} /> Adicionar pergunta
         </Button>
 
@@ -302,10 +364,27 @@ export default function QuizForm({ quizId, onCancel, onSave }: QuizFormProps) {
               Cancelar
             </Button>
           )}
-          <Button onClick={handleSave} disabled={isPending}>
+          <Button 
+            onClick={handleSave} 
+            disabled={isPending}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
             {isPending ? "Salvando..." : isEditing ? "Atualizar Quiz" : "Salvar Quiz"}
           </Button>
         </div>
+      </div>
+
+      {/* Rodapé com informações importantes */}
+      <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+        <h4 className="font-semibold mb-2 text-gray-700 dark:text-gray-300">
+          📝 Lembrete:
+        </h4>
+        <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+          <li>• Campos marcados com * são obrigatórios</li>
+          <li>• Cada pergunta deve ter pelo menos 2 opções</li>
+          <li>• Sempre marque qual é a resposta correta</li>
+          <li>• Você pode ter quantas perguntas e opções quiser</li>
+        </ul>
       </div>
     </div>
   );
