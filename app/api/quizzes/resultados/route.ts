@@ -66,13 +66,14 @@ export async function GET(req: Request) {
       media_acertos_por_participante: 0
     };
 
-    // 2️⃣ Buscar o ranking dos participantes
+    // 2️⃣ Buscar o ranking dos participantes com tempo total do banco
     const { data: ranking, error: rankingError } = await supabase
       .from("Participante")
       .select(`
         id,
         nome,
         ra,
+        tempo_total_ms,
         created_at,
         Resposta (
           id,
@@ -87,24 +88,18 @@ export async function GET(req: Request) {
       throw rankingError;
     }
 
-    // Processar o ranking para contar acertos e calcular tempo total
+    // Processar o ranking para contar acertos e usar tempo do banco
     const rankingDetalhado = (ranking || []).map(participante => {
       const respostas = participante.Resposta || [];
       const totalRespostas = respostas.length;
       const totalAcertos = respostas.filter(r => r.correta).length;
       const percentualAcerto = totalRespostas > 0 ? (totalAcertos / totalRespostas) * 100 : 0;
       
-      // Calcular tempo total de forma mais segura
-      let tempoTotal = 0;
-      if (respostas.length > 1) {
-        const tempos = respostas
-          .map(r => new Date(r.respondido_em).getTime())
-          .filter(t => !isNaN(t));
-        
-        if (tempos.length > 1) {
-          tempoTotal = Math.max(...tempos) - Math.min(...tempos);
-        }
-      }
+      // Usar o tempo total do banco de dados
+      const tempoTotal = participante.tempo_total_ms || 0;
+      
+      // Calcular tempo médio por pergunta
+      const tempoMedio = totalRespostas > 0 ? tempoTotal / totalRespostas : 0;
 
       return {
         id: participante.id,
@@ -113,7 +108,8 @@ export async function GET(req: Request) {
         totalRespostas,
         totalAcertos,
         percentualAcerto: Math.round(percentualAcerto * 100) / 100,
-        tempoTotal // em ms
+        tempoTotal, // em ms, vem do banco
+        tempoMedio: Math.round(tempoMedio) // tempo médio por pergunta em ms
       };
     }).sort((a, b) => {
       // Ranking por total de acertos (desc) e menor tempo total
@@ -159,7 +155,7 @@ export async function GET(req: Request) {
     // Ajustar os nomes das propriedades para coincidir com o que o frontend espera
     const resumoFormatado = {
       total_participantes: resumoFinal.total_participantes,
-      total_respostas: resumoFinal.total_respostas,
+      total_perguntas: resumoFinal.total_perguntas,
       taxa_acerto_geral: resumoFinal.percentual_acerto_geral || 0
     };
 

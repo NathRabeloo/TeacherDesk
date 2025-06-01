@@ -9,7 +9,7 @@ import { ArrowLeft, RefreshCw } from "lucide-react";
 interface Resultado {
   resumo: {
     total_participantes: number;
-    total_respostas: number;
+    total_perguntas: number;
     taxa_acerto_geral: number;
   };
   ranking: {
@@ -19,7 +19,8 @@ interface Resultado {
     totalRespostas: number;
     totalAcertos: number;
     percentualAcerto: number;
-    tempoTotal: number;
+    tempoTotal: number; // em ms
+    tempoMedio: number; // em ms - tempo médio por pergunta
   }[];
   perguntas: {
     id: string;
@@ -52,7 +53,7 @@ export default function QuizResultados({ quizId, onBack }: QuizResultadosProps) 
     
     try {
       console.log("Buscando resultados para quiz:", quizId);
-      const res = await fetch(`/api//quizzes/resultados?quizId=${quizId}`);
+      const res = await fetch(`/api/quizzes/resultados?quizId=${quizId}`);
       
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
@@ -76,11 +77,31 @@ export default function QuizResultados({ quizId, onBack }: QuizResultadosProps) 
   }, [quizId]);
 
   const formatarTempo = (tempoMs: number) => {
-    if (tempoMs === 0) return "0s";
+    if (tempoMs === 0 || !tempoMs) return "N/A";
+    
     const segundos = Math.floor(tempoMs / 1000);
     const minutos = Math.floor(segundos / 60);
     const segundosRestantes = segundos % 60;
     
+    if (minutos > 0) {
+      return `${minutos}m ${segundosRestantes}s`;
+    }
+    return `${segundosRestantes}s`;
+  };
+
+  const formatarTempoDetalhado = (tempoMs: number) => {
+    if (tempoMs === 0 || !tempoMs) return "0s";
+    
+    const segundos = Math.floor(tempoMs / 1000);
+    const minutos = Math.floor(segundos / 60);
+    const horas = Math.floor(minutos / 60);
+    
+    const minutosRestantes = minutos % 60;
+    const segundosRestantes = segundos % 60;
+    
+    if (horas > 0) {
+      return `${horas}h ${minutosRestantes}m ${segundosRestantes}s`;
+    }
     if (minutos > 0) {
       return `${minutos}m ${segundosRestantes}s`;
     }
@@ -184,11 +205,11 @@ export default function QuizResultados({ quizId, onBack }: QuizResultadosProps) 
               </div>
               <div className="text-sm text-gray-600">Participantes</div>
             </div>
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">
-                {dados.resumo.total_respostas}
+            <div className="text-center p-4 bg-indigo-50 rounded-lg">
+              <div className="text-2xl font-bold text-indigo-600">
+                {dados.resumo.total_perguntas}
               </div>
-              <div className="text-sm text-gray-600">Respostas</div>
+              <div className="text-sm text-gray-600">Perguntas</div>
             </div>
             <div className="text-center p-4 bg-purple-50 rounded-lg">
               <div className="text-2xl font-bold text-purple-600">
@@ -217,6 +238,7 @@ export default function QuizResultados({ quizId, onBack }: QuizResultadosProps) 
                     <TableHead className="text-center">Acertos</TableHead>
                     <TableHead className="text-center">% Acerto</TableHead>
                     <TableHead className="text-center">Tempo Total</TableHead>
+                    <TableHead className="text-center">Tempo/Pergunta</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -248,7 +270,14 @@ export default function QuizResultados({ quizId, onBack }: QuizResultadosProps) 
                         </span>
                       </TableCell>
                       <TableCell className="text-center">
-                        {formatarTempo(participante.tempoTotal)}
+                        <span className="font-mono text-sm">
+                          {formatarTempoDetalhado(participante.tempoTotal)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className="font-mono text-sm text-gray-600">
+                          {formatarTempo(participante.tempoMedio)}
+                        </span>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -274,7 +303,7 @@ export default function QuizResultados({ quizId, onBack }: QuizResultadosProps) 
                     <TableHead className="text-center">Respostas</TableHead>
                     <TableHead className="text-center">Acertos</TableHead>
                     <TableHead className="text-center">% Acerto</TableHead>
-                    <TableHead className="text-center">Compreensão</TableHead>
+                    <TableHead className="text-center">Dificuldade</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

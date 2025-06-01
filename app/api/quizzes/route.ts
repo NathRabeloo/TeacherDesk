@@ -1,18 +1,26 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/utils/supabase/server";
 import { NextResponse } from "next/server";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const disciplinaId = searchParams.get("disciplinaId");
 
   try {
-    const query = supabase.from("Quiz").select("id, titulo, disciplina_id");
+    const supabase = createClient();
+    
+    // Verificar se o usuário está autenticado
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: "Usuário não autenticado." }, { status: 401 });
+    }
 
+    // Construir query base filtrando por usuário
+    const query = supabase
+      .from("Quiz")
+      .select("id, titulo, disciplina_id")
+      .eq("user_id", user.id); // Filtrar apenas quizzes do usuário
+
+    // Adicionar filtro por disciplina se fornecido
     if (disciplinaId) {
       query.eq("disciplina_id", disciplinaId);
     }
@@ -36,10 +44,20 @@ export async function DELETE(req: Request) {
   }
 
   try {
+    const supabase = createClient();
+    
+    // Verificar se o usuário está autenticado
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: "Usuário não autenticado." }, { status: 401 });
+    }
+
+    // Excluir quiz verificando se pertence ao usuário
     const { error } = await supabase
       .from("Quiz")
       .delete()
-      .eq("id", quizId);
+      .eq("id", quizId)
+      .eq("user_id", user.id); // Verificar se é do usuário
 
     if (error) throw error;
 
