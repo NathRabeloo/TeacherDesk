@@ -85,9 +85,9 @@ export default async function RelatoriosPage() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
-      <Card><TodoList /></Card>
+      <Card className="rounded-xl"><TodoList /></Card>
 
-      <Card>
+      <Card className="rounded-xl">
         <ListaMetas
           dados={{
             quizzes: totalQuizzesUsuario ?? 0,
@@ -99,14 +99,14 @@ export default async function RelatoriosPage() {
         />
       </Card>
 
-      <Card>
+      <Card className="rounded-xl">
         <div className="p-4">
           <h2 className="text-xl font-bold mb-4">Seus Planos de Aula Criados</h2>
           <div className="text-5xl font-bold text-center text-green-600">{totalPlanosUsuario}</div>
         </div>
       </Card>
 
-      <Card>
+      <Card className="rounded-xl">
         <div className="p-4">
           <h2 className="text-xl font-bold mb-4">Taxa de Acerto Geral nos Quizzes</h2>
           <div className="text-5xl font-bold text-center text-green-600">
@@ -115,7 +115,7 @@ export default async function RelatoriosPage() {
         </div>
       </Card>
 
-      <Card>
+      <Card className="rounded-xl">
         <div className="p-4">
           <h2 className="text-xl font-bold mb-4">Eventos por Prioridade</h2>
           <div className="w-full max-w-[300px] mx-auto">
@@ -124,14 +124,15 @@ export default async function RelatoriosPage() {
         </div>
       </Card>
 
-   <Card>
-  <div className="p-4">
-    <h2 className="text-xl font-bold mb-4">Desempenho por Disciplina</h2>
-    <div className="w-full max-w-[600px] h-[400px] mx-auto">
-      <GraficoDesempenhoDisciplina dados={dadosDesempenho} />
-    </div>
-  </div>
-</Card>
+      <Card className="rounded-xl">
+        <div className="p-4">
+          <h2 className="text-xl font-bold mb-4">Desempenho por Disciplina</h2>
+          <div className="w-full max-w-[600px] h-[400px] mx-auto">
+            <GraficoDesempenhoDisciplina dados={dadosDesempenho} />
+          </div>
+        </div>
+      </Card>
+
 
 
     </div>
