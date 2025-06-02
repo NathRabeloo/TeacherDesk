@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import ModalAddEvento, { Evento } from "./ModalAddEvento";
 import { createClient } from "@/lib/utils/supabase/client";
-import { FaExclamationTriangle } from "react-icons/fa"; // Ícone de alerta
+import { FaExclamationTriangle } from "react-icons/fa";
 
 const daysOfWeek = ["SEG", "TER", "QUA", "QUI", "SEX", "SAB", "DOM"];
 
@@ -16,14 +16,16 @@ const Calendar = () => {
   const [showEventosProximos, setShowEventosProximos] = useState(false);
 
   const hoje = new Date();
-  const diaAtual = (hoje.getFullYear() === currentYear && hoje.getMonth() === currentMonth) ? hoje.getDate() : null;
+  const diaAtual =
+    hoje.getFullYear() === currentYear && hoje.getMonth() === currentMonth
+      ? hoje.getDate()
+      : null;
 
   const supabase = createClient();
 
   useEffect(() => {
     const fetchEventos = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-
       if (!user) return;
 
       const { data, error } = await supabase
@@ -34,10 +36,10 @@ const Calendar = () => {
         .order("data", { ascending: true });
 
       if (!error) {
-        const eventosConvertidos = (data || []).map(ev => ({
+        const eventosConvertidos = (data || []).map((ev) => ({
           ...ev,
           data: ev.data.split("T")[0],
-          prioridade: ev.prioridade || "baixa"
+          prioridade: ev.prioridade || "baixa",
         }));
         setEventos(eventosConvertidos);
       } else {
@@ -56,13 +58,13 @@ const Calendar = () => {
   const getCorPrioridade = (prioridade: string) => {
     switch (prioridade) {
       case "alta":
-        return "bg-red-200";
+        return "bg-red-200 dark:bg-red-400";
       case "media":
-        return "bg-yellow-200";
+        return "bg-yellow-200 dark:bg-yellow-400";
       case "baixa":
-        return "bg-green-200";
+        return "bg-green-200 dark:bg-green-400";
       default:
-        return "bg-white";
+        return "bg-white dark:bg-zinc-700";
     }
   };
 
@@ -95,8 +97,7 @@ const Calendar = () => {
     setEventos((oldEventos) => oldEventos.filter((ev) => ev.id !== id));
   };
 
-  // Eventos próximos nos próximos 3 dias
-  const eventosProximos = eventos.filter(ev => {
+  const eventosProximos = eventos.filter((ev) => {
     const dataEv = new Date(ev.data);
     const hoje = new Date();
     const daqui3Dias = new Date();
@@ -109,17 +110,25 @@ const Calendar = () => {
   });
 
   return (
-    <div className="flex flex-row h-full mx-auto mt-10 bg-white shadow rounded-xl p-6 w-full relative">
+    <div className="flex flex-row h-full mx-auto mt-10 bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow rounded-xl p-6 w-full relative">
       <div className="flex-1">
-        <h1 className="w-full text-3xl capitalize text-center font-semibold mb-3">Calendário</h1>
+        <h1 className="w-full text-3xl capitalize text-center font-semibold mb-3">
+          Calendário
+        </h1>
+
         <div className="flex justify-between items-center mb-4 relative">
-          <button onClick={() => changeMonth(-1)} className="bg-blue-300 text-gray-800 px-4 py-2 rounded-lg">Mês Anterior</button>
+          <button className="bg-blue-300 text-gray-800 px-4 py-2 rounded-lg" onClick={() => changeMonth(-1)}>
+            Mês Anterior
+          </button>
 
           <h2 className="text-2xl font-bold capitalize">
-            {new Date(currentYear, currentMonth).toLocaleString('pt-BR', { month: 'long' })} - {currentYear}
+            {new Date(currentYear, currentMonth).toLocaleString("pt-BR", {
+              month: "long",
+            })}{" "}
+            - {currentYear}
           </h2>
 
-          <button onClick={() => changeMonth(1)} className="bg-blue-300 text-gray-800 px-4 py-2 rounded-lg">
+          <button className="bg-blue-300 text-gray-800 px-4 py-2 rounded-lg" onClick={() => changeMonth(1)}>
             Próximo Mês
           </button>
 
@@ -134,30 +143,33 @@ const Calendar = () => {
               NOVO REGISTRO
             </button>
 
-
             <button
               onClick={() => setShowEventosProximos(!showEventosProximos)}
-              className={`p-2 rounded-full ${eventosProximos.length > 0 ? 'bg-yellow-500 text-white' : 'bg-gray-300 text-gray-500'} transition`}
+              className={`p-2 rounded-full ${
+                eventosProximos.length > 0
+                  ? "bg-yellow-500 text-white"
+                  : "bg-gray-300 text-gray-500"
+              } transition`}
               title="Eventos próximos"
             >
               <FaExclamationTriangle />
             </button>
 
-            {/* Lista suspensa de eventos próximos */}
             {showEventosProximos && (
-              <div className="absolute right-0 top-12 bg-white shadow-lg rounded-lg p-4 w-64 z-50">
-                <h4 className="font-semibold mb-2">Próximos eventos:</h4>
+              <div className="absolute right-0 top-12 bg-white dark:bg-zinc-700 shadow-lg rounded-lg p-4 w-64 z-50">
+                <h4 className="font-semibold mb-2 dark:text-white">Próximos eventos:</h4>
                 {eventosProximos.length > 0 ? (
                   <ul className="space-y-1">
                     {eventosProximos.map((ev, idx) => (
-                      <li key={idx} className="text-sm border-b pb-1">
-                        <strong>{ev.nome}</strong><br />
-                        <span className="text-gray-500">{formatDateBR(ev.data)}</span>
+                      <li key={idx} className="text-sm border-b pb-1 dark:border-gray-600">
+                        <strong>{ev.nome}</strong>
+                        <br />
+                        <span className="text-gray-500 dark:text-gray-300">{formatDateBR(ev.data)}</span>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-gray-500 text-sm">Nenhum evento próximo.</p>
+                  <p className="text-gray-500 dark:text-gray-300 text-sm">Nenhum evento próximo.</p>
                 )}
               </div>
             )}
@@ -165,7 +177,7 @@ const Calendar = () => {
         </div>
 
         {/* Dias da semana */}
-        <div className="grid grid-cols-7 gap-2 text-center font-semibold text-gray-600">
+        <div className="grid grid-cols-7 gap-2 text-center font-semibold text-gray-600 dark:text-white">
           {daysOfWeek.map((day, idx) => (
             <div key={idx}>{day}</div>
           ))}
@@ -174,14 +186,16 @@ const Calendar = () => {
         {/* Dias do mês */}
         <div className="grid grid-cols-7 gap-2 mt-2 text-center text-sm rounded-xl p-2">
           {Array.from({ length: inicioSemana }).map((_, i) => (
-            <div key={`empty-${i}`} className="h-20 border border-gray-300 rounded-lg" />
+            <div key={`empty-${i}`} className="h-20 border border-gray-300 dark:border-gray-600 rounded-lg" />
           ))}
 
           {Array.from({ length: diasDoMes }).map((_, diaIndex) => {
             const dia = diaIndex + 1;
-            const dataStr = `${currentYear}-${(currentMonth + 1).toString().padStart(2, "0")}-${dia.toString().padStart(2, "0")}`;
+            const dataStr = `${currentYear}-${(currentMonth + 1)
+              .toString()
+              .padStart(2, "0")}-${dia.toString().padStart(2, "0")}`;
 
-            const eventosDoDia = eventos.filter(e => e.data.startsWith(dataStr));
+            const eventosDoDia = eventos.filter((e) => e.data.startsWith(dataStr));
 
             const prioridades = eventosDoDia.map((e) => e.prioridade);
             let prioridadeMaisAlta: "alta" | "media" | "baixa" | "" = "";
@@ -190,25 +204,26 @@ const Calendar = () => {
             else if (prioridades.includes("baixa")) prioridadeMaisAlta = "baixa";
 
             const cor = getCorPrioridade(prioridadeMaisAlta);
-
             const isToday = diaAtual === dia;
             const classeDiaAtual = isToday ? "border-2 border-blue-400" : "";
             const corFinal = `${cor} ${classeDiaAtual}`;
 
             return (
               <div key={dia} className={`h-20 p-1 border border-gray-500 rounded-lg relative ${corFinal}`}>
-                <div className="absolute top-1 left-1 text-xs text-gray-700">{dia}</div>
+                <div className="absolute top-1 left-1 text-xs text-gray-700 dark:text-white">{dia}</div>
                 <div className="mt-5 space-y-1 text-[10px]">
                   {eventosDoDia.map((evento, idx) => {
                     const corIndicador =
-                      evento.prioridade === "alta" ? "bg-red-500"
-                        : evento.prioridade === "media" ? "bg-orange-400"
-                          : "bg-green-500";
+                      evento.prioridade === "alta"
+                        ? "bg-red-500"
+                        : evento.prioridade === "media"
+                        ? "bg-orange-400"
+                        : "bg-green-500";
 
                     return (
                       <div key={idx} className="flex items-center gap-1 truncate">
                         <span className={`w-2 h-2 rounded-full ${corIndicador}`}></span>
-                        <span className="text-gray-700 truncate">{evento.nome}</span>
+                        <span className="text-gray-700 dark:text-white truncate">{evento.nome}</span>
                       </div>
                     );
                   })}
@@ -224,33 +239,34 @@ const Calendar = () => {
       </div>
 
       {/* Barra lateral */}
-      <div className="w-64 pl-4 border-gray-200">
-        <h3 className="text-lg font-semibold mb-2">Eventos</h3>
+      <div className="w-64 pl-4 border-gray-200 dark:border-gray-600">
+        <h3 className="text-lg font-semibold mb-2 dark:text-white">Eventos</h3>
         {eventos.map((evento, idx) => {
           const corBadge =
-            evento.prioridade === "alta" ? "bg-red-500"
-              : evento.prioridade === "media" ? "bg-yellow-400"
-                : "bg-green-500";
+            evento.prioridade === "alta"
+              ? "bg-red-500"
+              : evento.prioridade === "media"
+              ? "bg-yellow-400"
+              : "bg-green-500";
 
           return (
-            <div key={idx} className="bg-white shadow p-2 rounded-lg mb-2 text-sm border">
+            <div key={idx} className="bg-white shadow p-2 rounded-lg mb-2 text-sm border dark:bg-zinc-700 dark:border-gray-600">
               <div className="flex justify-between items-center">
-                <span className="font-semibold">{evento.nome}</span>
-
+                <span className="font-semibold dark:text-white">{evento.nome}</span>
                 <span className={`text-xs text-white px-2 py-0.5 rounded-full ${corBadge}`}>
                   {evento.prioridade.toUpperCase()}
                 </span>
               </div>
 
               <div className="max-h-20 overflow-auto my-1.5">
-                <p className="text-gray-600">{evento.descricao}</p>
+                <p className="text-gray-600 dark:text-gray-300">{evento.descricao}</p>
               </div>
 
               <div className="flex justify-between items-center">
-                <p className="text-xs text-gray-500">{formatDateBR(evento.data)}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-300">{formatDateBR(evento.data)}</p>
                 <button
                   onClick={() => abrirModalEdicao(evento)}
-                  className="text-blue-600 hover:underline text-xs"
+                  className="text-blue-600 hover:underline text-xs dark:text-blue-400"
                 >
                   Editar
                 </button>

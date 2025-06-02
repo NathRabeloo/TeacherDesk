@@ -59,13 +59,13 @@ export function TodoList() {
         />
         <Button
           onClick={addTask}
-          className="bg-blue-800 hover:bg-blue-900 text-white"
+          className="bg-blue-800 hover:bg-blue-900 text-white rounded-lg"
         >
           Adicionar
         </Button>
         <Button
           onClick={clearCompletedTasks}
-          className="bg-gray-800 hover:bg-gray-700 text-white"
+          className="bg-gray-800 hover:bg-gray-700 text-white rounded-lg"
           disabled={completedTasks.length === 0}
         >
           Limpar concluídas
@@ -82,9 +82,8 @@ export function TodoList() {
             />
             <Label
               htmlFor={`task-${task.id}`}
-              className={`text-sm ${
-                task.done ? "line-through text-gray-500" : ""
-              }`}
+              className={`text-sm ${task.done ? "line-through text-gray-500" : ""
+                }`}
             >
               {task.text}
             </Label>
