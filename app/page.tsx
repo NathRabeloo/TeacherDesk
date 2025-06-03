@@ -10,7 +10,7 @@ const MainPage = () => {
   };
 
   const handleAlunoRedirect = () => {
-    router.push('/home/bibliografia/');
+    router.push('/bibliografia_publica/');
   };
 
   return (
@@ -143,7 +143,7 @@ const MainPage = () => {
           fontSize: '0.85rem',
           color: '#777'
         }}>
-          © Nathalia Rabelo, 2024. Todos os direitos reservados.
+          © TeacherDesk, 2025. Todos os direitos reservados.
         </footer>
       </div>
 

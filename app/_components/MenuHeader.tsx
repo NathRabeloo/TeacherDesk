@@ -37,7 +37,7 @@ const items = [
   { name: "Calendário", icon: <FaCalendarAlt size={20} />, route: "/home/calendario", description: "Gerencie compromissos" },
   { name: "Modelos", icon: <FaTable size={20} />, route: "/home/modelos", description: "Acesse modelos personalizados" },
   { name: "Bibliografia", icon: <FaBook size={20} />, route: "/home/bibliografia", description: "Adicione livros e sites" },
-  { name: "Diário de Plano de aulas", icon: <FaClipboardList size={20} />, route: "/home/plano-aulas", description: "Gerencie seu plano de aulas" },
+  { name: "Diário de Plano de aulas", icon: <FaClipboardList size={20} />, route: "/home/plano-aulas", description: "Gerencie seu diario de aulas" },
 ];
 
 const MenuHeader: React.FC = () => {

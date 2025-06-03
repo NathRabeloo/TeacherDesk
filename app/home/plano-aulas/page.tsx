@@ -22,6 +22,7 @@ import {
   listarDisciplinas,
   listarPlanosAula,
   criarPlanoAula,
+  deletarPlanoAula,
 } from '@/app/actions'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -30,6 +31,7 @@ type Plano = {
   id: string
   titulo: string
   disciplina_id: string
+  usuario_id: string
 }
 
 type Disciplina = {
@@ -46,35 +48,33 @@ export default function PlanoAulasPage() {
   const [modalAberto, setModalAberto] = useState(false)
   const [novoTitulo, setNovoTitulo] = useState('')
   const [novaDisciplinaId, setNovaDisciplinaId] = useState<string | null>(null)
-
   const [paginaAtual, setPaginaAtual] = useState(1)
   const itensPorPagina = 9
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     const carregar = async () => {
-      const [disciplinasDB, planosDB] = await Promise.all([
-        listarDisciplinas(),
-        listarPlanosAula(),
-      ])
-      setDisciplinas(disciplinasDB)
-      setPlanos(planosDB)
+      try {
+        const [disciplinasDB, planosDB] = await Promise.all([
+          listarDisciplinas(),
+          listarPlanosAula(),
+        ])
+        setDisciplinas(disciplinasDB)
+        setPlanos(planosDB)
+      } catch (error) {
+        alert('Erro ao carregar dados')
+      }
     }
-
     carregar()
   }, [])
 
   const planosFiltrados = planos.filter((plano) => {
-    const matchSearch = plano.titulo
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase())
-    const matchDisciplina = disciplinaFiltro
-      ? plano.disciplina_id === disciplinaFiltro
-      : true
+    const matchSearch = plano.titulo.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchDisciplina = disciplinaFiltro ? plano.disciplina_id === disciplinaFiltro : true
     return matchSearch && matchDisciplina
   })
 
   const totalPaginas = Math.ceil(planosFiltrados.length / itensPorPagina)
-
   const planosPaginados = planosFiltrados.slice(
     (paginaAtual - 1) * itensPorPagina,
     paginaAtual * itensPorPagina
@@ -85,35 +85,61 @@ export default function PlanoAulasPage() {
     return disc ? disc.nome : 'Desconhecida'
   }
 
-  const adicionarPlano = async () => {
-    if (!novoTitulo || !novaDisciplinaId) {
+  const salvarPlano = async () => {
+    if (!novoTitulo.trim() || !novaDisciplinaId) {
       alert('Preencha o título e a disciplina.')
       return
     }
 
-    const formData = new FormData()
-    formData.append('titulo', novoTitulo)
-    formData.append('disciplina_id', novaDisciplinaId)
-    formData.append('cor', 'bg-orange-300') // cor fixa laranja claro
+    setLoading(true)
+    try {
+      const formData = new FormData()
+      formData.append('titulo', novoTitulo)
+      formData.append('disciplina_id', novaDisciplinaId)
+      formData.append('cor', 'bg-orange-300')
 
-    const { success, data } = await criarPlanoAula(formData)
+      const { success, data } = await criarPlanoAula(formData)
 
-    if (success && data.length > 0) {
-      const novoPlano = data[0]
-      setPlanos([...planos, novoPlano])
-      setModalAberto(false)
-      setNovoTitulo('')
-      setNovaDisciplinaId(null)
-      setPaginaAtual(1)
-      router.push(`/plano-aulas/${novoPlano.id}`)
-    } else {
-      alert('Erro ao criar plano')
+      if (success && data && data.length > 0) {
+        const novoPlano = data[0]
+        setPlanos((prev) => [novoPlano, ...prev])
+        setModalAberto(false)
+        setNovoTitulo('')
+        setNovaDisciplinaId(null)
+        setPaginaAtual(1)
+        router.push(`/home/plano-aulas/${novoPlano.id}`)
+      } else {
+        alert('Erro ao criar plano')
+      }
+    } catch (error) {
+      alert('Erro ao salvar plano')
     }
+    setLoading(false)
+  }
+
+  const excluirPlano = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este plano?')) return
+
+    setLoading(true)
+    try {
+      const { success, error } = await deletarPlanoAula(id)
+      if (success) {
+        setPlanos((prev) => prev.filter((p) => p.id !== id))
+        if (planosPaginados.length === 1 && paginaAtual > 1) {
+          setPaginaAtual(paginaAtual - 1)
+        }
+      } else {
+        alert('Erro ao excluir plano: ' + error)
+      }
+    } catch {
+      alert('Erro ao excluir plano')
+    }
+    setLoading(false)
   }
 
   return (
-    <div className="min-h-screen bg-blue-100 flex justify-center items-start py-10">
-      <div className="bg-white rounded-3xl shadow-md w-full max-w-[90rem] p-6">
+    <div className="min-h-screen bg-white dark:bg-[var(--background)] text-black dark:text-[var(--foreground)] flex justify-center items-start py-10">
+      <div className="bg-white dark:bg-[var(--card)] text-black dark:text-[var(--card-foreground)] rounded-3xl shadow-md w-full max-w-[90rem] p-6">
         <h1 className="text-2xl font-bold mb-6 text-center">Diários de Aula</h1>
 
         <div className="flex flex-col md:flex-row gap-4 mb-6 items-center justify-center">
@@ -125,17 +151,21 @@ export default function PlanoAulasPage() {
               setPaginaAtual(1)
             }}
             className="md:w-1/2"
+            disabled={loading}
           />
           <Select
+            value={disciplinaFiltro || 'todas'}
             onValueChange={(value) => {
-              setDisciplinaFiltro(value)
+              setDisciplinaFiltro(value === 'todas' ? '' : value)
               setPaginaAtual(1)
             }}
+            disabled={loading}
           >
             <SelectTrigger className="w-full md:w-1/4">
               <SelectValue placeholder="Filtrar por disciplina" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="todas">Todas</SelectItem>
               {disciplinas.map((disc) => (
                 <SelectItem key={disc.id} value={disc.id}>
                   {disc.nome}
@@ -143,70 +173,112 @@ export default function PlanoAulasPage() {
               ))}
             </SelectContent>
           </Select>
-          <Button onClick={() => setModalAberto(true)}>Adicionar Diário</Button>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 mb-6">
-          {planosPaginados.map((plano) => (
-            <Card key={plano.id} className="h-full">
-              <CardContent className="p-4 bg-white rounded-lg shadow h-full flex flex-col justify-between">
-                <div className="space-y-2 text-center">
-                  <h2 className="text-md font-semibold line-clamp-2">{plano.titulo}</h2>
-                  <div className="rounded-full text-white text-sm font-semibold px-3 py-1 bg-orange-400">
-                    {getDisciplinaNome(plano.disciplina_id)}
-                  </div>
-                </div>
-                <Link href={`/plano-aulas/${plano.id}`}>
-                  <Button className="w-full mt-4 bg-blue-400 text-white hover:bg-blue-500">
-                    Acessar Diário
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        <div className="flex justify-center items-center gap-4">
           <Button
-            onClick={() => setPaginaAtual((prev) => Math.max(1, prev - 1))}
-            disabled={paginaAtual === 1}
-            variant="outline"
+            onClick={() => {
+              setNovoTitulo('')
+              setNovaDisciplinaId(null)
+              setModalAberto(true)
+            }}
+            disabled={loading}
+            className="bg-[var(--primary)] text-[var(--primary-foreground)] hover:brightness-110"
+          >
+            Adicionar Diário
+          </Button>
+        </div>
+
+        {planosPaginados.length === 0 ? (
+          <div className="text-center text-muted-foreground my-10">Nenhum plano encontrado.</div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 mb-6">
+            {planosPaginados.map((plano) => (
+              <Card key={plano.id} className="h-full">
+                <CardContent className="p-4 bg-white dark:bg-[var(--card)] text-black dark:text-[var(--card-foreground)] rounded-lg shadow h-full flex flex-col justify-between">
+                  <div className="space-y-1 text-center">
+                    <h2 className="text-md font-semibold line-clamp-2">{plano.titulo}</h2>
+                    <div className="rounded-full text-white dark:text-[var(--accent-foreground)] text-sm font-semibold px-3 py-1 bg-orange-400 dark:bg-[var(--accent)]">
+                      {getDisciplinaNome(plano.disciplina_id)}
+                    </div>
+                  </div>
+                  <div className="mt-4 flex justify-between gap-2">
+                    <Link href={`/home/plano-aulas/${plano.id}`} className="flex-1">
+                      <Button className="w-full bg-[var(--primary)] text-[var(--primary-foreground)] hover:brightness-110">
+                        Acessar Diário
+                      </Button>
+                    </Link>
+                    <Button
+                      onClick={() => excluirPlano(plano.id)}
+                      className="flex-1 bg-red-600 text-white hover:bg-red-700"
+                      disabled={loading}
+                    >
+                      Excluir
+                    </Button>
+
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        <div className="flex justify-center gap-2 mb-10">
+          <Button
+            disabled={paginaAtual === 1 || loading}
+            onClick={() => setPaginaAtual((p) => Math.max(1, p - 1))}
+            className="bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] hover:brightness-110 disabled:opacity-50"
           >
             Anterior
           </Button>
-          <span className="font-semibold">
-            Página {paginaAtual} de {totalPaginas}
-          </span>
+
+          {Array.from({ length: totalPaginas }, (_, i) => (
+            <Button
+              key={i}
+              onClick={() => setPaginaAtual(i + 1)}
+              disabled={loading}
+              className={`hover:brightness-110 transition-all duration-200 ${paginaAtual === i + 1
+                ? 'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] shadow-md'
+                : 'bg-[hsl(var(--card))] text-[hsl(var(--muted-foreground))] border border-[hsl(var(--border))]'
+                }`}
+            >
+              {i + 1}
+            </Button>
+          ))}
+
           <Button
-            onClick={() =>
-              setPaginaAtual((prev) => Math.min(totalPaginas, prev + 1))
-            }
-            disabled={paginaAtual === totalPaginas}
-            variant="outline"
+            disabled={paginaAtual === totalPaginas || loading}
+            onClick={() => setPaginaAtual((p) => Math.min(totalPaginas, p + 1))}
+            className="bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] hover:brightness-110 disabled:opacity-50"
           >
-            Próxima
+            Próximo
           </Button>
         </div>
 
-        <Dialog open={modalAberto} onOpenChange={setModalAberto}>
-          <DialogContent>
+
+        <Dialog open={modalAberto} onOpenChange={(open) => { if (!loading) setModalAberto(open) }}>
+          <DialogContent
+            className="bg-[hsl(240,4%,18%)] text-white sm:max-w-[425px] border border-[hsl(240,4%,35%)] shadow-xl rounded-xl"
+          >
+
             <DialogHeader>
-              <DialogTitle>Adicionar Novo Diário</DialogTitle>
+              <DialogTitle className="text-lg font-semibold">Adicionar Diário</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
+
+            <div className="grid gap-4 py-4">
               <Input
                 placeholder="Título"
                 value={novoTitulo}
                 onChange={(e) => setNovoTitulo(e.target.value)}
+                disabled={loading}
+                className="bg-input text-foreground border border-border focus:ring-2 focus:ring-primary"
               />
               <Select
-                value={novaDisciplinaId ?? ''}
-                onValueChange={setNovaDisciplinaId}
+                value={novaDisciplinaId || ''}
+                onValueChange={(value) => setNovaDisciplinaId(value || null)}
+                disabled={loading}
               >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Disciplina" />
+                <SelectTrigger className="bg-input text-foreground border border-border">
+                  <SelectValue placeholder="Selecione uma disciplina" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-popover text-popover-foreground border border-border bg-[hsl(240,4%,18%)] text-white sm:max-w-[425px] border border-[hsl(240,4%,35%)] shadow-xl rounded-xl">
                   {disciplinas.map((disc) => (
                     <SelectItem key={disc.id} value={disc.id}>
                       {disc.nome}
@@ -215,11 +287,20 @@ export default function PlanoAulasPage() {
                 </SelectContent>
               </Select>
             </div>
+
             <DialogFooter>
-              <Button onClick={adicionarPlano}>Salvar</Button>
+              <Button
+                type="submit"
+                onClick={salvarPlano}
+                disabled={loading}
+                className="bg-primary text-primary-foreground hover:brightness-110"
+              >
+                {loading ? 'Salvando...' : 'Salvar'}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
 
       </div>
     </div>
