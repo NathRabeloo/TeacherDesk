@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/utils/supabase/client";
 import { deletarDisciplina } from "@/app/actions";
-import { Loader2, Trash2, Plus, BookOpen, GraduationCap, Users } from "lucide-react";
+import { Loader2, Trash2, Plus, BookOpen, GraduationCap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Dialog,
@@ -36,9 +36,8 @@ export default function DisciplinaLista({ userId }: Props) {
   const [nome, setNome] = useState("");
   const [salvando, setSalvando] = useState(false);
 
-  const supabase = createClient();
-
   useEffect(() => {
+    const supabase = createClient();
     const carregarDisciplinas = async () => {
       const { data, error } = await supabase
         .from("Disciplina")
@@ -71,6 +70,7 @@ export default function DisciplinaLista({ userId }: Props) {
     if (!nome.trim()) return;
 
     setSalvando(true);
+    const supabase = createClient();
     const { data, error } = await supabase
       .from("Disciplina")
       .insert({ nome, user_id: userId })

@@ -424,7 +424,7 @@ export default function EnquetePage() {
                   </div>
                   <div className="flex items-start space-x-3">
                     <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mt-1">3</div>
-                    <p>Clique em "Gerar Enquete" para criar o QR Code</p>
+                    <p>Clique em Gerar Enquete para criar o QR Code</p>
                   </div>
                   <div className="flex items-start space-x-3">
                     <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mt-1">4</div>
