@@ -37,7 +37,7 @@ export default async function Home() {
   const userName = user.user_metadata.name;
 
   return (
-    <div className="max-h-screen">
+    <div className="">
       <Header
         date={currentDate}
         title={`Bem-vindo, ${userName}!`}
@@ -46,7 +46,12 @@ export default async function Home() {
         desktopImageLeft={`/assets/Avatar/${avatarSelecionado}.png`}
         mobileImage={`/assets/Avatar/${avatarSelecionado}.png`}
       />
-      <Grid />
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+        <div className="h-[calc(100vh-240px)]">
+          <Grid />
+        </div>
+      </div>
     </div>
   );
 }

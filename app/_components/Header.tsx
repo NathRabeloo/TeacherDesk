@@ -8,10 +8,10 @@ interface HeaderProps {
   title?: string;
   buttonText?: string;
   buttonLink?: string;
-  desktopImageLeft?: string;  // Imagem à esquerda em desktop
-  desktopImageRight?: string; // Imagem à direita em desktop (opcional)
-  mobileImage?: string;       // Imagem em dispositivos móveis
-  showOnlyLeftImage?: boolean; // Nova prop para mostrar apenas a imagem da esquerda
+  desktopImageLeft?: string;
+  desktopImageRight?: string;
+  mobileImage?: string;
+  showOnlyLeftImage?: boolean;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -34,61 +34,60 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <div className="w-full max-w-8xl h-auto min-h-[150px] md:min-h-[180px] bg-[#5A9BF6] dark:bg-dark-secondary p-3 md:p-6 rounded-xl flex flex-col sm:flex-row items-center text-white shadow-lg relative overflow-hidden">
-      
-      <div className="w-[60%] text-left space-y-1 md:space-y-2 z-10">
-        <p className="text-xs md:text-sm">{date}</p>
-        <h1 className="text-xl md:text-2xl font-bold">
-          {title ? title.replace("{userName}", userName) : `Bem-vinde, ${userName}!`}
-        </h1>
-
-        {buttonText && (
-          <button
-            className="mt-1 md:mt-2 bg-[#4A86E8] dark:bg-dark-accent px-3 md:px-6 py-1 md:py-2 rounded-lg text-white flex items-center gap-1 md:gap-2 hover:bg-[#3B76D4] dark:hover:bg-blue-600 text-xs md:text-sm"
-            onClick={handleButtonClick}
-          >
-            {buttonText}
-          </button>
-        )}
-      </div>
-
-      {/* Imagem para mobile/tablet */}
-      <div className="block sm:block lg:hidden absolute inset-0 pointer-events-none">
-        {mobileImage && (
-          <img
-            src={mobileImage}
-            alt="Imagem mobile"
-            className="absolute right-2 bottom-[0px] max-h-[140px] object-contain"
-          />
-        )}
-      </div>
-
-      {/* Imagens para desktop */}
-      <div className="hidden lg:block absolute inset-0 pointer-events-none">
-        {/* Imagem à esquerda (personalizada ou padrão) */}
-        {desktopImageLeft ? (
-          <img
-            src={desktopImageLeft}
-            alt="Imagem à esquerda"
-            className={`absolute ${showOnlyLeftImage ? 'right-10' : 'left-1/2 -translate-x-1/2'} bottom-[-0px] max-h-[180px] object-contain`}
-          />
-        ) : title !== "Bibliografia" && (
-          <img
-            src="/assets/avatar/fem1.png"
-            alt="Avatar Usuario"
-            className={`absolute ${showOnlyLeftImage ? 'right-10' : 'left-1/2 -translate-x-1/2'} bottom-[-0px] max-h-[180px] object-contain`}
-          />
-        )}
-
-        {/* Imagem à direita (personalizada ou padrão) - somente exibida se showOnlyLeftImage for false */}
-        {!showOnlyLeftImage && desktopImageRight && (
-          <img
-            src={desktopImageRight}
-            alt="Imagem à direita"
-            className="absolute right-10 bottom-[-10px] max-h-[180px] object-contain"
-          />
-        )}
+    <div className="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700 mb-6">
+      <div className="w-full h-auto min-h-[140px] bg-gradient-to-r from-blue-500 to-purple-600 dark:from-gray-700 dark:to-gray-600 p-4 md:p-6 rounded-none flex flex-col sm:flex-row items-center text-white relative overflow-hidden">
         
+        <div className="w-full sm:w-[60%] text-left space-y-1 md:space-y-2 z-10">
+          <p className="text-xs md:text-sm opacity-90">{date}</p>
+          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold">
+            {title ? title.replace("{userName}", userName) : `Bem-vinde, ${userName}!`}
+          </h1>
+
+          {buttonText && (
+            <button
+              className="mt-2 md:mt-3 bg-white/20 backdrop-blur-sm border border-white/30 px-4 md:px-6 py-2 md:py-3 rounded-lg text-white flex items-center gap-2 hover:bg-white/30 transition-all duration-200 text-sm md:text-base font-semibold shadow-lg"
+              onClick={handleButtonClick}
+            >
+              {buttonText}
+            </button>
+          )}
+        </div>
+
+        {/* Imagem para mobile/tablet */}
+        <div className="block sm:block lg:hidden absolute inset-0 pointer-events-none">
+          {mobileImage && (
+            <img
+              src={mobileImage}
+              alt="Imagem mobile"
+              className="absolute right-2 bottom-0 max-h-[120px] object-contain opacity-80"
+            />
+          )}
+        </div>
+
+        {/* Imagens para desktop */}
+        <div className="hidden lg:block absolute inset-0 pointer-events-none">
+          {desktopImageLeft ? (
+            <img
+              src={desktopImageLeft}
+              alt="Imagem à esquerda"
+              className={`absolute ${showOnlyLeftImage ? 'right-10' : 'left-1/2 -translate-x-1/2'} bottom-0 max-h-[140px] object-contain opacity-80`}
+            />
+          ) : title !== "Bibliografia" && (
+            <img
+              src="/assets/avatar/fem1.png"
+              alt="Avatar Usuario"
+              className={`absolute ${showOnlyLeftImage ? 'right-10' : 'left-1/2 -translate-x-1/2'} bottom-0 max-h-[140px] object-contain opacity-80`}
+            />
+          )}
+
+          {!showOnlyLeftImage && desktopImageRight && (
+            <img
+              src={desktopImageRight}
+              alt="Imagem à direita"
+              className="absolute right-10 bottom-0 max-h-[140px] object-contain opacity-80"
+            />
+          )}
+        </div>
       </div>
     </div>
   );
