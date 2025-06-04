@@ -91,7 +91,7 @@ const Calendario = () => {
                 <div className="hidden md:flex items-center gap-2 bg-blue-50 dark:bg-blue-900 px-4 py-2 rounded-xl">
                   <FaCalendarPlus className="text-blue-600 dark:text-blue-400" />
                   <span className="text-blue-600 dark:text-blue-400 font-medium text-sm">
-                    Clique em "Novo Registro" para adicionar eventos
+                    Clique em Novo Registro para adicionar eventos
                   </span>
                 </div>
               </div>

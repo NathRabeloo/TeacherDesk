@@ -11,6 +11,7 @@ const monthNames = [
   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
 ];
 
+const supabase = createClient();
 const Calendar = () => {
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [showModal, setShowModal] = useState(false);
@@ -22,7 +23,7 @@ const Calendar = () => {
   const hoje = new Date();
   const diaAtual = (hoje.getFullYear() === currentYear && hoje.getMonth() === currentMonth) ? hoje.getDate() : null;
 
-  const supabase = createClient();
+  
 
   useEffect(() => {
     const fetchEventos = async () => {

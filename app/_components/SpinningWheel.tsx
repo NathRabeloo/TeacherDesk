@@ -202,7 +202,7 @@ const SpinningWheel: React.FC<SpinningWheelProps> = ({ items, onFinish }) => {
 
         ctx.stroke();
 
-    }, [items]);
+    }, [items, colors]);
 
     return (
         <div className="flex flex-col items-center space-y-6 p-6">
