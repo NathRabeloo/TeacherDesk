@@ -298,7 +298,7 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ evento, onAdd, onClose,
               
               <div className="p-6">
                 <p className="text-gray-700 dark:text-gray-300 text-center mb-6">
-                  Tem certeza que deseja excluir o evento "<strong>{nome}</strong>"?
+                  Tem certeza que deseja excluir o evento<strong>{nome}</strong>?
                 </p>
                 
                 <div className="flex gap-3 justify-center">

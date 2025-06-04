@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { FaPlus, FaTrash, FaArrowLeft, FaQuestionCircle, FaLightbulb, FaCheckCircle } from "react-icons/fa";
 import { useRouter } from "next/navigation";
-
+import { useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -68,34 +68,39 @@ export default function QuizForm({ quizId, onCancel, onSave }: QuizFormProps) {
     fetchDisciplinas();
   }, [router]);
 
-  const loadQuizData = async (id: string) => {
-    setIsLoading(true);
-    try {
-      const quizData = await buscarQuizParaEdicao(id);
-      setTitle(quizData.titulo);
-      setDisciplinaId(quizData.disciplina_id);
-      setQuestions(quizData.questions);
-    } catch (error: any) {
-      console.error("Erro ao carregar quiz:", error);
-      if (error.message?.includes("não autenticado")) {
-        alert("Sessão expirada. Faça login novamente.");
-        router.push("/sign-in");
-      } else if (error.message?.includes("não tem permissão")) {
-        alert("Você não tem permissão para editar este quiz.");
-        if (onCancel) onCancel();
-      } else {
-        alert("Erro ao carregar dados do quiz");
+
+
+  const loadQuizData = useCallback(
+    async (id: string) => {
+      setIsLoading(true);
+      try {
+        const quizData = await buscarQuizParaEdicao(id);
+        setTitle(quizData.titulo);
+        setDisciplinaId(quizData.disciplina_id);
+        setQuestions(quizData.questions);
+      } catch (error: any) {
+        console.error("Erro ao carregar quiz:", error);
+        if (error.message?.includes("não autenticado")) {
+          alert("Sessão expirada. Faça login novamente.");
+          router.push("/sign-in");
+        } else if (error.message?.includes("não tem permissão")) {
+          alert("Você não tem permissão para editar este quiz.");
+          if (onCancel) onCancel();
+        } else {
+          alert("Erro ao carregar dados do quiz");
+        }
+      } finally {
+        setIsLoading(false);
       }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+    [router, onCancel]
+  );
 
   useEffect(() => {
     if (isEditing && quizId) {
       loadQuizData(quizId);
     }
-  }, [isEditing, quizId]);
+  }, [isEditing, quizId, loadQuizData]);
 
   const handleAddQuestion = () => {
     setQuestions([...questions, { text: "", options: ["", ""], correctAnswer: 0 }]);

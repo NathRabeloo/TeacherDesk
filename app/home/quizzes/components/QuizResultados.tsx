@@ -41,7 +41,7 @@ export default function QuizResultados({ quizId, onBack }: QuizResultadosProps) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchResultados = async () => {
+  const fetchResultados = React.useCallback(async () => {
     if (!quizId) {
       setError("ID do quiz não fornecido");
       setLoading(false);
@@ -70,11 +70,11 @@ export default function QuizResultados({ quizId, onBack }: QuizResultadosProps) 
     } finally {
       setLoading(false);
     }
-  };
+  }, [quizId]);
 
   useEffect(() => {
     fetchResultados();
-  }, [quizId]);
+  }, [quizId, fetchResultados]);
 
   const formatarTempo = (tempoMs: number) => {
     if (tempoMs === 0 || !tempoMs) return "N/A";
