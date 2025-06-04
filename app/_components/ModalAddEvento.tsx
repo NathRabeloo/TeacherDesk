@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { createClient } from "@/lib/utils/supabase/client";
+import { FaCalendarPlus, FaEdit, FaTrash, FaTimes, FaSave, FaExclamationTriangle } from "react-icons/fa";
 
 export interface Evento {
   id?: number;
@@ -21,8 +22,8 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ evento, onAdd, onClose,
   const [descricao, setDescricao] = useState(evento?.descricao || "");
   const [data, setData] = useState(evento?.data || "");
   const [prioridade, setPrioridade] = useState<"alta" | "media" | "baixa">(evento?.prioridade || "baixa");
-  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const supabase = createClient();
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
   useEffect(() => {
     if (evento) {
@@ -43,7 +44,7 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ evento, onAdd, onClose,
     if (!evento || !evento.id) return;
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("Evento")
         .update({ deletedAt: new Date().toISOString() })
         .eq("id", evento.id);
@@ -70,6 +71,7 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ evento, onAdd, onClose,
 
     const dataSelecionada = new Date(data);
     const hoje = new Date();
+
     dataSelecionada.setHours(0, 0, 0, 0);
     hoje.setHours(0, 0, 0, 0);
 
@@ -125,101 +127,194 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ evento, onAdd, onClose,
     }
   };
 
+  const getPrioridadeColor = (prioridade: string) => {
+    switch (prioridade) {
+      case "alta":
+        return "bg-red-500 text-white";
+      case "media":
+        return "bg-yellow-500 text-white";
+      case "baixa":
+        return "bg-green-500 text-white";
+      default:
+        return "bg-gray-500 text-white";
+    }
+  };
+
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white dark:bg-zinc-900 dark:text-white p-6 rounded-lg shadow-lg w-96">
-        <h2 className="text-xl font-semibold mb-4">
-          {evento ? "Editar Evento" : "Adicionar Evento"}
-        </h2>
-
-        <div className="mb-4">
-          <label htmlFor="nome" className="block text-sm font-semibold">Nome</label>
-          <input
-            id="nome"
-            type="text"
-            className="w-full p-2 border rounded-lg mt-1 dark:bg-zinc-800 dark:border-zinc-600 dark:text-white"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-          />
+    <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-100 dark:from-gray-700 dark:to-gray-600 px-6 py-4 border-b border-gray-200 dark:border-gray-600">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className={`p-2 rounded-xl ${evento ? "bg-orange-500" : "bg-green-500"}`}>
+                {evento ? (
+                  <FaEdit className="text-white text-lg" />
+                ) : (
+                  <FaCalendarPlus className="text-white text-lg" />
+                )}
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                  {evento ? "Editar Evento" : "Novo Evento"}
+                </h2>
+                <p className="text-gray-600 dark:text-gray-300 text-sm">
+                  {evento ? "Modifique as informações do evento" : "Adicione um novo evento ao calendário"}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+            >
+              <FaTimes className="text-gray-500 dark:text-gray-400" />
+            </button>
+          </div>
         </div>
 
-        <div className="mb-4">
-          <label htmlFor="descricao" className="block text-sm font-semibold">Descrição</label>
-          <textarea
-            id="descricao"
-            className="w-full p-2 border rounded-lg mt-1 dark:bg-zinc-800 dark:border-zinc-600 dark:text-white"
-            value={descricao}
-            onChange={(e) => setDescricao(e.target.value)}
-          />
+        {/* Form Content */}
+        <div className="p-6 space-y-6">
+          {/* Nome do Evento */}
+          <div>
+            <label htmlFor="nome" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Nome do Evento
+            </label>
+            <input
+              id="nome"
+              type="text"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all"
+              placeholder="Digite o nome do evento"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+            />
+          </div>
+
+          {/* Descrição */}
+          <div>
+            <label htmlFor="descricao" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Descrição
+            </label>
+            <textarea
+              id="descricao"
+              rows={3}
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none transition-all"
+              placeholder="Descreva os detalhes do evento"
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+            />
+          </div>
+
+          {/* Data e Prioridade */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="data" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                Data
+              </label>
+              <input
+                id="data"
+                type="date"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
+                value={data}
+                onChange={(e) => setData(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="prioridade" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                Prioridade
+              </label>
+              <select
+                id="prioridade"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
+                value={prioridade}
+                onChange={(e) => setPrioridade(e.target.value as "alta" | "media" | "baixa")}
+              >
+                <option value="baixa">Baixa</option>
+                <option value="media">Média</option>
+                <option value="alta">Alta</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Preview da Prioridade */}
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Preview:</span>
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getPrioridadeColor(prioridade)}`}>
+              {prioridade.toUpperCase()}
+            </span>
+          </div>
         </div>
 
-        <div className="mb-4">
-          <label htmlFor="data" className="block text-sm font-semibold">Data</label>
-          <input
-            id="data"
-            type="date"
-            className="w-full p-2 border rounded-lg mt-1 dark:bg-zinc-800 dark:border-zinc-600 dark:text-white"
-            value={data}
-            onChange={(e) => setData(e.target.value)}
-          />
-        </div>
-
-        <div className="mb-4">
-          <label htmlFor="prioridade" className="block text-sm font-semibold">Prioridade</label>
-          <select
-            id="prioridade"
-            className="w-full p-2 border rounded-lg mt-1 dark:bg-zinc-800 dark:border-zinc-600 dark:text-white"
-            value={prioridade}
-            onChange={(e) => setPrioridade(e.target.value as "alta" | "media" | "baixa")}
-          >
-            <option value="alta">Alta</option>
-            <option value="media">Média</option>
-            <option value="baixa">Baixa</option>
-          </select>
-        </div>
-
-        <div className="flex justify-between">
+        {/* Actions */}
+        <div className="bg-gray-50 dark:bg-gray-700 px-6 py-4 flex flex-col sm:flex-row gap-3 justify-between">
           <button
             onClick={onClose}
-            className="bg-gray-300 dark:bg-zinc-700 dark:text-white text-gray-800 px-4 py-2 rounded-lg"
+            className="px-6 py-3 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-semibold hover:bg-gray-300 dark:hover:bg-gray-500 transition-all duration-200 flex items-center justify-center gap-2"
           >
+            <FaTimes className="text-sm" />
             Cancelar
           </button>
 
-          {evento && (
-            <button
-              onClick={() => setShowConfirmDelete(true)}
-              className="bg-red-500 text-white px-4 py-2 rounded-lg"
-            >
-              Excluir
-            </button>
-          )}
+          <div className="flex gap-3">
+            {evento && (
+              <button
+                onClick={() => setShowConfirmDelete(true)}
+                className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-semibold transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
+              >
+                <FaTrash className="text-sm" />
+                Excluir
+              </button>
+            )}
 
-          <button
-            onClick={GerenciarEvento}
-            className="bg-green-500 text-white px-4 py-2 rounded-lg"
-          >
-            {evento ? "Salvar" : "Adicionar"}
-          </button>
+            <button
+              onClick={GerenciarEvento}
+              className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl font-semibold transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
+            >
+              <FaSave className="text-sm" />
+              {evento ? "Salvar" : "Adicionar"}
+            </button>
+          </div>
         </div>
 
+        {/* Confirmation Delete Modal */}
         {showConfirmDelete && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-zinc-900 dark:text-white p-6 rounded-lg shadow-lg w-80 text-center">
-              <h3 className="text-lg font-semibold mb-4">Tem certeza que deseja excluir?</h3>
-              <div className="flex justify-center gap-4">
-                <button
-                  onClick={() => setShowConfirmDelete(false)}
-                  className="bg-gray-300 dark:bg-zinc-700 dark:text-white px-4 py-2 rounded-lg"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={DeletarEvento}
-                  className="bg-red-600 text-white px-4 py-2 rounded-lg"
-                >
-                  Confirmar
-                </button>
+          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-60 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+              <div className="bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900 dark:to-red-800 px-6 py-4 border-b border-red-200 dark:border-red-700">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-red-500 rounded-xl">
+                    <FaExclamationTriangle className="text-white text-lg" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-red-800 dark:text-red-200">
+                      Confirmar Exclusão
+                    </h3>
+                    <p className="text-red-600 dark:text-red-300 text-sm">
+                      Esta ação não pode ser desfeita
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-6">
+                <p className="text-gray-700 dark:text-gray-300 text-center mb-6">
+                  Tem certeza que deseja excluir o evento "<strong>{nome}</strong>"?
+                </p>
+                
+                <div className="flex gap-3 justify-center">
+                  <button
+                    onClick={() => setShowConfirmDelete(false)}
+                    className="px-6 py-3 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-semibold hover:bg-gray-300 dark:hover:bg-gray-500 transition-all duration-200"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={DeletarEvento}
+                    className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
+                  >
+                    Confirmar Exclusão
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -230,4 +325,3 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ evento, onAdd, onClose,
 };
 
 export default ModalAddEvento;
-
