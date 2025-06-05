@@ -6,22 +6,13 @@ import Footer from "../_components/Footer";
 import MenuHeader from "../_components/MenuHeader";
 
 export default function HomeLayout({ children }: { children: React.ReactNode }) {
-  const [searchQuery, setSearchQuery] = useState("");
 
   return (
-    <div className="flex flex-col min-h-screen h-screen max-h-screen font-sans bg-gray-100 dark:bg-dark-primary">
+    <><div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
+      {/* Header */}
       <MenuHeader />
-      <div className="flex flex-1">
-        <div className="flex flex-col flex-1">
-          <div className="flex flex-col h-full p-2 md:p-4">
-            <div className="w-full mb-2">
-            <div className="flex-1 mb-2">{children}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-      <Footer />
-    </div>
-    
+      {/* Content Container */}
+      {children}
+    </div><Footer /></>
   );
 }

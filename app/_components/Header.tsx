@@ -8,89 +8,77 @@ interface HeaderProps {
   title?: string;
   buttonText?: string;
   buttonLink?: string;
-  desktopImageLeft?: string;  // Imagem à esquerda em desktop
-  desktopImageRight?: string; // Imagem à direita em desktop (opcional)
-  mobileImage?: string;       // Imagem em dispositivos móveis
-  showOnlyLeftImage?: boolean; // Nova prop para mostrar apenas a imagem da esquerda
+  desktopImageLeft?: string;
+  desktopImageRight?: string;
+  mobileImage?: string;
+  showOnlyLeftImage?: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ 
-  date, 
-  title, 
-  buttonText, 
-  buttonLink, 
+const Header: React.FC<HeaderProps> = ({
+  date,
+  title,
+  buttonText,
+  buttonLink,
   desktopImageLeft,
   desktopImageRight,
   mobileImage,
-  showOnlyLeftImage = false
+  showOnlyLeftImage = false,
 }) => {
   const router = useRouter();
-  const [userName, setUserName] = useState<string>("Usuário");
+  const [userName, setUserName] = useState("Usuário");
 
   const handleButtonClick = () => {
-    if (buttonLink) {
-      router.push(buttonLink);
-    }
+    if (buttonLink) router.push(buttonLink);
   };
 
   return (
-    <div className="w-full max-w-8xl h-auto min-h-[150px] md:min-h-[180px] bg-[#5A9BF6] dark:bg-dark-secondary p-3 md:p-6 rounded-xl flex flex-col sm:flex-row items-center text-white shadow-lg relative overflow-hidden">
-      
-      <div className="w-[60%] text-left space-y-1 md:space-y-2 z-10">
-        <p className="text-xs md:text-sm">{date}</p>
-        <h1 className="text-xl md:text-2xl font-bold">
+    <header className="relative bg-gradient-to-r from-blue-500 to-blue-300 dark:from-gray-700 dark:to-gray-600 text-white p-6 rounded-2xl shadow-lg overflow-hidden flex flex-col sm:flex-row items-center gap-4 max-w-7xl  mx-auto mt-6">
+
+      {/* Texto principal */}
+      <div className="flex-1 z-10">
+        <p className="text-sm opacity-90">{date}</p>
+        <h1 className="text-2xl md:text-3xl font-bold">
           {title ? title.replace("{userName}", userName) : `Bem-vinde, ${userName}!`}
         </h1>
 
         {buttonText && (
           <button
-            className="mt-1 md:mt-2 bg-[#4A86E8] dark:bg-dark-accent px-3 md:px-6 py-1 md:py-2 rounded-lg text-white flex items-center gap-1 md:gap-2 hover:bg-[#3B76D4] dark:hover:bg-blue-600 text-xs md:text-sm"
             onClick={handleButtonClick}
+            className="mt-3 px-6 py-2 bg-white/20 border border-white/30 rounded-full backdrop-blur-sm hover:bg-white/30 transition text-sm md:text-base font-semibold shadow-md"
           >
             {buttonText}
           </button>
         )}
       </div>
 
-      {/* Imagem para mobile/tablet */}
-      <div className="block sm:block lg:hidden absolute inset-0 pointer-events-none">
-        {mobileImage && (
-          <img
-            src={mobileImage}
-            alt="Imagem mobile"
-            className="absolute right-2 bottom-[0px] max-h-[140px] object-contain"
-          />
-        )}
-      </div>
+      {/* Imagem mobile */}
+      {mobileImage && (
+        <img
+          src={mobileImage}
+          alt="Imagem mobile"
+          className="block sm:hidden max-h-[120px] object-contain absolute right-4 bottom-2 opacity-80 pointer-events-none"
+        />
+      )}
 
-      {/* Imagens para desktop */}
-      <div className="hidden lg:block absolute inset-0 pointer-events-none">
-        {/* Imagem à esquerda (personalizada ou padrão) */}
-        {desktopImageLeft ? (
+      {/* Imagens desktop */}
+      <div className="hidden sm:block absolute inset-0 z-0 pointer-events-none">
+        {(desktopImageLeft || title !== "Bibliografia") && (
           <img
-            src={desktopImageLeft}
+            src={desktopImageLeft || "/assets/avatar/fem1.png"}
             alt="Imagem à esquerda"
-            className={`absolute ${showOnlyLeftImage ? 'right-10' : 'left-1/2 -translate-x-1/2'} bottom-[-0px] max-h-[180px] object-contain`}
-          />
-        ) : title !== "Bibliografia" && (
-          <img
-            src="/assets/avatar/fem1.png"
-            alt="Avatar Usuario"
-            className={`absolute ${showOnlyLeftImage ? 'right-10' : 'left-1/2 -translate-x-1/2'} bottom-[-0px] max-h-[180px] object-contain`}
+            className={`absolute ${showOnlyLeftImage ? "right-10" : "left-1/2 -translate-x-1/2"} bottom-0 max-h-[140px] object-contain opacity-100`}
           />
         )}
 
-        {/* Imagem à direita (personalizada ou padrão) - somente exibida se showOnlyLeftImage for false */}
         {!showOnlyLeftImage && desktopImageRight && (
           <img
             src={desktopImageRight}
             alt="Imagem à direita"
-            className="absolute right-10 bottom-[-10px] max-h-[180px] object-contain"
+            className="absolute right-10 bottom-0 max-h-[140px] object-contain opacity-100"
           />
         )}
-        
       </div>
-    </div>
+    </header>
   );
 };
 

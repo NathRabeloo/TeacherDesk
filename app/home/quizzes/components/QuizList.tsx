@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { FaEdit, FaTrash, FaQrcode, FaChartBar } from "react-icons/fa";
+import { FaEdit, FaTrash, FaQrcode, FaChartBar, FaSearch, FaFilter, FaPlus, FaUsers, FaQuestionCircle } from "react-icons/fa";
 import QRCode from "react-qr-code";
 import { Copy } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
@@ -38,7 +38,7 @@ interface Disciplina {
 interface QuizListProps {
   onCreateQuiz: () => void;
   onEditQuiz: (quizId: string) => void;
-  onViewResults?: (quizId: string) => void; // Adicionando prop para visualizar resultados
+  onViewResults?: (quizId: string) => void;
 }
 
 const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewResults }) => {
@@ -106,7 +106,7 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
     : "";
 
   const handleCopy = () => {
-    if (!qrCodeUrl) return;
+    if (!qrCodeUrl) return;  
     navigator.clipboard.writeText(qrCodeUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -121,142 +121,256 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-6">
-      <div>
-        <h2 className="text-xl font-bold">Meus Quizzes</h2>
+    <div className="space-y-8">
+      {/* Estatísticas Gerais */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-2xl shadow-lg text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-blue-100 text-sm font-medium">Total de Questionários</p>
+              <p className="text-3xl font-bold mt-1">{quizzes.length}</p>
+            </div>
+            <div className="bg-blue-400 bg-opacity-30 p-3 rounded-xl">
+              <FaQuestionCircle className="text-2xl" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-green-500 to-green-600 p-6 rounded-2xl shadow-lg text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-green-100 text-sm font-medium">Disciplinas Ativas</p>
+              <p className="text-3xl font-bold mt-1">{disciplinas.length}</p>
+            </div>
+            <div className="bg-green-400 bg-opacity-30 p-3 rounded-xl">
+              <FaUsers className="text-2xl" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-6 rounded-2xl shadow-lg text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-purple-100 text-sm font-medium">Questionários Filtrados</p>
+              <p className="text-3xl font-bold mt-1">{filteredQuizzes.length}</p>
+            </div>
+            <div className="bg-purple-400 bg-opacity-30 p-3 rounded-xl">
+              <FaFilter className="text-2xl" />
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="flex gap-4">
-        <Input
-          placeholder="Buscar quiz..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="max-w-xs"
-        />
+      {/* Área de Filtros e Pesquisa */}
+      <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-600">
+        <div className="flex flex-col lg:flex-row gap-4 items-center">
+          <div className="flex items-center gap-3 flex-1">
+            <div className="bg-blue-500 p-2 rounded-lg">
+              <FaSearch className="text-white text-lg" />
+            </div>
+            <Input
+              placeholder="Buscar questionário por título..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 rounded-xl shadow-sm"
+            />
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <div className="bg-purple-500 p-2 rounded-lg">
+              <FaFilter className="text-white text-lg" />
+            </div>
+            <Select
+              onValueChange={(value) => setSelectedDisciplina(value === "all" ? null : value)}
+              value={selectedDisciplina ?? "all"}
+            >
+              <SelectTrigger className="w-[240px] bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 rounded-xl shadow-sm">
+                <SelectValue placeholder="Filtrar por Disciplina" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as Disciplinas</SelectItem>
+                {disciplinas.map((disciplina) => (
+                  <SelectItem key={disciplina.id} value={disciplina.id}>
+                    {disciplina.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        <Select
-          onValueChange={(value) => setSelectedDisciplina(value === "all" ? null : value)}
-          value={selectedDisciplina ?? "all"}
-        >
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Filtrar por Disciplina" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas as Disciplinas</SelectItem>
-            {disciplinas.map((disciplina) => (
-              <SelectItem key={disciplina.id} value={disciplina.id}>
-                {disciplina.nome}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Button onClick={onCreateQuiz}>Criar novo quiz</Button>
-      </div>
-
-      {isLoading ? (
-        <p className="text-center text-muted-foreground">Carregando...</p>
-      ) : filteredQuizzes.length === 0 ? (
-        <div className="text-center py-8 bg-white rounded shadow">
-          <p className="text-gray-500">Nenhum quiz encontrado.</p>
-          <Button className="mt-4" onClick={onCreateQuiz}>
-            Criar Primeiro Quiz
+          <Button 
+            onClick={onCreateQuiz}
+            className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-3"
+          >
+            <FaPlus className="text-lg" />
+            Novo Questionário
           </Button>
         </div>
-      ) : (
-        <div className="rounded-md border bg-white shadow-sm">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Título</TableHead>
-                <TableHead>Disciplina</TableHead>
-                <TableHead className="text-center">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredQuizzes.map((quiz) => (
-                <TableRow key={quiz.id}>
-                  <TableCell>{quiz.titulo}</TableCell>
-                  <TableCell>
-                    {disciplinas.find((d) => d.id === quiz.disciplina_id)?.nome ?? "N/A"}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex justify-center gap-2">
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        onClick={() => onEditQuiz(quiz.id)}
-                        title="Editar Quiz"
-                      >
-                        <FaEdit />
-                      </Button>
-                      
-                      {onViewResults && (
+      </div>
+
+      {/* Área de Conteúdo Principal */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        {isLoading ? (
+          <div className="text-center py-16">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+            <p className="text-xl text-gray-600 dark:text-gray-300">Carregando questionários...</p>
+          </div>
+        ) : filteredQuizzes.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="bg-gray-100 dark:bg-gray-700 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
+              <FaQuestionCircle className="text-4xl text-gray-400" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Nenhum questionário encontrado
+            </h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-6 text-lg">
+              {searchQuery || selectedDisciplina 
+                ? "Tente ajustar os filtros de pesquisa" 
+                : "Comece criando seu primeiro questionário"}
+            </p>
+            <Button 
+              onClick={onCreateQuiz}
+              className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-3"
+            >
+              <FaPlus className="text-xl" />
+              Criar Primeiro Questionário
+            </Button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 border-b border-gray-200 dark:border-gray-600">
+                  <TableHead className="text-left py-4 px-6 font-bold text-gray-900 dark:text-white text-lg">
+                    Título do Questionário
+                  </TableHead>
+                  <TableHead className="text-left py-4 px-6 font-bold text-gray-900 dark:text-white text-lg">
+                    Disciplina
+                  </TableHead>
+                  <TableHead className="text-center py-4 px-6 font-bold text-gray-900 dark:text-white text-lg">
+                    Ações
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredQuizzes.map((quiz, index) => (
+                  <TableRow 
+                    key={quiz.id} 
+                    className={`border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150 ${
+                      index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-750'
+                    }`}
+                  >
+                    <TableCell className="py-4 px-6">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded-lg">
+                          <FaQuestionCircle className="text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-900 dark:text-white text-lg">
+                            {quiz.titulo}
+                          </p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-4 px-6">
+                      <span className="bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-3 py-1 rounded-lg font-medium">
+                        {disciplinas.find((d) => d.id === quiz.disciplina_id)?.nome ?? "N/A"}
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-4 px-6">
+                      <div className="flex justify-center gap-2">
                         <Button
                           size="icon"
                           variant="outline"
-                          onClick={() => onViewResults(quiz.id)}
-                          title="Ver Resultados"
+                          onClick={() => onEditQuiz(quiz.id)}
+                          title="Editar Questionário"
+                          className="h-10 w-10 rounded-xl border-2 border-blue-200 hover:border-blue-300 hover:bg-blue-50 dark:border-blue-700 dark:hover:border-blue-600 dark:hover:bg-blue-900 transition-all duration-200"
                         >
-                          <FaChartBar />
+                          <FaEdit className="text-blue-600 dark:text-blue-400" />
                         </Button>
-                      )}
-                      
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedQuiz(quiz);
-                          setIsQRCodeOpen(true);
-                        }}
-                        title="Gerar QR Code"
-                      >
-                        <FaQrcode />
-                      </Button>
-                      
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        onClick={() => handleDelete(quiz.id)}
-                        title="Excluir Quiz"
-                      >
-                        <FaTrash />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+                        
+                        {onViewResults && (
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            onClick={() => onViewResults(quiz.id)}
+                            title="Ver Resultados"
+                            className="h-10 w-10 rounded-xl border-2 border-green-200 hover:border-green-300 hover:bg-green-50 dark:border-green-700 dark:hover:border-green-600 dark:hover:bg-green-900 transition-all duration-200"
+                          >
+                            <FaChartBar className="text-green-600 dark:text-green-400" />
+                          </Button>
+                        )}
+                        
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedQuiz(quiz);
+                            setIsQRCodeOpen(true);
+                          }}
+                          title="Gerar QR Code"
+                          className="h-10 w-10 rounded-xl border-2 border-purple-200 hover:border-purple-300 hover:bg-purple-50 dark:border-purple-700 dark:hover:border-purple-600 dark:hover:bg-purple-900 transition-all duration-200"
+                        >
+                          <FaQrcode className="text-purple-600 dark:text-purple-400" />
+                        </Button>
+                        
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          onClick={() => handleDelete(quiz.id)}
+                          title="Excluir Questionário"
+                          className="h-10 w-10 rounded-xl border-2 border-red-200 hover:border-red-300 hover:bg-red-50 dark:border-red-700 dark:hover:border-red-600 dark:hover:bg-red-900 transition-all duration-200"
+                        >
+                          <FaTrash className="text-red-600 dark:text-red-400" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
 
       {/* Dialog do QR Code */}
       <Dialog open={isQRCodeOpen} onOpenChange={handleQRCodeDialogChange}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>QR Code do Quiz</DialogTitle>
+            <DialogTitle className="text-2xl font-bold text-center text-gray-900 dark:text-white">
+              QR Code do Questionário
+            </DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col items-center space-y-4">
+          <div className="flex flex-col items-center space-y-6 py-4">
             {selectedQuiz && (
               <>
-                <QRCode value={qrCodeUrl} size={180} />
-                <p className="text-sm text-center break-all">
-                  {qrCodeUrl}
-                </p>
+                <div className="bg-white p-4 rounded-2xl shadow-lg">
+                  <QRCode value={qrCodeUrl} size={200} />
+                </div>
+                <div className="text-center space-y-2">
+                  <p className="font-semibold text-gray-900 dark:text-white">
+                    {selectedQuiz.titulo}
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 break-all bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+                    {qrCodeUrl}
+                  </p>
+                </div>
                 <Button
                   variant="outline"
                   onClick={handleCopy}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-3 px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
                 >
                   <Copy size={16} />
-                  {copied ? "Copiado!" : "Copiar link"}
+                  {copied ? "Link Copiado!" : "Copiar Link"}
                 </Button>
               </>
             )}
           </div>
           <DialogFooter>
-            <Button onClick={() => setIsQRCodeOpen(false)}>
+            <Button 
+              onClick={() => setIsQRCodeOpen(false)}
+              className="w-full bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white rounded-xl py-3 font-semibold"
+            >
               Fechar
             </Button>
           </DialogFooter>

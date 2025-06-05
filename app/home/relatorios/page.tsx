@@ -1,10 +1,11 @@
 import { createClient } from "@/lib/utils/supabase/server";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { TodoList } from "./_components/ToDoList";
 import { ListaMetas } from "./_components/ListaMetas";
 import GraficoEventos from "./_components/GraficoEventos";
 import GraficoDesempenhoDisciplina from "./_components/GraficoDesempenhoDisciplina";
+import { FaChartBar, FaClipboardList, FaBullseye, FaGraduationCap, FaPoll, FaBookOpen, FaTrophy, FaUsers, FaChartPie } from "react-icons/fa";
 
 export default async function RelatoriosPage() {
   const supabase = createClient();
@@ -45,7 +46,7 @@ export default async function RelatoriosPage() {
   const { count: totalAcertosQuiz } = await supabase
     .from("Resposta")
     .select("*", { count: "exact", head: true })
-    .eq("correta", true); // corrigido: coluna se chama "correta"
+    .eq("correta", true);
 
   // Eventos (para agrupamento por prioridade)
   const { data: eventos, error: eventosErro } = await supabase
@@ -84,57 +85,95 @@ export default async function RelatoriosPage() {
       : 0;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
-      <Card className="rounded-xl"><TodoList /></Card>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          {/* Cabeçalho do Conteúdo */}
+          <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 px-8 py-6 border-b border-gray-200 dark:border-gray-600">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="p-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-600">
+                  <FaChartBar className="text-white text-xl" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    Visão Geral
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-300 text-lg mt-1">
+                    Controle suas atividades e acompanhe o progresso
+                  </p>
+                </div>
+              </div>
+            </div>
 
-      <Card className="rounded-xl">
-        <ListaMetas
-          dados={{
-            quizzes: totalQuizzesUsuario ?? 0,
-            planos: totalPlanosUsuario ?? 0,
-            enquetes: totalEnquetesUsuario ?? 0,
-            respostas_enquete: totalVotos ?? 0,
-            respostas_quiz: totalRespostasQuiz ?? 0,
-          }}
-        />
-      </Card>
+          {/* Grid de Relatórios */}
+          <div className="p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Lista de Tarefas */}
+                    <TodoList />
 
-      <Card className="rounded-xl">
-        <div className="p-4">
-          <h2 className="text-xl font-bold mb-4">Seus Planos de Aula Criados</h2>
-          <div className="text-5xl font-bold text-center text-green-600">{totalPlanosUsuario}</div>
-        </div>
-      </Card>
+              {/* Metas */}
+      
+                    <ListaMetas
+                      dados={{
+                        quizzes: totalQuizzesUsuario ?? 0,
+                        planos: totalPlanosUsuario ?? 0,
+                        enquetes: totalEnquetesUsuario ?? 0,
+                        respostas_enquete: totalVotos ?? 0,
+                        respostas_quiz: totalRespostasQuiz ?? 0,
+                      }}
+                    />
+    
+              {/* Planos de Aula */}
+              <Card className="cursor-pointer hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border-2 border-gray-200 dark:border-gray-600 hover:border-purple-300 dark:hover:border-purple-500 bg-white dark:bg-gray-800 rounded-2xl">
+                <CardContent className="p-0">
+                  <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-4 rounded-t-2xl">
+                    <div className="flex items-center space-x-3">
+                      <FaGraduationCap className="text-white text-2xl" />
+                      <h3 className="text-xl font-bold text-white">Planos de Aula</h3>
+                    </div>
+                  </div>
+                  <div className="p-6 text-center">
+                    <div className="text-6xl font-bold text-purple-600 dark:text-purple-400 mb-4">
+                      {totalPlanosUsuario}
+                    </div>
+                    <p className="text-gray-600 dark:text-gray-300 text-lg">
+                      Planos criados
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
 
-      <Card className="rounded-xl">
-        <div className="p-4">
-          <h2 className="text-xl font-bold mb-4">Taxa de Acerto Geral nos Quizzes</h2>
-          <div className="text-5xl font-bold text-center text-green-600">
-            {taxaAcertosGeral.toFixed(2)}%
+              {/* Taxa de Acerto */}
+              <Card className="cursor-pointer hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border-2 border-gray-200 dark:border-gray-600 hover:border-yellow-300 dark:hover:border-yellow-500 bg-white dark:bg-gray-800 rounded-2xl">
+                <CardContent className="p-0">
+                  <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 p-4 rounded-t-2xl">
+                    <div className="flex items-center space-x-3">
+                      <FaTrophy className="text-white text-2xl" />
+                      <h3 className="text-xl font-bold text-white">Taxa de Acerto</h3>
+                    </div>
+                  </div>
+                  <div className="p-6 text-center">
+                    <div className="text-6xl font-bold text-yellow-600 dark:text-yellow-400 mb-4">
+                      {taxaAcertosGeral.toFixed(1)}%
+                    </div>
+                    <p className="text-gray-600 dark:text-gray-300 text-lg">
+                      Nos quizzes realizados
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Eventos por Prioridade */}
+                <GraficoEventos dados={dadosEventos} />
+              
+              {/* Desempenho por Disciplina */}
+            
+                      <GraficoDesempenhoDisciplina dados={dadosDesempenho} />
+                  
+            </div>
           </div>
         </div>
-      </Card>
-
-      <Card className="rounded-xl">
-        <div className="p-4">
-          <h2 className="text-xl font-bold mb-4">Eventos por Prioridade</h2>
-          <div className="w-full max-w-[300px] mx-auto">
-            <GraficoEventos dados={dadosEventos} />
-          </div>
-        </div>
-      </Card>
-
-      <Card className="rounded-xl">
-        <div className="p-4">
-          <h2 className="text-xl font-bold mb-4">Desempenho por Disciplina</h2>
-          <div className="w-full max-w-[600px] h-[400px] mx-auto">
-            <GraficoDesempenhoDisciplina dados={dadosDesempenho} />
-          </div>
-        </div>
-      </Card>
-
-
-
+      </div>
     </div>
   );
 }

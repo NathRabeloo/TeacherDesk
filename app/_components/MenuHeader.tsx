@@ -44,61 +44,88 @@ const MenuHeader: React.FC = () => {
   const router = useRouter();
 
   return (
-    <header className="w-full h-16 bg-[#5A9BF6] dark:bg-dark-secondary text-white flex items-center justify-between px-6 shadow-md">
-      
-      {/* Logo */}
-      <div className="flex items-center space-x-2">
-        <span className="text-xl font-bold">TEACHER</span>
-        <span className="italic text-white/80">Desk</span>
-      </div>
+    <header className="w-full bg-gradient-to-r from-blue-500 to-blue-300 dark:from-gray-700 dark:to-gray-600 shadow-lg border-b border-gray-200 dark:border-gray-700">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
 
-      {/* Menu */}
-      <nav className="flex items-center space-x-6">
-        {/* Hamburguer Menu */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="text-white hover:bg-blue-700 p-2">
-              <FaBars size={18} />
+          {/* Logo */}
+          <div
+            onClick={() => router.push("/home")}
+            className="flex items-center space-x-3 cursor-pointer"
+          >
+            <div className="flex items-center space-x-2">
+              <span className="text-xl font-bold text-gray-900 dark:text-white">TEACHER</span>
+              <span className="italic text-gray-600 dark:text-gray-300">Desk</span>
+            </div>
+          </div>
+
+          {/* Menu Navigation */}
+          <nav className="flex items-center space-x-4">
+            {/* Hamburguer Menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-xl transition-all duration-200"
+                >
+                  <FaBars size={18} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-80 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-xl rounded-xl p-2">
+                {items.map((item, index) => (
+                  <DropdownMenuItem
+                    key={index}
+                    onClick={() => router.push(item.route)}
+                    className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer rounded-lg transition-all duration-200 mb-1"
+                  >
+                    <div>
+                      {item.icon}
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="font-semibold text-gray-900 dark:text-white">{item.name}</span>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{item.description}</p>
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Navigation Buttons */}
+            <Button
+              onClick={() => router.push("/home")}
+              variant="ghost"
+              className="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700 px-3 py-2 rounded-xl transition-all duration-200"
+            >
+              <FaHome size={16} />
+              <span className="text-sm font-medium hidden sm:inline">Início</span>
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-72 bg-white text-black p-1">
-            {items.map((item, index) => (
-              <DropdownMenuItem
-                key={index}
-                onClick={() => router.push(item.route)}
-                className="flex flex-col items-start gap-1 px-3 py-2 hover:bg-blue-100 cursor-pointer"
-              >
-                <div className="flex items-center gap-2">
-                  {item.icon}
-                  <span className="font-medium">{item.name}</span>
-                </div>
-                <p className="text-xs text-gray-500 ml-6">{item.description}</p>
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
 
-        {/* Navegação padrão */}
-        <button onClick={() => router.push("/home")} className="flex items-center space-x-1 hover:text-gray-200">
-          <FaHome />
-          <span className="text-sm hidden sm:inline">Página Principal</span>
-        </button>
+            <Button
+              onClick={() => router.push("/header/perfil")}
+              variant="ghost"
+              className="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700 px-3 py-2 rounded-xl transition-all duration-200"
+            >
+              <FaUser size={16} />
+              <span className="text-sm font-medium hidden sm:inline">Perfil</span>
+            </Button>
 
-        <button onClick={() => router.push("/header/perfil")} className="flex items-center space-x-1 hover:text-gray-200">
-          <FaUser />
-          <span className="text-sm hidden sm:inline">Meu Perfil</span>
-          
-        </button>
+            {/* Theme Toggle */}
+            <div className="flex items-center justify-center p-2 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-700 transition-all duration-200">
+              <ThemeToggle />
+            </div>
 
-        <div className="hover:text-gray-200">
-          <ThemeToggle />
+            {/* Logout Button */}
+            <Button
+              onClick={() => signOutAction()}
+              variant="ghost"
+              className="flex items-center space-x-2 text-red-600 dark:text-red-400 hover:bg-gray-300 dark:hover:bg-red-900/20 px-3 py-2 rounded-xl transition-all duration-200"
+            >
+              <FaSignOutAlt size={16} />
+              <span className="text-sm font-medium hidden sm:inline">Sair</span>
+            </Button>
+          </nav>
         </div>
-
-        <button onClick={() => signOutAction()} className="flex items-center space-x-1 hover:text-gray-200">
-          <FaSignOutAlt />
-          <span className="text-sm hidden sm:inline">Sair Do Site</span>
-        </button>
-      </nav>
+      </div>
     </header>
   );
 };

@@ -4,6 +4,7 @@ import React, { useState, useRef } from "react";
 import * as XLSX from "xlsx";
 import * as mammoth from "mammoth";
 import SpinningWheel from "./SpinningWheel";
+import { FaFileUpload, FaPlus, FaTrash, FaCog, FaDice, FaSpinner, FaFileAlt, FaEdit } from "react-icons/fa";
 
 interface ArquivoFormProps {
   initialData?: { list?: string[] };
@@ -41,7 +42,7 @@ const ArquivoForm: React.FC<ArquivoFormProps> = ({ onSubmit }) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setLoading(true); // começa o carregamento
+    setLoading(true);
     const reader = new FileReader();
     const extension = file.name.split(".").pop()?.toLowerCase();
 
@@ -87,8 +88,7 @@ const ArquivoForm: React.FC<ArquivoFormProps> = ({ onSubmit }) => {
           });
         };
         reader.readAsArrayBuffer(file);
-      }
-      else {
+      } else {
         alert("Formato de arquivo não suportado. Use .txt, .csv, .xlsx ou .docx.");
         setLoading(false);
       }
@@ -96,117 +96,229 @@ const ArquivoForm: React.FC<ArquivoFormProps> = ({ onSubmit }) => {
       alert("Erro ao ler o arquivo.");
       setLoading(false);
     } finally {
-      // resetar o valor para permitir subir o mesmo arquivo novamente
       event.target.value = "";
     }
   };
 
+  const validItems = arquivoItems.filter((item) => item.trim() !== "");
+
   return (
-    <form onSubmit={(e) => e.preventDefault()} className="w-full bg-[#5A9BF6] dark:bg-dark-primary text-white p-4 sm:p-6 md:p-8 rounded-2xl shadow-xl flex flex-col gap-6">
-      <div className="flex justify-between items-center flex-wrap gap-4">
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          className="bg-[#4A86E8] hover:bg-[#3B76D4] px-4 py-2 rounded-lg text-white text-sm sm:text-base w-full sm:w-auto"
-        >
-          Selecionar Arquivo
-        </button>
-      </div>
+ 
 
-      <input
-        type="file"
-        accept=".txt,.csv,.xlsx,.docx"
-        ref={fileInputRef}
-        className="hidden"
-        onChange={handleFileUpload}
-      />
+          <div className="p-8">
+            <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
+              
+              {/* Seção de Upload */}
+              <div className="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-gray-700 dark:to-gray-600 rounded-xl p-6 border-2 border-dashed border-indigo-300 dark:border-gray-600">
+                <div className="text-center">
+                  <div className="flex items-center justify-center space-x-3 mb-4">
+                    <div className="bg-indigo-500 p-3 rounded-full">
+                      <FaFileAlt className="text-white text-2xl" />
+                    </div>
+                    <h3 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                      Carregar Arquivo
+                    </h3>
+                  </div>
+                  
+                  <p className="text-gray-600 dark:text-gray-300 mb-6">
+                    Suporte para arquivos: .txt, .csv, .xlsx, .docx
+                  </p>
 
-      {arquivoItems.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Lista de Itens */}
-          <div>
-            <p className="text-sm mb-2">{arquivoItems.length} itens carregados</p>
-
-            <div className="overflow-y-auto max-h-[300px] pr-1 space-y-2">
-              {arquivoItems.map((item, index) => (
-                <div key={index} className="flex items-center bg-white rounded-md p-2 text-black">
-                  <input
-                    type="text"
-                    value={item}
-                    onChange={(e) => handleArchiveChange(index, e.target.value)}
-                    className="flex-1 px-2 py-1 text-sm rounded bg-gray-100 outline-none"
-                    placeholder={`Item ${index + 1}`}
-                  />
                   <button
                     type="button"
-                    onClick={() => removeArchiveItem(index)}
-                    className="ml-2 text-red-600 hover:text-red-800"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={loading}
+                    className={`${
+                      loading 
+                        ? "bg-gray-400 cursor-not-allowed" 
+                        : "bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700"
+                    } text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-3 mx-auto`}
                   >
-                    ✕
+                    {loading ? (
+                      <>
+                        <FaSpinner className="animate-spin text-xl" />
+                        Carregando...
+                      </>
+                    ) : (
+                      <>
+                        <FaFileUpload className="text-xl" />
+                        Selecionar Arquivo
+                      </>
+                    )}
                   </button>
+
+                  <input
+                    type="file"
+                    accept=".txt,.csv,.xlsx,.docx"
+                    ref={fileInputRef}
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
                 </div>
-              ))}
-            </div>
+              </div>
 
-            <button
-              type="button"
-              onClick={addArchiveItem}
-              className="mt-4 bg-[#4A86E8] hover:bg-[#3B76D4] px-4 py-2 rounded-lg text-sm w-full sm:w-auto"
-            >
-              + Adicionar item
-            </button>
+              {/* Conteúdo Principal - Grid */}
+              {arquivoItems.length > 0 && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  
+                  {/* Seção da Lista */}
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-gray-700 dark:to-gray-600 rounded-xl p-6 border border-green-200 dark:border-gray-600">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center space-x-3">
+                        <div className="bg-green-500 p-2 rounded-lg">
+                          <FaEdit className="text-white text-lg" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                            Itens Carregados
+                          </h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">
+                            {validItems.length} item(s) válido(s)
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <button
+                        type="button"
+                        onClick={addArchiveItem}
+                        className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
+                      >
+                        <FaPlus className="text-sm" />
+                        Adicionar
+                      </button>
+                    </div>
 
-            <div className="mt-4 flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={removeAfterDraw}
-                onChange={(e) => setRemoveAfterDraw(e.target.checked)}
-                id="removeAfterDraw"
-              />
-              <label htmlFor="removeAfterDraw" className="text-sm">
-                Remover item sorteado da lista
-              </label>
-            </div>
+                    {/* Lista de Inputs */}
+                    <div className="max-h-80 overflow-y-auto pr-2 space-y-3">
+                      {arquivoItems.map((item, index) => (
+                        <div key={index} className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-600">
+                          <div className="flex-1">
+                            <input
+                              type="text"
+                              value={item}
+                              onChange={(e) => handleArchiveChange(index, e.target.value)}
+                              className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                              placeholder={`Item ${index + 1}`}
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeArchiveItem(index)}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-lg transition-colors"
+                            title="Remover item"
+                          >
+                            <FaTrash className="text-sm" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Configurações */}
+                    <div className="mt-6 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                      <div className="flex items-center space-x-3">
+                        <FaCog className="text-gray-500 dark:text-gray-400" />
+                        <label className="flex items-center space-x-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={removeAfterDraw}
+                            onChange={(e) => setRemoveAfterDraw(e.target.checked)}
+                            className="w-5 h-5 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                          />
+                          <span className="text-gray-700 dark:text-gray-300 font-medium">
+                            Remover item sorteado da lista
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Seção da Roleta */}
+                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-700 dark:to-gray-600 rounded-xl p-6 border border-purple-200 dark:border-gray-600">
+                    <div className="flex items-center space-x-3 mb-6">
+                      <div className="bg-purple-500 p-2 rounded-lg">
+                        <FaDice className="text-white text-lg" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                          Roda da Sorte
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                          {validItems.length >= 2 ? "Pronto para sortear!" : "Adicione pelo menos 2 itens"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-center items-center min-h-[350px]">
+                      {validItems.length >= 2 ? (
+                        <SpinningWheel
+                          items={validItems}
+                          onFinish={(winner) => {
+                            setSelectedResult(winner);
+                            onSubmit(winner);
+                            if (removeAfterDraw) {
+                              removeItem(winner);
+                            }
+                          }}
+                        />
+                      ) : (
+                        <div className="text-center py-12">
+                          <div className="bg-gray-200 dark:bg-gray-700 w-64 h-64 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <FaDice className="text-6xl text-gray-400 dark:text-gray-500" />
+                          </div>
+                          <p className="text-gray-500 dark:text-gray-400 font-medium">
+                            {arquivoItems.length === 0 
+                              ? "Carregue um arquivo para começar" 
+                              : "Adicione pelo menos 2 itens válidos"}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Resultado */}
+              {selectedResult && (
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-200 dark:border-green-700 rounded-2xl p-8 text-center">
+                  <div className="flex items-center justify-center space-x-3 mb-4">
+                    <div className="bg-green-500 p-3 rounded-full">
+                      <FaDice className="text-white text-2xl" />
+                    </div>
+                    <h2 className="text-3xl font-bold text-green-800 dark:text-green-300">
+                      Resultado do Sorteio
+                    </h2>
+                  </div>
+                  <div className="text-6xl font-bold text-green-700 dark:text-green-300 animate-bounce uppercase mb-4">
+                    🎉 {selectedResult} 🎉
+                  </div>
+                  <p className="text-lg text-green-600 dark:text-green-400">
+                    Parabéns ao(à) sorteado(a)!
+                  </p>
+                </div>
+              )}
+
+              {/* Botão Limpar */}
+              <div className="flex justify-end pt-6 border-t border-gray-200 dark:border-gray-600">
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => {
+                    setArquivoItems([]);
+                    setSelectedResult("");
+                    setRemoveAfterDraw(false);
+                  }}
+                  className={`${
+                    loading 
+                      ? "bg-gray-400 cursor-not-allowed" 
+                      : "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
+                  } text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-3`}
+                >
+                  <FaTrash className="text-lg" />
+                  Limpar Tudo
+                </button>
+              </div>
+            </form>
           </div>
-
-          {/* Roda da Sorte */}
-          <div className="w-full flex justify-center items-center">
-            <SpinningWheel
-              items={arquivoItems.filter((item) => item.trim() !== "")}
-              onFinish={(winner) => {
-                setSelectedResult(winner);
-                onSubmit(winner);
-                if (removeAfterDraw) {
-                  removeItem(winner);
-                }
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {selectedResult && (
-        <div className="mt-6 text-center text-4xl sm:text-6xl md:text-7xl font-bold text-white animate-bounce uppercase">
-          🎉 {selectedResult} 🎉
-        </div>
-      )}
-
-      <div className="flex justify-end">
-        <button
-          type="button"
-          disabled={loading}
-          onClick={() => {
-            setArquivoItems([]);
-            setSelectedResult("");
-            setRemoveAfterDraw(false);
-          }}
-          className={`px-4 py-2 rounded-lg text-sm sm:text-base text-white ${loading ? "bg-gray-400 cursor-not-allowed" : "bg-red-500 hover:bg-red-700"
-            }`}
-        >
-          Limpar tudo
-        </button>
-      </div>
-    </form>
   );
 };
 
