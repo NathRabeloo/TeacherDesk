@@ -151,41 +151,27 @@ const Tutoriais = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
-      {/* Header Section */}
-      <div className="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-3 rounded-xl shadow-lg">
-                <FaBook className="text-white text-2xl" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                  Central de Tutoriais
-                </h1>
-                <p className="text-lg text-gray-600 dark:text-gray-300 mt-1">
-                  Gerencie e organize seus tutoriais de forma eficiente
-                </p>
-              </div>
-            </div>
-
-            {/* Estatísticas Rápidas */}
-            <div className="hidden lg:flex items-center space-x-6">
-              <div className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full mb-2">
-                  <FaBook className="text-blue-600 dark:text-blue-400 text-xl" />
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Total</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-white">{tutoriais.length}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Seção de Controles */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+           {/* Cabeçalho do Conteúdo */}
+                <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 px-8 py-6 border-b border-gray-200 dark:border-gray-600">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="p-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-600">
+                        <FaBook className="text-white text-xl" />
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                          Visão Geral
+                        </h2>
+                        <p className="text-gray-600 dark:text-gray-300 text-lg mt-1">
+                          Controle suas atividades e acompanhe o progresso
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
           <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 px-8 py-6 border-b border-gray-200 dark:border-gray-600">
             <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
               <div className="flex flex-col md:flex-row gap-4 items-center flex-1">
@@ -553,15 +539,7 @@ const Tutoriais = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Rodapé */}
-      <div className="bg-white dark:bg-gray-800 mt-12 border-t border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="text-center text-gray-600 dark:text-gray-400">
-            <p className="text-lg">Central de Tutoriais Interativa</p>
-            <p className="text-sm mt-2">Organize e compartilhe conhecimento de forma eficiente</p>
-          </div>
-        </div>
-      </div>
+  
     </div>
   );
 };

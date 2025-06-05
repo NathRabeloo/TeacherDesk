@@ -40,49 +40,6 @@ export default function Modelos() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
-      {/* Header Section */}
-      <div className="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-3 rounded-xl shadow-lg">
-                <FaFolder className="text-white text-2xl" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                  Modelos para Download
-                </h1>
-                <p className="text-lg text-gray-600 dark:text-gray-300 mt-1">
-                  Acesse e baixe documentos modelo prontos para uso
-                </p>
-              </div>
-            </div>
-            
-            {/* Estatísticas Rápidas */}
-            <div className="hidden lg:flex items-center space-x-6">
-              <div className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full mb-2">
-                  <FaFileWord className="text-blue-600 dark:text-blue-400 text-xl" />
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Word</p>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-full mb-2">
-                  <FaFilePowerpoint className="text-orange-600 dark:text-orange-400 text-xl" />
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">PowerPoint</p>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full mb-2">
-                  <FaCloudDownloadAlt className="text-green-600 dark:text-green-400 text-xl" />
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Downloads</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Seção de Conteúdo Principal */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -170,16 +127,6 @@ export default function Modelos() {
                 </p>
               </div>
             )}
-          </div>
-        </div>
-      </div>
-
-      {/* Rodapé */}
-      <div className="bg-white dark:bg-gray-800 mt-12 border-t border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="text-center text-gray-600 dark:text-gray-400">
-            <p className="text-lg">Biblioteca de Modelos Institucionais</p>
-            <p className="text-sm mt-2">Facilitando a criação de documentos padronizados</p>
           </div>
         </div>
       </div>

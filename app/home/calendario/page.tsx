@@ -18,9 +18,9 @@ const Calendario = () => {
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
 
           {/* Área Principal do Conteúdo - Calendário */}
-          <div className="p-8">
+        
             <CalendarioVisual />
-          </div>
+     
         </div>
         </div>
       </div>
