@@ -23,14 +23,14 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ name, icon, description, grad
           </div>
         </div>
         <div className="space-y-2">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white">
             {name}
           </h3>
-          <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+          <p className="text-gray-600 dark:text-gray-300 text-xl leading-relaxed">
             {description}
           </p>
         </div>
-        <div className={`w-full py-2 px-4 rounded-lg bg-gradient-to-r ${gradient} text-white font-semibold text-sm shadow-lg hover:shadow-xl transition-all duration-200`}>
+        <div className={`w-full py-2 px-4 rounded-lg bg-gradient-to-r ${gradient} text-white font-semibold text-xl shadow-lg hover:shadow-xl transition-all duration-200`}>
           Acessar
         </div>
       </div>

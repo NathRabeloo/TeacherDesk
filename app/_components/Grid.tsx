@@ -47,7 +47,7 @@ export default function Grid() {
             name: "Sorteador", 
             icon: <FaRandom size={32} />, 
             route: "/home/sorteador", 
-            description: "Sorteie grupos, alunos ou números aleatoriamente",
+            description: "Sorteie alunos ou números aleatoriamente",
             gradient: "from-pink-500 to-pink-600"
         },
         { 
@@ -82,7 +82,7 @@ export default function Grid() {
             name: "Diário de Aulas", 
             icon: <FaClipboardList size={32} />, 
             route: "/home/plano-aulas", 
-            description: "Acompanhe a execução do seu plano de aulas",
+            description: "Faça um registro das suas aulas em diário de aulas",
             gradient: "from-red-500 to-red-600"
         },
     ];

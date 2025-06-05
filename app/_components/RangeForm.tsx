@@ -76,13 +76,7 @@ const RangeForm: React.FC<RangeFormProps> = ({ onSubmit, initialData }) => {
 
   return (
     <div className="w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-      {/* Header do Formulário */}
-      <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
-        <div className="flex items-center space-x-3">
-          <FaHashtag className="text-white text-xl" />
-          <h3 className="text-xl font-bold text-white">Configuração do Sorteio por Intervalo</h3>
-        </div>
-      </div>
+     
 
       <div className="p-6 space-y-6">
         {/* Configuração de Intervalo */}

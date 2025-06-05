@@ -106,24 +106,6 @@ export default function DisciplinaLista({ userId }: Props) {
               </p>
             </div>
           </div>
-          
-          {/* Estatísticas Rápidas */}
-          <div className="hidden lg:flex items-center space-x-6">
-            <div className="text-center">
-              <div className="flex items-center justify-center w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full mb-2">
-                <BookOpen className="text-blue-600 dark:text-blue-400 text-xl" />
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-white">{disciplinas.length}</p>
-            </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full mb-2">
-                <GraduationCap className="text-green-600 dark:text-green-400 text-xl" />
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Ativas</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-white">{disciplinas.length}</p>
-            </div>
-          </div>
         </div>
       </div>
 
