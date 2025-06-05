@@ -78,7 +78,7 @@ const MenuHeader: React.FC = () => {
                     onClick={() => router.push(item.route)}
                     className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer rounded-lg transition-all duration-200 mb-1"
                   >
-                    <div className={`p-2 rounded-lg bg-gradient-to-r ${item.gradient} shadow-md`}>
+                    <div>
                       {item.icon}
                     </div>
                     <div className="flex flex-col gap-1">
