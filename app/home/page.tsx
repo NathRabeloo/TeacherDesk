@@ -38,19 +38,18 @@ export default async function Home() {
 
   return (
     <div className="">
+      <div className="p-3">
       <Header
         date={currentDate}
         title={`Bem-vindo, ${userName}!`}
         buttonText="Tutorial TeacherDesk →"
-        buttonLink="/home/tutorial"
+        buttonLink="/home/tutoriais"
         desktopImageLeft={`/assets/Avatar/${avatarSelecionado}.png`}
         mobileImage={`/assets/Avatar/${avatarSelecionado}.png`}
       />
-      
+      </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        <div className="h-[calc(100vh-240px)]">
           <Grid />
-        </div>
       </div>
     </div>
   );

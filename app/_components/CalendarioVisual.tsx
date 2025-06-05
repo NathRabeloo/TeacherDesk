@@ -155,17 +155,10 @@ const Calendar = () => {
                 <p className="text-lg font-bold text-gray-900 dark:text-white">{eventos.length}</p>
               </div>
               <div className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full mb-2">
-                  <FaClock className="text-green-600 dark:text-green-400 text-xl" />
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Próximos</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-white">{eventosProximos.length}</p>
-              </div>
-              <div className="text-center">
                 <div className="flex items-center justify-center w-12 h-12 bg-yellow-100 dark:bg-yellow-900 rounded-full mb-2">
                   <FaFlag className="text-yellow-600 dark:text-yellow-400 text-xl" />
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Prioridade Alta</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Prioritários</p>
                 <p className="text-lg font-bold text-gray-900 dark:text-white">
                   {eventos.filter(e => e.prioridade === 'alta').length}
                 </p>
