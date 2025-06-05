@@ -103,25 +103,7 @@ const ArquivoForm: React.FC<ArquivoFormProps> = ({ onSubmit }) => {
   const validItems = arquivoItems.filter((item) => item.trim() !== "");
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700 p-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 rounded-2xl mb-6">
-          <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 px-8 py-6 border-b border-gray-200 dark:border-gray-600 rounded-t-2xl">
-            <div className="flex items-center space-x-4">
-              <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-3 rounded-xl shadow-lg">
-                <FaFileUpload className="text-white text-2xl" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                  Sorteio por Arquivo
-                </h1>
-                <p className="text-lg text-gray-600 dark:text-gray-300 mt-1">
-                  Carregue um arquivo com os itens a serem sorteados
-                </p>
-              </div>
-            </div>
-          </div>
+ 
 
           <div className="p-8">
             <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
@@ -337,9 +319,6 @@ const ArquivoForm: React.FC<ArquivoFormProps> = ({ onSubmit }) => {
               </div>
             </form>
           </div>
-        </div>
-      </div>
-    </div>
   );
 };
 

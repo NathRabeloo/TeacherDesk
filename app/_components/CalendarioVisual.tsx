@@ -126,8 +126,7 @@ const Calendar = () => {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
-      {/* Header Section */}
+  
       <div className="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
@@ -143,37 +142,9 @@ const Calendar = () => {
                   Organize e gerencie seus compromissos importantes
                 </p>
               </div>
-            </div>
-            
-            {/* Estatísticas Rápidas */}
-            <div className="hidden lg:flex items-center space-x-6">
-              <div className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full mb-2">
-                  <FaCalendarDay className="text-blue-600 dark:text-blue-400 text-xl" />
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Eventos</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-white">{eventos.length}</p>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full mb-2">
-                  <FaClock className="text-green-600 dark:text-green-400 text-xl" />
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Próximos</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-white">{eventosProximos.length}</p>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-yellow-100 dark:bg-yellow-900 rounded-full mb-2">
-                  <FaFlag className="text-yellow-600 dark:text-yellow-400 text-xl" />
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Prioridade Alta</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-white">
-                  {eventos.filter(e => e.prioridade === 'alta').length}
-                </p>
-              </div>
-            </div>
+          </div>
           </div>
         </div>
-      </div>
 
       {/* Navegação do Calendário */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">

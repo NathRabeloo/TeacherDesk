@@ -87,53 +87,8 @@ export default function MeuPerfil() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
-      {/* Header Section */}
-      <div className="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="bg-gradient-to-r from-purple-500 to-pink-600 p-3 rounded-xl shadow-lg">
-                <FaUser className="text-white text-2xl" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                  Meu Perfil
-                </h1>
-                <p className="text-lg text-gray-600 dark:text-gray-300 mt-1">
-                  Gerencie suas informações e configurações
-                </p>
-              </div>
-            </div>
-            
-            {/* Estatísticas Rápidas */}
-            <div className="hidden lg:flex items-center space-x-6">
-              <div className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-full mb-2">
-                  <FaGraduationCap className="text-purple-600 dark:text-purple-400 text-xl" />
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Disciplinas</p>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full mb-2">
-                  <FaTrophy className="text-green-600 dark:text-green-400 text-xl" />
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Conquistas</p>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-yellow-100 dark:bg-yellow-900 rounded-full mb-2">
-                  <FaCalendar className="text-yellow-600 dark:text-yellow-400 text-xl" />
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Atividades</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Conteúdo Principal */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        
+  
         {/* Card de Perfil */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 px-8 py-6 border-b border-gray-200 dark:border-gray-600">
@@ -151,8 +106,8 @@ export default function MeuPerfil() {
                   </p>
                 </div>
               </div>
-            </div>
-          </div>
+              </div>
+    
 
           <div className="p-8">
             <Card className="border-2 border-gray-200 dark:border-gray-600 bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-700 shadow-lg">
@@ -206,31 +161,12 @@ export default function MeuPerfil() {
             </Card>
           </div>
         </div>
-
-        {/* Card de Disciplinas */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 px-8 py-6 border-b border-gray-200 dark:border-gray-600">
-            <div className="flex items-center space-x-4">
-              <div className="p-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600">
-                <FaGraduationCap className="text-white text-xl" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Disciplinas
-                </h2>
-                <p className="text-gray-600 dark:text-gray-300 text-lg mt-1">
-                  Gerencie suas matérias e conteúdos de estudo
-                </p>
-              </div>
-            </div>
           </div>
 
           <div className="p-8">
             <DisciplinaLista userId={user.id} />
           </div>
-        </div>
-      </div>
-
+ 
       {/* Modal de Seleção de Avatar */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="max-w-2xl bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-600 shadow-2xl">
@@ -297,16 +233,6 @@ export default function MeuPerfil() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Rodapé */}
-      <div className="bg-white dark:bg-gray-800 mt-12 border-t border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="text-center text-gray-600 dark:text-gray-400">
-            <p className="text-lg">Sistema de Gerenciamento Acadêmico</p>
-            <p className="text-sm mt-2">Organize seus estudos de forma eficiente</p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
