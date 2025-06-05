@@ -1,6 +1,6 @@
 // app/responder/page.tsx
 import { Suspense } from "react";
-import QuizResponder from "./_components/QuizResponder";
+import QuizResponder from "./QuizResponder";
 
 export default function Page() {
   return (
