@@ -150,8 +150,6 @@ const Tutoriais = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
-      {/* Seção de Controles */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
            {/* Cabeçalho do Conteúdo */}
@@ -171,7 +169,6 @@ const Tutoriais = () => {
                       </div>
                     </div>
                   </div>
-                </div>
           <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 px-8 py-6 border-b border-gray-200 dark:border-gray-600">
             <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
               <div className="flex flex-col md:flex-row gap-4 items-center flex-1">
@@ -336,7 +333,6 @@ const Tutoriais = () => {
         </div>
       </div>
 
-      {/* Modais */}
       {/* Modal Criar */}
       <Dialog open={modalCriar} onOpenChange={setModalCriar}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-600 shadow-2xl">

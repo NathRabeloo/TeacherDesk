@@ -171,7 +171,6 @@ export default function QuizForm({ quizId, onCancel, onSave }: QuizFormProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
             <div className="flex items-center space-x-4">
@@ -180,7 +179,7 @@ export default function QuizForm({ quizId, onCancel, onSave }: QuizFormProps) {
             </div>
           </div>
         </div>
-      </div>
+
     );
   }
 

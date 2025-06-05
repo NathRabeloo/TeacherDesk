@@ -39,33 +39,31 @@ export default function Modelos() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
-      {/* Seção de Conteúdo Principal */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-          {/* Cabeçalho do Conteúdo */}
-          <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 px-8 py-6 border-b border-gray-200 dark:border-gray-600">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="p-3 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600">
-                  <FaDownload className="text-white text-xl" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                    Biblioteca de Modelos
-                  </h2>
-                  <p className="text-gray-600 dark:text-gray-300 text-lg mt-1">
-                    Escolha e baixe os modelos disponíveis
-                  </p>
-                </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        {/* Cabeçalho do Conteúdo */}
+        <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 px-8 py-6 border-b border-gray-200 dark:border-gray-600">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="p-3 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600">
+                <FaDownload className="text-white text-xl" />
               </div>
-              <div className="bg-blue-100 dark:bg-blue-900 px-4 py-2 rounded-lg">
-                <span className="text-blue-800 dark:text-blue-200 font-semibold">
-                  {arquivos.length} modelos disponíveis
-                </span>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Biblioteca de Modelos
+                </h2>
+                <p className="text-gray-600 dark:text-gray-300 text-lg mt-1">
+                  Escolha e baixe os modelos disponíveis
+                </p>
               </div>
             </div>
+            <div className="bg-blue-100 dark:bg-blue-900 px-4 py-2 rounded-lg">
+              <span className="text-blue-800 dark:text-blue-200 font-semibold">
+                {arquivos.length} modelos disponíveis
+              </span>
+            </div>
           </div>
+
 
           {/* Grid de Cartões de Modelos */}
           <div className="p-8">
@@ -73,7 +71,7 @@ export default function Modelos() {
               {arquivos.map((arquivo, index) => {
                 const IconComponent = getFileIcon(arquivo.nomeArquivo);
                 const gradient = getFileGradient(arquivo.nomeArquivo);
-                
+
                 return (
                   <Card
                     key={index}
@@ -83,7 +81,7 @@ export default function Modelos() {
                       <div className={`bg-gradient-to-r ${gradient} p-4 rounded-2xl shadow-lg`}>
                         <IconComponent className="text-4xl text-white" />
                       </div>
-                      
+
                       <div className="space-y-3">
                         <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
                           {arquivo.titulo}
@@ -97,7 +95,7 @@ export default function Modelos() {
                         <div className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-lg">
                           <span className="font-mono">{arquivo.nomeArquivo}</span>
                         </div>
-                        
+
                         <a
                           href={`${BASE_URL}${encodeURIComponent(arquivo.nomeArquivo)}`}
                           target="_blank"
