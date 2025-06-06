@@ -592,7 +592,7 @@ export const listarTutoriais = async () => {
 
     const { data, error } = await supabase
         .from("tutoriais")
-        .select("id, titulo, tipo, descricao")
+        .select("id, titulo, tipo, descricao, fixo")
         .order("id", { ascending: false });
 
     if (error) {
