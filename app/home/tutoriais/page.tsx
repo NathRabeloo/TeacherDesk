@@ -150,25 +150,25 @@ const Tutoriais = () => {
   };
 
   return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-           {/* Cabeçalho do Conteúdo */}
-                <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 px-8 py-6 border-b border-gray-200 dark:border-gray-600">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="p-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-600">
-                        <FaBook className="text-white text-xl" />
-                      </div>
-                      <div>
-                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                          Visão Geral
-                        </h2>
-                        <p className="text-gray-600 dark:text-gray-300 text-lg mt-1">
-                          Controle suas atividades e acompanhe o progresso
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        {/* Cabeçalho do Conteúdo */}
+        <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 px-8 py-6 border-b border-gray-200 dark:border-gray-600">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="p-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-600">
+                <FaBook className="text-white text-xl" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Visão Geral
+                </h2>
+                <p className="text-gray-600 dark:text-gray-300 text-lg mt-1">
+                  Controle suas atividades e acompanhe o progresso
+                </p>
+              </div>
+            </div>
+          </div>
           <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 px-8 py-6 border-b border-gray-200 dark:border-gray-600">
             <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
               <div className="flex flex-col md:flex-row gap-4 items-center flex-1">
@@ -260,28 +260,30 @@ const Tutoriais = () => {
                             Visualizar
                           </Button>
 
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={() => {
-                                setTutorialSelecionado(tutorial);
-                                setTitulo(tutorial.titulo);
-                                setTipo(tutorial.tipo);
-                                setDescricao(tutorial.descricao);
-                                setModalEditar(true);
-                              }}
-                              className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-2 rounded-lg font-semibold flex items-center justify-center gap-2"
-                            >
-                              <FaEdit />
-                              Editar
-                            </Button>
-                            <Button
-                              onClick={() => handleExcluir(tutorial)}
-                              className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white py-2 rounded-lg font-semibold flex items-center justify-center gap-2"
-                            >
-                              <FaTrash />
-                              Excluir
-                            </Button>
-                          </div>
+                          {!tutorial.fixo ? (
+                            <div className="flex gap-2">
+                              <Button
+                                onClick={() => {
+                                  setTutorialSelecionado(tutorial);
+                                  setTitulo(tutorial.titulo);
+                                  setTipo(tutorial.tipo);
+                                  setDescricao(tutorial.descricao);
+                                  setModalEditar(true);
+                                }}
+                                className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-2 rounded-lg font-semibold flex items-center justify-center gap-2"
+                              >
+                                <FaEdit />
+                                Editar
+                              </Button>
+                              <Button
+                                onClick={() => handleExcluir(tutorial)}
+                                className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white py-2 rounded-lg font-semibold flex items-center justify-center gap-2"
+                              >
+                                <FaTrash />
+                                Excluir
+                              </Button>
+                            </div>
+                          ) : (<></>)}
                         </div>
                       </CardContent>
                     </Card>
@@ -309,11 +311,10 @@ const Tutoriais = () => {
                     key={i}
                     variant={i + 1 === paginaAtual ? "default" : "outline"}
                     onClick={() => mudarPagina(i + 1)}
-                    className={`px-4 py-2 rounded-lg border-2 ${
-                      i + 1 === paginaAtual
+                    className={`px-4 py-2 rounded-lg border-2 ${i + 1 === paginaAtual
                         ? "bg-blue-600 text-white border-blue-600"
                         : "border-gray-300 dark:border-gray-600"
-                    }`}
+                      }`}
                   >
                     {i + 1}
                   </Button>
@@ -535,7 +536,7 @@ const Tutoriais = () => {
         </DialogContent>
       </Dialog>
 
-  
+
     </div>
   );
 };
