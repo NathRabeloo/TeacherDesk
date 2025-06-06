@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { BookOpen, Hash, Clock, Users } from "lucide-react";
-import { Quiz } from "../types";
+import { BookOpen, Hash, Clock, Users, Tag } from "lucide-react";
+import { Quiz } from "./types";
 
 type QuizHeaderProps = {
   quiz: Quiz;
@@ -10,6 +10,10 @@ type QuizHeaderProps = {
   participanteRA?: string;
   respondidas?: number;
   showStats?: boolean;
+  sessionInfo?: {
+    id: string;
+    nome: string;
+  } | null;
 };
 
 export const QuizHeader: React.FC<QuizHeaderProps> = ({ 
@@ -17,7 +21,8 @@ export const QuizHeader: React.FC<QuizHeaderProps> = ({
   participanteNome, 
   participanteRA,
   respondidas,
-  showStats = true
+  showStats = true,
+  sessionInfo
 }) => {
   return (
     <div className="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">
@@ -33,6 +38,12 @@ export const QuizHeader: React.FC<QuizHeaderProps> = ({
                 <p className="text-gray-600 dark:text-gray-300">
                   <span className="font-semibold">{participanteNome}</span> | RA: <span className="font-semibold">{participanteRA}</span>
                 </p>
+                {sessionInfo && (
+                  <div className="mt-1 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                    <Tag className="w-3.5 h-3.5 mr-1" />
+                    {sessionInfo.nome}
+                  </div>
+                )}
               </div>
             </div>
             {respondidas !== undefined && (
@@ -50,6 +61,12 @@ export const QuizHeader: React.FC<QuizHeaderProps> = ({
             <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
               {quiz.titulo}
             </h1>
+            {sessionInfo && (
+              <div className="mb-4 inline-flex items-center px-4 py-2 rounded-full text-base font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                <Tag className="w-4 h-4 mr-2" />
+                {sessionInfo.nome}
+              </div>
+            )}
             <p className="text-xl text-gray-600 dark:text-gray-300">
               Preencha suas informações para começar o questionário
             </p>

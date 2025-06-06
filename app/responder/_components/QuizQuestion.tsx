@@ -4,7 +4,7 @@ import React from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { CheckCircle } from "lucide-react";
-import { Pergunta } from "../types";
+import { Pergunta } from "./types";
 
 type QuizQuestionProps = {
   pergunta: Pergunta;
@@ -39,7 +39,7 @@ export const QuizQuestion: React.FC<QuizQuestionProps> = ({
       <div className="p-6">
         <RadioGroup
           value={pergunta.respostaSelecionada || ""}
-          onValueChange={(val) => !disabled && onSelectOption(val)}
+          onValueChange={(val) => onSelectOption(val)} 
           className="space-y-3"
           disabled={disabled}
         >

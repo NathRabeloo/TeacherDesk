@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { User, Hash, Play, XCircle, CheckCircle } from "lucide-react";
-import { Participante, ParticipanteErrors } from "../types";
+import { Participante, ParticipanteErrors } from "./types";
 
 type ParticipantInfoFormProps = {
   onSubmit: (participante: Participante) => void;

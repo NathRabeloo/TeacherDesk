@@ -12,17 +12,19 @@ type ViewType = "list" | "create" | "edit" | "results";
 const PainelQuizzes = () => {
   const [activeView, setActiveView] = useState<ViewType>("list");
   const [currentQuizId, setCurrentQuizId] = useState<string | null>(null);
+  const [currentSessionId, setCurrentSessionId] = useState<string | undefined>(undefined);
 
-  const handleViewChange = (view: ViewType, quizId?: string) => {
+  const handleViewChange = (view: ViewType, quizId?: string, sessionId?: string) => {
     setActiveView(view);
     setCurrentQuizId(quizId ?? null);
+    setCurrentSessionId(sessionId);
   };
 
   const handleCreateQuiz = () => handleViewChange("create");
 
   const handleEditQuiz = (quizId: string) => handleViewChange("edit", quizId);
 
-  const handleViewResults = (quizId: string) => handleViewChange("results", quizId);
+  const handleViewResults = (quizId: string, sessionId?: string) => handleViewChange("results", quizId, sessionId);
 
   const handleSaveQuiz = (quizData: any) => {
     console.log("Quiz salvo:", quizData);
@@ -83,7 +85,11 @@ const PainelQuizzes = () => {
         );
       case "results":
         return currentQuizId ? (
-          <QuizResultados quizId={currentQuizId} onBack={handleCancel} />
+          <QuizResultados 
+            quizId={currentQuizId} 
+            sessionId={currentSessionId}
+            onBack={handleCancel} 
+          />
         ) : (
           <div className="text-center py-12">
             <FaChartBar className="mx-auto text-6xl text-gray-400 mb-4" />
@@ -151,3 +157,4 @@ const PainelQuizzes = () => {
 };
 
 export default PainelQuizzes;
+

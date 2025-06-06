@@ -4,7 +4,8 @@ import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, RefreshCw, Users, Target, TrendingUp, Clock, Award, BarChart3 } from "lucide-react";
+import { ArrowLeft, RefreshCw, Users, Target, TrendingUp, Clock, Award, BarChart3, Tag } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Resultado {
   resumo: {
@@ -29,17 +30,45 @@ interface Resultado {
     totalAcertos: number;
     percentualAcerto: number;
   }[];
+  sessao?: {
+    id: string;
+    nome: string;
+    data: string;
+  } | null;
 }
 
 interface QuizResultadosProps {
   quizId: string;
+  sessionId?: string;
   onBack?: () => void;
 }
 
-export default function QuizResultados({ quizId, onBack }: QuizResultadosProps) {
+export default function QuizResultados({ quizId, sessionId, onBack }: QuizResultadosProps) {
   const [dados, setDados] = useState<Resultado | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sessoes, setSessoes] = useState<{id: string, nome: string}[]>([]);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | undefined>(sessionId);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(false);
+
+  const fetchSessoes = React.useCallback(async () => {
+    if (!quizId) return;
+    
+    setIsLoadingSessions(true);
+    try {
+      // Usar a função listarSessoesQuiz do action.ts
+      const response = await fetch(`/api/quizzes/sessoes?quizId=${quizId}`);
+      if (!response.ok) {
+        throw new Error("Erro ao buscar sessões");
+      }
+      const data = await response.json();
+      setSessoes(data);
+    } catch (error) {
+      console.error("Erro ao buscar sessões:", error);
+    } finally {
+      setIsLoadingSessions(false);
+    }
+  }, [quizId]);
 
   const fetchResultados = React.useCallback(async () => {
     if (!quizId) {
@@ -52,8 +81,13 @@ export default function QuizResultados({ quizId, onBack }: QuizResultadosProps) 
     setError(null);
     
     try {
-      console.log("Buscando resultados para quiz:", quizId);
-      const res = await fetch(`/api/quizzes/resultados?quizId=${quizId}`);
+      console.log("Buscando resultados para quiz:", quizId, "sessão:", selectedSessionId);
+      let url = `/api/quizzes/resultados?quizId=${quizId}`;
+      if (selectedSessionId) {
+        url += `&sessionId=${selectedSessionId}`;
+      }
+      
+      const res = await fetch(url);
       
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
@@ -70,11 +104,15 @@ export default function QuizResultados({ quizId, onBack }: QuizResultadosProps) 
     } finally {
       setLoading(false);
     }
-  }, [quizId]);
+  }, [quizId, selectedSessionId]);
+
+  useEffect(() => {
+    fetchSessoes();
+  }, [quizId, fetchSessoes]);
 
   useEffect(() => {
     fetchResultados();
-  }, [quizId, fetchResultados]);
+  }, [quizId, selectedSessionId, fetchResultados]);
 
   const formatarTempo = (tempoMs: number) => {
     if (tempoMs === 0 || !tempoMs) return "N/A";
@@ -277,16 +315,45 @@ export default function QuizResultados({ quizId, onBack }: QuizResultadosProps) 
                 <div>
                   <h1 className="text-3xl font-bold text-white">Resultados do Quiz</h1>
                   <p className="text-purple-100 text-lg mt-1">Análise completa de desempenho e estatísticas</p>
+                  {dados.sessao && (
+                    <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-amber-100 text-amber-800">
+                      <Tag className="w-3.5 h-3.5 mr-1" />
+                      {dados.sessao.nome}
+                    </div>
+                  )}
                 </div>
               </div>
               
-              <Button 
-                onClick={fetchResultados}
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20 flex items-center gap-2 px-6 py-3 rounded-xl font-semibold"
-              >
-                <RefreshCw size={16} />
-                Atualizar
-              </Button>
+              <div className="flex items-center gap-3">
+                {sessoes.length > 0 && (
+                  <div className="bg-white/10 rounded-xl p-2 border border-white/20">
+                    <Select
+                      value={selectedSessionId || "all"}
+                      onValueChange={(value) => setSelectedSessionId(value === "all" ? undefined : value)}
+                    >
+                      <SelectTrigger className="w-[200px] bg-transparent border-0 text-white focus:ring-0">
+                        <SelectValue placeholder="Filtrar por sessão" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todas as sessões</SelectItem>
+                        {sessoes.map((sessao) => (
+                          <SelectItem key={sessao.id} value={sessao.id}>
+                            {sessao.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                
+                <Button 
+                  onClick={fetchResultados}
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20 flex items-center gap-2 px-6 py-3 rounded-xl font-semibold"
+                >
+                  <RefreshCw size={16} />
+                  Atualizar
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -364,69 +431,54 @@ export default function QuizResultados({ quizId, onBack }: QuizResultadosProps) 
               </div>
               
               {dados.ranking.length === 0 ? (
-                <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-2xl p-12 text-center border border-gray-200 dark:border-gray-600">
-                  <Users className="mx-auto text-6xl text-gray-400 mb-4" />
-                  <p className="text-xl text-gray-500 dark:text-gray-400">Nenhum participante encontrado</p>
-                  <p className="text-gray-400 dark:text-gray-500 mt-2">Ainda não há respostas para este quiz</p>
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-2xl p-12 text-center">
+                  <p className="text-lg text-gray-600 dark:text-gray-300">Nenhum participante encontrado.</p>
                 </div>
               ) : (
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600">
-                          <TableHead className="w-16 text-center font-bold">Posição</TableHead>
-                          <TableHead className="font-bold">Nome</TableHead>
-                          <TableHead className="font-bold">RA</TableHead>
-                          <TableHead className="text-center font-bold">Acertos</TableHead>
-                          <TableHead className="text-center font-bold">% Acerto</TableHead>
-                          <TableHead className="text-center font-bold">Tempo Total</TableHead>
-                          <TableHead className="text-center font-bold">Tempo/Pergunta</TableHead>
+                  <Table>
+                    <TableHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600">
+                      <TableRow>
+                        <TableHead className="font-bold text-gray-900 dark:text-white">Posição</TableHead>
+                        <TableHead className="font-bold text-gray-900 dark:text-white">Nome</TableHead>
+                        <TableHead className="font-bold text-gray-900 dark:text-white">RA</TableHead>
+                        <TableHead className="font-bold text-gray-900 dark:text-white text-center">Acertos</TableHead>
+                        <TableHead className="font-bold text-gray-900 dark:text-white text-center">Taxa</TableHead>
+                        <TableHead className="font-bold text-gray-900 dark:text-white text-center">Tempo Total</TableHead>
+                        <TableHead className="font-bold text-gray-900 dark:text-white text-center">Tempo Médio</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {dados.ranking.map((participante, index) => (
+                        <TableRow key={participante.id} className={index % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50 dark:bg-gray-750"}>
+                          <TableCell className="font-medium">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
+                              index === 0 ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300" :
+                              index === 1 ? "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" :
+                              index === 2 ? "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300" :
+                              "bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                            }`}>
+                              {index + 1}
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-medium text-gray-900 dark:text-white">{participante.nome}</TableCell>
+                          <TableCell>{participante.ra}</TableCell>
+                          <TableCell className="text-center">{participante.totalAcertos}/{participante.totalRespostas}</TableCell>
+                          <TableCell className="text-center">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              participante.percentualAcerto >= 70 ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" :
+                              participante.percentualAcerto >= 50 ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200" :
+                              "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                            }`}>
+                              {participante.percentualAcerto.toFixed(1)}%
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-center">{formatarTempoDetalhado(participante.tempoTotal)}</TableCell>
+                          <TableCell className="text-center">{formatarTempo(participante.tempoMedio)}</TableCell>
                         </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {dados.ranking.map((participante, index) => (
-                          <TableRow key={participante.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                            <TableCell className="text-center">
-                              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg ${
-                                index === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-500' : 
-                                index === 1 ? 'bg-gradient-to-r from-gray-400 to-gray-500' : 
-                                index === 2 ? 'bg-gradient-to-r from-orange-400 to-orange-500' : 'bg-gradient-to-r from-blue-400 to-blue-500'
-                              }`}>
-                                {index + 1}
-                              </div>
-                            </TableCell>
-                            <TableCell className="font-semibold text-gray-900 dark:text-white">{participante.nome}</TableCell>
-                            <TableCell className="text-gray-600 dark:text-gray-300 font-mono">{participante.ra}</TableCell>
-                            <TableCell className="text-center">
-                              <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full font-semibold">
-                                {participante.totalAcertos}/{participante.totalRespostas}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <span className={`px-3 py-1 rounded-full font-semibold ${
-                                participante.percentualAcerto >= 70 ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
-                                participante.percentualAcerto >= 50 ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
-                                'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
-                              }`}>
-                                {participante.percentualAcerto.toFixed(1)}%
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <span className="font-mono text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-                                {formatarTempoDetalhado(participante.tempoTotal)}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <span className="font-mono text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded">
-                                {formatarTempo(participante.tempoMedio)}
-                              </span>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               )}
             </div>
@@ -440,74 +492,57 @@ export default function QuizResultados({ quizId, onBack }: QuizResultadosProps) 
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Estatísticas por Pergunta</h2>
               </div>
               
-              {dados.perguntas.length === 0 ? (
-                <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-2xl p-12 text-center border border-gray-200 dark:border-gray-600">
-                  <Target className="mx-auto text-6xl text-gray-400 mb-4" />
-                  <p className="text-xl text-gray-500 dark:text-gray-400">Nenhuma pergunta encontrada</p>
-                  <p className="text-gray-400 dark:text-gray-500 mt-2">Este quiz não possui perguntas cadastradas</p>
-                </div>
-              ) : (
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600">
-                          <TableHead className="font-bold">Pergunta</TableHead>
-                          <TableHead className="text-center font-bold">Respostas</TableHead>
-                          <TableHead className="text-center font-bold">Acertos</TableHead>
-                          <TableHead className="text-center font-bold">% Acerto</TableHead>
-                          <TableHead className="text-center font-bold">Dificuldade</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {dados.perguntas.map((pergunta, index) => (
-                          <TableRow key={pergunta.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                            <TableCell className="max-w-md">
-                              <div className="flex items-start gap-3">
-                                <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-bold text-sm px-2 py-1 rounded-full min-w-[2rem] text-center">
-                                  {index + 1}
-                                </span>
-                                <div className="font-medium text-gray-900 dark:text-white" title={pergunta.texto}>
-                                  {pergunta.texto.length > 80 ? `${pergunta.texto.substring(0, 80)}...` : pergunta.texto}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded font-semibold">
-                                {pergunta.totalRespostas}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <span className="bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-2 py-1 rounded font-semibold">
-                                {pergunta.totalAcertos}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <span className={`px-3 py-1 rounded-full font-semibold ${
-                                pergunta.percentualAcerto >= 70 ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
-                                pergunta.percentualAcerto >= 50 ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
-                                'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
-                              }`}>
-                                {pergunta.percentualAcerto.toFixed(1)}%
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                pergunta.percentualAcerto >= 70 ? 'bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200' :
-                                pergunta.percentualAcerto >= 50 ? 'bg-yellow-200 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-200' :
-                                'bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-200'
-                              }`}>
-                                {pergunta.percentualAcerto >= 70 ? 'FÁCIL' :
-                                 pergunta.percentualAcerto >= 50 ? 'MÉDIA' : 'DIFÍCIL'}
-                              </span>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
-              )}
+              <div className="grid grid-cols-1 gap-6">
+                {dados.perguntas.map((pergunta, index) => (
+                  <Card key={pergunta.id} className="shadow-lg">
+                    <CardContent className="p-6">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3">
+                            <div className="bg-green-100 dark:bg-green-900 p-2 rounded-lg">
+                              <span className="font-bold text-green-700 dark:text-green-300">{index + 1}</span>
+                            </div>
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{pergunta.texto}</h3>
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-4">
+                          <div className="bg-blue-50 dark:bg-blue-900 p-3 rounded-xl text-center min-w-[100px]">
+                            <div className="text-xl font-bold text-blue-700 dark:text-blue-300">{pergunta.totalRespostas}</div>
+                            <div className="text-xs text-blue-600 dark:text-blue-400">Respostas</div>
+                          </div>
+                          
+                          <div className="bg-green-50 dark:bg-green-900 p-3 rounded-xl text-center min-w-[100px]">
+                            <div className="text-xl font-bold text-green-700 dark:text-green-300">{pergunta.totalAcertos}</div>
+                            <div className="text-xs text-green-600 dark:text-green-400">Acertos</div>
+                          </div>
+                          
+                          <div className={`p-3 rounded-xl text-center min-w-[100px] ${
+                            pergunta.percentualAcerto >= 70 ? "bg-green-50 dark:bg-green-900" :
+                            pergunta.percentualAcerto >= 50 ? "bg-yellow-50 dark:bg-yellow-900" :
+                            "bg-red-50 dark:bg-red-900"
+                          }`}>
+                            <div className={`text-xl font-bold ${
+                              pergunta.percentualAcerto >= 70 ? "text-green-700 dark:text-green-300" :
+                              pergunta.percentualAcerto >= 50 ? "text-yellow-700 dark:text-yellow-300" :
+                              "text-red-700 dark:text-red-300"
+                            }`}>
+                              {pergunta.percentualAcerto.toFixed(1)}%
+                            </div>
+                            <div className={`text-xs ${
+                              pergunta.percentualAcerto >= 70 ? "text-green-600 dark:text-green-400" :
+                              pergunta.percentualAcerto >= 50 ? "text-yellow-600 dark:text-yellow-400" :
+                              "text-red-600 dark:text-red-400"
+                            }`}>
+                              Taxa de Acerto
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -515,3 +550,4 @@ export default function QuizResultados({ quizId, onBack }: QuizResultadosProps) 
     </div>
   );
 }
+

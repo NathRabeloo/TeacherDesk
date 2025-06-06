@@ -2,16 +2,20 @@
 
 import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { CheckCircle, XCircle } from "lucide-react";
-import { Quiz, Participante } from "../types";
+import { CheckCircle, XCircle, Tag } from "lucide-react";
+import { Quiz, Participante } from "./types";
 
 type QuizResultProps = {
   quiz: Quiz;
   participante: Participante;
   acertos: number;
+  sessionInfo?: {
+    id: string;
+    nome: string;
+  } | null;
 };
 
-export const QuizResult: React.FC<QuizResultProps> = ({ quiz, participante, acertos }) => {
+export const QuizResult: React.FC<QuizResultProps> = ({ quiz, participante, acertos, sessionInfo }) => {
   const porcentagem = quiz.perguntas.length > 0 
     ? Math.round((acertos / quiz.perguntas.length) * 100) 
     : 0;
@@ -28,6 +32,12 @@ export const QuizResult: React.FC<QuizResultProps> = ({ quiz, participante, acer
             <p className="text-gray-600">
               {participante.nome} | RA: {participante.ra}
             </p>
+            {sessionInfo && (
+              <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-amber-100 text-amber-800">
+                <Tag className="w-3.5 h-3.5 mr-1" />
+                {sessionInfo.nome}
+              </div>
+            )}
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <div className="text-4xl font-bold text-blue-600">
@@ -91,6 +101,11 @@ export const QuizResult: React.FC<QuizResultProps> = ({ quiz, participante, acer
                     </div>
                   );
                 })}
+                {pergunta.tempoRespostaMs && (
+                  <div className="text-sm text-gray-500 mt-2">
+                    Tempo de resposta: {(pergunta.tempoRespostaMs / 1000).toFixed(1)} segundos
+                  </div>
+                )}
               </CardContent>
             </Card>
           );

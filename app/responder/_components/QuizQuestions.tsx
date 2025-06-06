@@ -3,7 +3,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Trophy } from "lucide-react";
-import { Quiz } from "../types";
+import { Quiz } from "./types";
 import { QuizQuestion } from "./QuizQuestion";
 
 type QuizQuestionsProps = {
