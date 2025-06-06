@@ -1,32 +1,39 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { FaFileWord, FaFilePowerpoint, FaFileExcel, FaDownload, FaPlus } from "react-icons/fa";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  FaFileWord,
+  FaFilePowerpoint,
+  FaFileExcel,
+  FaDownload,
+  FaPlus,
+  FaFilePdf,
+} from "react-icons/fa";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
 const getFileIcon = (filename: string) => {
-  if (filename.includes(".docx") || filename.includes(".doc")) {
-    return FaFileWord;
-  } else if (filename.includes(".pptx") || filename.includes(".ppt")) {
-    return FaFilePowerpoint;
-  } else if (filename.includes(".xlsx") || filename.includes(".xls")) {
-    return FaFileExcel;
-  }
+  if (filename.includes(".docx") || filename.includes(".doc")) return FaFileWord;
+  if (filename.includes(".pptx") || filename.includes(".ppt")) return FaFilePowerpoint;
+  if (filename.includes(".xlsx") || filename.includes(".xls")) return FaFileExcel;
+  if (filename.includes(".pdf")) return FaFilePdf;
   return FaDownload;
 };
 
 const getFileGradient = (filename: string) => {
-  if (filename.includes(".docx") || filename.includes(".doc")) {
-    return "from-blue-500 to-blue-600";
-  } else if (filename.includes(".pptx") || filename.includes(".ppt")) {
-    return "from-orange-500 to-red-600";
-  } else if (filename.includes(".xlsx") || filename.includes(".xls")) {
-    return "from-green-500 to-green-600";
-  }
+  if (filename.includes(".docx") || filename.includes(".doc")) return "from-blue-500 to-blue-600";
+  if (filename.includes(".pptx") || filename.includes(".ppt")) return "from-orange-500 to-red-600";
+  if (filename.includes(".xlsx") || filename.includes(".xls")) return "from-green-500 to-green-600";
+  if (filename.includes(".pdf")) return "from-red-500 to-red-600";
   return "from-gray-500 to-gray-600";
 };
 
@@ -36,17 +43,27 @@ export default function Modelos() {
   const [open, setOpen] = useState(false);
   const [nome, setNome] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const BASE_URL = "https://klrdcdnkvdtjoiuwgcaw.supabase.co/storage/v1/object/public/arquivos-modelos/";
+  const BASE_URL =
+    "https://klrdcdnkvdtjoiuwgcaw.supabase.co/storage/v1/object/public/arquivos-modelos/";
 
   useEffect(() => {
     fetchModelos();
   }, []);
 
-  const fetchModelos = async () => {
+  const fetchModelos = async (extensao?: string) => {
     const { data, error } = await supabase.from("Modelo").select("*");
     if (error) {
       console.error("Erro ao buscar modelos", error);
+      return;
+    }
+
+    if (extensao) {
+      const filtrados = data.filter((modelo) =>
+        modelo.arquivo.toLowerCase().endsWith(extensao.toLowerCase())
+      );
+      setModelos(filtrados);
     } else {
       setModelos(data);
     }
@@ -58,23 +75,42 @@ export default function Modelos() {
       return;
     }
 
-    const arquivoPath = `${Date.now()}-${file.name}`;
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Arquivo muito grande. O limite é 10MB.");
+      return;
+    }
+
+    const extensoesPermitidas = [".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx", ".pdf"];
+    const extensao = file.name.toLowerCase().slice(file.name.lastIndexOf("."));
+    if (!extensoesPermitidas.includes(extensao)) {
+      alert("Tipo de arquivo não permitido.");
+      return;
+    }
+
+    const sanitizedFileName = file.name
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^\w.-]/g, "_");
+
+    const arquivoPath = `${Date.now()}-${sanitizedFileName}`;
 
     const { error: storageError } = await supabase
       .storage
       .from("arquivos-modelos")
-      .upload(arquivoPath, file);
+      .upload(arquivoPath, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
 
     if (storageError) {
       console.error("Erro ao subir arquivo:", storageError);
-      alert("Erro ao subir arquivo.");
+      alert("Erro ao subir arquivo. Verifique o nome do arquivo ou tente novamente.");
       return;
     }
 
     const { error: insertError } = await supabase.from("Modelo").insert({
       nome,
       arquivo: file.name,
-      arquivoPath
+      arquivoPath,
     });
 
     if (insertError) {
@@ -85,6 +121,7 @@ export default function Modelos() {
 
     setNome("");
     setFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
     setOpen(false);
     fetchModelos();
   };
@@ -119,7 +156,7 @@ export default function Modelos() {
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Adicionar Novo Modelo</DialogTitle>
-                </DialogHeader>                
+                </DialogHeader>
 
                 <div className="space-y-4">
                   <Input
@@ -129,12 +166,26 @@ export default function Modelos() {
                   />
                   <Input
                     type="file"
+                    ref={fileInputRef}
                     onChange={(e) => setFile(e.target.files?.[0] || null)}
                   />
                   <Button onClick={handleUpload}>Enviar</Button>
                 </div>
               </DialogContent>
             </Dialog>
+          </div>
+
+          {/* Filtros */}
+          <div className="flex gap-3 mt-8 mb-4">
+            {["", ".docx", ".pptx", ".xlsx", ".pdf"].map((ext) => (
+              <Button
+                key={ext}
+                onClick={() => fetchModelos(ext || undefined)}
+                variant={ext === "" ? "default" : "outline"}
+              >
+                {ext === "" ? "Todos" : ext.toUpperCase()}
+              </Button>
+            ))}
           </div>
 
           <div className="p-8">
@@ -157,19 +208,20 @@ export default function Modelos() {
                         <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
                           {modelo.nome}
                         </h3>
-                        <p className="text-gray-600 dark:text-gray-300 text-lg leading-relaxed">
+                        <p className="text-gray-600 dark:text-gray-300 text-lg leading-relaxed break-words">
                           {modelo.arquivo}
                         </p>
                       </div>
 
                       <a
-                        href={`${BASE_URL}${encodeURIComponent(modelo.arquivoPath)}`}
+                        href={new URL(modelo.arquivoPath.replace(/^\/+/, ""), BASE_URL).toString()}
                         target="_blank"
                         rel="noopener noreferrer"
                         className={`w-full py-3 px-6 rounded-xl bg-gradient-to-r ${gradient} text-white font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-3 no-underline`}
                       >
                         <FaDownload className="text-lg" />
-                        Baixar Modelo
+                        <span>Baixar Modelo</span>
+                        <span className="sr-only">Baixar {modelo.nome}</span>
                       </a>
                     </CardContent>
                   </Card>
