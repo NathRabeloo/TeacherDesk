@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { createClient } from "@/lib/utils/supabase/client";
-import { FaCalendarPlus, FaEdit, FaTrash, FaTimes, FaSave, FaExclamationTriangle } from "react-icons/fa";
+import { FaCalendarPlus, FaEdit, FaTrash, FaTimes, FaSave, FaExclamationTriangle, FaCheck } from "react-icons/fa";
 
 export interface Evento {
   id?: number;
@@ -15,15 +15,23 @@ interface ModalAddEventoProps {
   onAdd: (evento: Evento) => void;
   onClose: () => void;
   onDelete: (id: number) => void;
+  onComplete?: (id: number) => void;
 }
 
-const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ evento, onAdd, onClose, onDelete }) => {
+const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ 
+  evento, 
+  onAdd, 
+  onClose, 
+  onDelete,
+  onComplete 
+}) => {
   const [nome, setNome] = useState(evento?.nome || "");
   const [descricao, setDescricao] = useState(evento?.descricao || "");
   const [data, setData] = useState(evento?.data || "");
   const [prioridade, setPrioridade] = useState<"alta" | "media" | "baixa">(evento?.prioridade || "baixa");
   const supabase = createClient();
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [showConfirmComplete, setShowConfirmComplete] = useState(false);
 
   useEffect(() => {
     if (evento) {
@@ -40,13 +48,39 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ evento, onAdd, onClose,
     }
   }, [evento]);
 
-  const DeletarEvento = async () => {
+  const handleConcluirEvento = async () => {
     if (!evento || !evento.id) return;
 
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("Evento")
-        .update({ deletedAt: new Date().toISOString() })
+        .delete()
+        .eq("id", evento.id);
+
+      if (error) {
+        console.error("Erro ao concluir evento:", error.message);
+        alert("Erro ao concluir evento.");
+        return;
+      }
+
+      if (onComplete) {
+        onComplete(evento.id);
+      }
+      alert("Evento concluído e removido com sucesso!");
+      onClose();
+    } catch (err) {
+      console.error("Erro inesperado ao concluir evento:", err);
+      alert("Erro ao concluir evento.");
+    }
+  };
+
+  const handleDeletarEvento = async () => {
+    if (!evento || !evento.id) return;
+
+    try {
+      const { error } = await supabase
+        .from("Evento")
+        .delete()
         .eq("id", evento.id);
 
       if (error) {
@@ -63,7 +97,7 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ evento, onAdd, onClose,
     }
   };
 
-  const GerenciarEvento = async () => {
+  const handleGerenciarEvento = async () => {
     if (!nome || !descricao || !data) {
       alert("Todos os campos devem ser preenchidos.");
       return;
@@ -110,8 +144,7 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ evento, onAdd, onClose,
           descricao,
           data,
           prioridade,
-          usuarioId: user.id,
-          deletedAt: null,
+          usuarioId: user.id
         })
         .select()
         .single();
@@ -247,27 +280,39 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ evento, onAdd, onClose,
 
         {/* Actions */}
         <div className="bg-gray-50 dark:bg-gray-700 px-6 py-4 flex flex-col sm:flex-row gap-3 justify-between">
-          <button
-            onClick={onClose}
-            className="px-6 py-3 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-semibold hover:bg-gray-300 dark:hover:bg-gray-500 transition-all duration-200 flex items-center justify-center gap-2"
-          >
-            <FaTimes className="text-sm" />
-            Cancelar
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="px-6 py-3 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-semibold hover:bg-gray-300 dark:hover:bg-gray-500 transition-all duration-200 flex items-center justify-center gap-2"
+            >
+              <FaTimes className="text-sm" />
+              Cancelar
+            </button>
+          </div>
 
           <div className="flex gap-3">
             {evento && (
-              <button
-                onClick={() => setShowConfirmDelete(true)}
-                className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-semibold transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
-              >
-                <FaTrash className="text-sm" />
-                Excluir
-              </button>
+              <>
+                <button
+                  onClick={() => setShowConfirmComplete(true)}
+                  className="p-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold transition-all duration-200 flex items-center justify-center"
+                  title="Concluir e remover evento"
+                >
+                  <FaCheck className="text-sm" />
+                </button>
+                
+                <button
+                  onClick={() => setShowConfirmDelete(true)}
+                  className="p-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold transition-all duration-200 flex items-center justify-center"
+                  title="Excluir evento"
+                >
+                  <FaTrash className="text-sm" />
+                </button>
+              </>
             )}
 
             <button
-              onClick={GerenciarEvento}
+              onClick={handleGerenciarEvento}
               className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl font-semibold transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
             >
               <FaSave className="text-sm" />
@@ -275,6 +320,50 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ evento, onAdd, onClose,
             </button>
           </div>
         </div>
+
+        {/* Confirmation Complete Modal */}
+        {showConfirmComplete && (
+          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-60 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+              <div className="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900 dark:to-green-800 px-6 py-4 border-b border-green-200 dark:border-green-700">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-green-500 rounded-xl">
+                    <FaCheck className="text-white text-lg" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-green-800 dark:text-green-200">
+                      Concluir e Remover Evento
+                    </h3>
+                    <p className="text-green-600 dark:text-green-300 text-sm">
+                      O evento será marcado como concluído e removido da lista
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-6">
+                <p className="text-gray-700 dark:text-gray-300 text-center mb-6">
+                  Tem certeza que deseja marcar o evento <strong>{nome}</strong> como concluído e removê-lo da lista?
+                </p>
+                
+                <div className="flex gap-3 justify-center">
+                  <button
+                    onClick={() => setShowConfirmComplete(false)}
+                    className="px-6 py-3 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-semibold hover:bg-gray-300 dark:hover:bg-gray-500 transition-all duration-200"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleConcluirEvento}
+                    className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
+                  >
+                    Confirmar e Remover
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Confirmation Delete Modal */}
         {showConfirmDelete && (
@@ -298,7 +387,7 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ evento, onAdd, onClose,
               
               <div className="p-6">
                 <p className="text-gray-700 dark:text-gray-300 text-center mb-6">
-                  Tem certeza que deseja excluir o evento<strong>{nome}</strong>?
+                  Tem certeza que deseja excluir o evento <strong>{nome}</strong>?
                 </p>
                 
                 <div className="flex gap-3 justify-center">
@@ -309,7 +398,7 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ evento, onAdd, onClose,
                     Cancelar
                   </button>
                   <button
-                    onClick={DeletarEvento}
+                    onClick={handleDeletarEvento}
                     className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
                   >
                     Confirmar Exclusão
