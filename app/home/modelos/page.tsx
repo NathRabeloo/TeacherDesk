@@ -70,6 +70,8 @@ export default function Modelos() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const itensPorPagina = 9;
 
   const BASE_URL =
     "https://klrdcdnkvdtjoiuwgcaw.supabase.co/storage/v1/object/public/arquivos-modelos/";
@@ -108,6 +110,13 @@ export default function Modelos() {
       setLoading(false);
     }
   };
+
+  // Filtro e paginação
+  const totalPaginas = Math.ceil(modelos.length / itensPorPagina);
+  const modelosPaginados = modelos.slice(
+    (paginaAtual - 1) * itensPorPagina,
+    paginaAtual * itensPorPagina
+  );
 
   const handleUpload = async () => {
     if (!file || !nome) {
@@ -181,6 +190,7 @@ export default function Modelos() {
 
       // Atualizar a lista de modelos
       fetchModelos();
+      setPaginaAtual(1); // Resetar para a primeira página após adicionar novo modelo
     } catch (error) {
       console.error("Erro durante o upload:", error);
       alert("Ocorreu um erro durante o upload. Tente novamente.");
@@ -210,6 +220,10 @@ export default function Modelos() {
 
       // Atualiza a lista de modelos
       fetchModelos();
+      // Ajustar página atual se necessário
+      if (modelosPaginados.length === 1 && paginaAtual > 1) {
+        setPaginaAtual(paginaAtual - 1);
+      }
     } catch (error) {
       console.error("Erro ao excluir modelo:", error);
       alert("Ocorreu um erro ao excluir o modelo.");
@@ -340,7 +354,10 @@ export default function Modelos() {
               return (
                 <Button
                   key={ext}
-                  onClick={() => fetchModelos(ext || undefined)}
+                  onClick={() => {
+                    fetchModelos(ext || undefined);
+                    setPaginaAtual(1); // Resetar para a primeira página ao mudar filtro
+                  }}
                   variant={isTodos ? "default" : "outline"}
                   className={`rounded-xl transition-all duration-300 ${isTodos
                       ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-gray-100 hover:to-gray-400 hover:text-black"
@@ -352,103 +369,135 @@ export default function Modelos() {
               );
             })}
           </div>
+        </div>
 
-          <div className="p-8">
-            {loading ? (
-              <div className="text-center py-16">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
-                <p className="text-gray-500 dark:text-gray-400">Carregando modelos...</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {modelos.map((modelo) => {
-                  const IconComponent = getFileIcon(modelo.arquivo);
-                  const gradient = getFileGradient(modelo.arquivo);
-                  const extensao = getFileExtension(modelo.arquivo);
+        <div className="p-8">
+          {loading ? (
+            <div className="text-center py-16">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+              <p className="text-gray-500 dark:text-gray-400">Carregando modelos...</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {modelosPaginados.map((modelo) => {
+                const IconComponent = getFileIcon(modelo.arquivo);
+                const gradient = getFileGradient(modelo.arquivo);
+                const extensao = getFileExtension(modelo.arquivo);
 
-                  // Construir a URL completa do arquivo no bucket
-                  const fileUrl = modelo.arquivoPath
-                    ? `${BASE_URL}${modelo.arquivoPath}`
-                    : "#";
+                // Construir a URL completa do arquivo no bucket
+                const fileUrl = modelo.arquivoPath
+                  ? `${BASE_URL}${modelo.arquivoPath}`
+                  : "#";
 
-                  return (
-                    <Card
-                      key={modelo.id}
-                      className="hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 bg-white dark:bg-gray-800"
-                    >
-                      <CardContent className="flex flex-col items-center p-8 text-center space-y-6">
-                        <div className="flex justify-between w-full">
-                          <div className={`bg-gradient-to-r ${gradient} p-4 rounded-2xl shadow-lg`}>
-                            <IconComponent className="text-4xl text-white" />
-                          </div>
-
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  className="rounded-xl"
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDelete(modelo.id, modelo.arquivoPath);
-                                  }}
-                                >
-                                  <FaTrash className="text-red-500 hover:text-red-700" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Excluir modelo</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                return (
+                  <Card
+                    key={modelo.id}
+                    className="hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 bg-white dark:bg-gray-800"
+                  >
+                    <CardContent className="flex flex-col items-center p-8 text-center space-y-6">
+                      <div className="flex justify-between w-full">
+                        <div className={`bg-gradient-to-r ${gradient} p-4 rounded-2xl shadow-lg`}>
+                          <IconComponent className="text-4xl text-white" />
                         </div>
 
-                        <div className="space-y-3">
-                          <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
-                            {modelo.nome}
-                          </h3>
-                          <div className="flex items-center justify-center gap-2">
-                            <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full text-sm font-medium text-gray-600 dark:text-gray-300">
-                              {extensao.toUpperCase()}
-                            </span>
-                          </div>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                className="rounded-xl"
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDelete(modelo.id, modelo.arquivoPath);
+                                }}
+                              >
+                                <FaTrash className="text-red-500 hover:text-red-700" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Excluir modelo</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+
+                      <div className="space-y-3">
+                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                          {modelo.nome}
+                        </h3>
+                        <div className="flex items-center justify-center gap-2">
+                          <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full text-sm font-medium text-gray-600 dark:text-gray-300">
+                            {extensao.toUpperCase()}
+                          </span>
                         </div>
+                      </div>
 
-                        <a
-                          href={fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`w-full py-3 px-6 rounded-xl bg-gradient-to-r ${gradient} text-white font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-3 no-underline`}
-                        >
-                          <FaDownload className="text-lg" />
-                          <span>Baixar Modelo</span>
-                          <span className="sr-only">Baixar {modelo.nome}</span>
-                        </a>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
+                      <a
+                        href={fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`w-full py-3 px-6 rounded-xl bg-gradient-to-r ${gradient} text-white font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-3 no-underline`}
+                      >
+                        <FaDownload className="text-lg" />
+                        <span>Baixar Modelo</span>
+                        <span className="sr-only">Baixar {modelo.nome}</span>
+                      </a>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
 
-            {!loading && modelos.length === 0 && (
-              <div className="text-center py-16">
-                <div className="flex items-center justify-center w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full mx-auto mb-6">
-                  <FaDownload className="text-4xl text-gray-400" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300 mb-2">
-                  Nenhum modelo disponível
-                </h3>
-                <p className="text-gray-500 dark:text-gray-400">
-                  Adicione modelos clicando no botão Novo Modelo.
-                </p>
+          {!loading && modelos.length === 0 && (
+            <div className="text-center py-16">
+              <div className="flex items-center justify-center w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full mx-auto mb-6">
+                <FaDownload className="text-4xl text-gray-400" />
               </div>
-            )}
-          </div>
+              <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-300 mb-2">
+                Nenhum modelo disponível
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400">
+                Adicione modelos clicando no botão Novo Modelo.
+              </p>
+            </div>
+          )}
+
+          {/* Paginação */}
+          {totalPaginas > 1 && (
+            <div className="flex justify-center gap-2 mt-12">
+              <Button 
+                disabled={paginaAtual === 1 || loading} 
+                onClick={() => setPaginaAtual((p) => Math.max(1, p - 1))}
+                className="rounded-xl"
+                variant="outline"
+              >
+                Anterior
+              </Button>
+              {Array.from({ length: totalPaginas }, (_, i) => (
+                <Button
+                  key={i}
+                  variant={paginaAtual === i + 1 ? 'default' : 'outline'}
+                  onClick={() => setPaginaAtual(i + 1)}
+                  disabled={loading}
+                  className="rounded-xl"
+                >
+                  {i + 1}
+                </Button>
+              ))}
+              <Button 
+                disabled={paginaAtual === totalPaginas || loading} 
+                onClick={() => setPaginaAtual((p) => Math.min(totalPaginas, p + 1))}
+                className="rounded-xl"
+                variant="outline"
+              >
+                Próximo
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
-
