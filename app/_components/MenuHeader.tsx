@@ -114,14 +114,16 @@ const MenuHeader: React.FC = () => {
               <ThemeToggle />
             </div>
 
-            {/* Logout Button */}
             <Button
               onClick={() => signOutAction()}
-              variant="ghost"
-              className="flex items-center space-x-2 text-red-600 dark:text-red-400 hover:bg-gray-300 dark:hover:bg-red-900/20 px-3 py-2 rounded-xl transition-all duration-200"
+              variant="outline"
+              className="flex items-center gap-2 text-red-600 dark:text-red-500 border-2 border-red-500 dark:border-red-600 hover:bg-red-500 dark:hover:bg-red-900/20 px-4 py-2 rounded-full font-medium transition-all duration-300 group"
             >
-              <FaSignOutAlt size={16} />
-              <span className="text-sm font-medium hidden sm:inline">Sair</span>
+              <FaSignOutAlt
+                size={16}
+                className="transform group-hover:translate-x-1 transition-transform duration-200"
+              />
+              <span className="hidden sm:inline">Sair</span>
             </Button>
           </nav>
         </div>
