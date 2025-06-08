@@ -111,7 +111,7 @@ export default function PlanoAulasPage() {
         setNovoTitulo('')
         setNovaDisciplinaId(null)
         setPaginaAtual(1)
-        router.push(`/plano-aulas/${novoPlano.id}`)
+        router.push(`/home/plano-aulas/${novoPlano.id}`)
       } else {
         alert('Erro ao criar plano')
       }
