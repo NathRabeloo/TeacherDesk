@@ -11,7 +11,7 @@ export type Pergunta = {
   texto: string;
   opcoes: Opcao[];
   respostaSelecionada?: string | null;
-  tempoRespostaMs?: number; // Novo campo para o tempo de resposta
+  tempoRespostaMs?: number; // Tempo de resposta em milissegundos
 };
 
 export type Quiz = {
@@ -23,6 +23,7 @@ export type Quiz = {
 export type Participante = {
   nome: string;
   ra: string;
+  score?: number; // Novo campo para armazenar a pontuação
 };
 
 export type ParticipanteErrors = {
@@ -40,4 +41,16 @@ export type QuizSession = {
   user_id?: string | null;
 };
 
+// Novo tipo para o ranking com score
+export type RankingItem = {
+  id: string;
+  nome: string;
+  ra: string;
+  totalRespostas: number;
+  totalAcertos: number;
+  percentualAcerto: number;
+  tempoTotal: number; // em ms
+  tempoMedio: number; // em ms - tempo médio por pergunta
+  score: number; // Novo campo para pontuação
+};
 

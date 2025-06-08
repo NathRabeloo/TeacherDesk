@@ -31,6 +31,18 @@ export const ParticipantInfoForm: React.FC<ParticipantInfoFormProps> = ({ onSubm
     }
   };
 
+  const handleNomeChange = (value: string) => {
+    // Limita o nome a 30 caracteres
+    const limitedValue = value.slice(0, 30);
+    
+    setParticipante(prev => ({ ...prev, nome: limitedValue }));
+    
+    // Remove erro se o nome estiver válido
+    if (errors.nome && limitedValue.trim()) {
+      setErrors(prev => ({ ...prev, nome: undefined }));
+    }
+  };
+
   const validarParticipante = () => {
     const newErrors: ParticipanteErrors = {};
     
@@ -73,20 +85,24 @@ export const ParticipantInfoForm: React.FC<ParticipantInfoFormProps> = ({ onSubm
               id="nome"
               placeholder="Digite seu nome completo"
               value={participante.nome}
-              onChange={(e) => {
-                setParticipante(prev => ({ ...prev, nome: e.target.value }));
-                if (errors.nome) setErrors(prev => ({ ...prev, nome: undefined }));
-              }}
+              onChange={(e) => handleNomeChange(e.target.value)}
               className={`text-lg py-4 px-4 rounded-xl border-2 transition-all duration-200 ${
                 errors.nome 
                   ? "border-red-500 focus:border-red-600" 
                   : "border-gray-300 dark:border-gray-600 focus:border-blue-500"
               }`}
+              maxLength={30}
             />
             {errors.nome && (
               <p className="text-red-500 text-sm mt-2 flex items-center gap-2">
                 <XCircle size={16} />
                 {errors.nome}
+              </p>
+            )}
+            {participante.nome && (
+              <p className="text-gray-500 text-sm mt-2 flex items-center gap-2">
+                <CheckCircle className={participante.nome.length < 30 ? "text-green-500" : "text-amber-500"} size={16} />
+                {participante.nome.length}/30 caracteres
               </p>
             )}
           </div>

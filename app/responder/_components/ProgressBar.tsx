@@ -1,28 +1,19 @@
 "use client";
 
 import React from "react";
+import { Progress } from "@/components/ui/progress"; // Assumindo que você está usando o componente Progress do shadcn/ui
 
 type ProgressBarProps = {
-  current: number;
-  total: number;
+  value: number; // Valor em porcentagem (0-100)
+  className?: string; // Para passar classes de estilo adicionais
 };
 
-export const ProgressBar: React.FC<ProgressBarProps> = ({ current, total }) => {
-  const progresso = total > 0 ? (current / total) * 100 : 0;
-  
+export const ProgressBar: React.FC<ProgressBarProps> = ({ value, className }) => {
   return (
-    <div className="mt-4">
-      <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300 mb-2">
-        <span>Progresso</span>
-        <span>{Math.round(progresso)}%</span>
-      </div>
-      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-        <div 
-          className="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-500"
-          style={{ width: `${progresso}%` }}
-        ></div>
-      </div>
+    <div className={className}>
+      <Progress value={value} className="h-2" />
     </div>
   );
 };
+
 

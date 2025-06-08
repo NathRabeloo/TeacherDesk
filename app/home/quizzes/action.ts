@@ -1,7 +1,7 @@
+"use server";
 
-'use server';
-
-import { createClient } from '@/lib/utils/supabase/server';
+import { createClient } from "@/lib/utils/supabase/server";
+import { revalidatePath } from "next/cache";
 
 interface Question {
   text: string;
@@ -267,6 +267,7 @@ export async function criarSessaoQuiz(quizId: string, nomeSessao: string) {
       throw new Error("Erro ao criar sessão de quiz");
     }
 
+    revalidatePath(`/admin/quizzes/${quizId}`);
     return sessao;
   } catch (error) {
     console.error("Erro ao criar sessão de quiz:", error);
@@ -378,7 +379,7 @@ export async function excluirSessaoQuiz(sessaoId: string) {
     // Verificar se a sessão pertence ao usuário
     const { data: sessao, error: sessaoError } = await supabase
       .from("QuizSession")
-      .select("id, user_id")
+      .select("id, user_id, quiz_id") // Adicionado quiz_id aqui
       .eq("id", sessaoId)
       .single();
 
@@ -407,9 +408,193 @@ export async function excluirSessaoQuiz(sessaoId: string) {
       throw new Error("Erro ao excluir sessão de quiz");
     }
 
+    revalidatePath(`/admin/quizzes/${sessao.quiz_id}`);
     return { success: true };
   } catch (error) {
     console.error("Erro ao excluir sessão de quiz:", error);
     throw error;
   }
 }
+
+// Função para obter resultados de um quiz (movida para action.ts)
+export async function obterResultadosQuiz(quizId: string, sessionId?: string) {
+  try {
+    const supabase = createClient();
+
+    // Consulta base para obter participantes
+    let participantesQuery = supabase
+      .from("Participante")
+      .select(`
+        id, 
+        nome, 
+        ra, 
+        tempo_total_ms,
+        score
+      `)
+      .eq("quiz_id", quizId);
+
+    // Se tiver sessionId, filtrar por sessão
+    if (sessionId) {
+      participantesQuery = participantesQuery.eq("quiz_session_id", sessionId);
+    }
+
+    const { data: participantes, error: participantesError } = await participantesQuery;
+
+    if (participantesError) {
+      console.error("Erro ao buscar participantes:", participantesError);
+      throw new Error("Erro ao buscar participantes");
+    }
+
+    // Obter todas as perguntas do quiz
+    const { data: perguntas, error: perguntasError } = await supabase
+      .from("Pergunta")
+      .select("id, texto")
+      .eq("quiz_id", quizId);
+
+    if (perguntasError) {
+      console.error("Erro ao buscar perguntas:", perguntasError);
+      throw new Error("Erro ao buscar perguntas");
+    }
+
+    // Obter todas as respostas dos participantes
+    let respostasQuery = supabase
+      .from("Resposta")
+      .select(`
+        id,
+        participante_id,
+        pergunta_id,
+        correta,
+        iniciada_em,
+        respondido_em
+      `)
+      .in(
+        "participante_id",
+        participantes.map((p) => p.id)
+      );
+
+    const { data: respostas, error: respostasError } = await respostasQuery;
+
+    if (respostasError) {
+      console.error("Erro ao buscar respostas:", respostasError);
+      throw new Error("Erro ao buscar respostas");
+    }
+
+    // Calcular estatísticas para cada participante
+    const ranking = participantes.map((participante) => {
+      const respostasParticipante = respostas.filter(
+        (r) => r.participante_id === participante.id
+      );
+
+      const totalRespostas = respostasParticipante.length;
+      const totalAcertos = respostasParticipante.filter((r) => r.correta).length;
+      const percentualAcerto =
+        totalRespostas > 0 ? (totalAcertos / totalRespostas) * 100 : 0;
+
+      const tempoTotal = participante.tempo_total_ms || 0;
+      const tempoMedio = totalRespostas > 0 ? tempoTotal / totalRespostas : 0;
+      
+      // Usar o score do banco de dados ou calcular se não estiver disponível
+      const score = participante.score || 
+        (totalAcertos > 0 && tempoTotal > 0 ? 
+          Math.round((totalAcertos * 1000) / (tempoTotal / 1000)) : 0);
+
+      return {
+        id: participante.id,
+        nome: participante.nome,
+        ra: participante.ra,
+        totalRespostas,
+        totalAcertos,
+        percentualAcerto,
+        tempoTotal,
+        tempoMedio,
+        score // Incluindo o score no ranking
+      };
+    });
+
+    // Ordenar ranking por score (decrescente)
+    ranking.sort((a, b) => b.score - a.score);
+
+    // Calcular estatísticas para cada pergunta
+    const perguntasStats = perguntas.map((pergunta) => {
+      const respostasPergunta = respostas.filter(
+        (r) => r.pergunta_id === pergunta.id
+      );
+
+      const totalRespostas = respostasPergunta.length;
+      const totalAcertos = respostasPergunta.filter((r) => r.correta).length;
+      const percentualAcerto =
+        totalRespostas > 0 ? (totalAcertos / totalRespostas) * 100 : 0;
+
+      return {
+        id: pergunta.id,
+        texto: pergunta.texto,
+        totalRespostas,
+        totalAcertos,
+        percentualAcerto,
+      };
+    });
+
+    // Calcular resumo geral
+    const totalParticipantes = participantes.length;
+    const totalPerguntas = perguntas.length;
+    const totalRespostas = respostas.length;
+    const totalAcertos = respostas.filter((r) => r.correta).length;
+    const taxaAcertoGeral =
+      totalRespostas > 0 ? (totalAcertos / totalRespostas) * 100 : 0;
+
+    // Obter informações da sessão se houver
+    let sessaoInfo = null;
+    if (sessionId) {
+      const { data: sessao, error: sessaoError } = await supabase
+        .from("QuizSession")
+        .select("id, nome_sessao, created_at")
+        .eq("id", sessionId)
+        .single();
+
+      if (!sessaoError && sessao) {
+        sessaoInfo = {
+          id: sessao.id,
+          nome: sessao.nome_sessao || `Sessão de ${new Date(sessao.created_at).toLocaleDateString()}`,
+          data: sessao.created_at,
+        };
+      }
+    }
+
+    return {
+      resumo: {
+        total_participantes: totalParticipantes,
+        total_perguntas: totalPerguntas,
+        taxa_acerto_geral: taxaAcertoGeral,
+      },
+      ranking,
+      perguntas: perguntasStats,
+      sessao: sessaoInfo,
+    };
+  } catch (error) {
+    console.error("Erro ao obter resultados:", error);
+    throw error;
+  }
+}
+
+// Função para atualizar o score de um participante
+export async function atualizarScoreParticipante(participanteId: string, score: number) {
+  try {
+    const supabase = createClient();
+
+    const { error } = await supabase
+      .from("Participante")
+      .update({ score })
+      .eq("id", participanteId);
+
+    if (error) {
+      console.error("Erro ao atualizar score:", error);
+      throw error;
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao atualizar score:", error);
+    throw error;
+  }
+}
+

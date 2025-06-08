@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, RefreshCw, Users, Target, TrendingUp, Clock, Award, BarChart3, Tag } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RankingItem } from "../../../responder/_components/types"; // Importar RankingItem do types.ts
 
 interface Resultado {
   resumo: {
@@ -13,16 +14,7 @@ interface Resultado {
     total_perguntas: number;
     taxa_acerto_geral: number;
   };
-  ranking: {
-    id: string;
-    nome: string;
-    ra: string;
-    totalRespostas: number;
-    totalAcertos: number;
-    percentualAcerto: number;
-    tempoTotal: number; // em ms
-    tempoMedio: number; // em ms - tempo médio por pergunta
-  }[];
+  ranking: RankingItem[]; // Usar o tipo RankingItem
   perguntas: {
     id: string;
     texto: string;
@@ -384,24 +376,22 @@ export default function QuizResultados({ quizId, sessionId, onBack }: QuizResult
                     Total de estudantes que responderam
                   </div>
                 </div>
-
-                <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900 dark:to-indigo-800 p-6 rounded-2xl border border-indigo-200 dark:border-indigo-700 shadow-lg">
+                <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900 dark:to-green-800 p-6 rounded-2xl border border-green-200 dark:border-green-700 shadow-lg">
                   <div className="flex items-center justify-between mb-4">
-                    <div className="bg-indigo-500 p-3 rounded-xl">
+                    <div className="bg-green-500 p-3 rounded-xl">
                       <Target className="text-white text-xl" />
                     </div>
                     <div className="text-right">
-                      <div className="text-3xl font-bold text-indigo-600 dark:text-indigo-400">
+                      <div className="text-3xl font-bold text-green-600 dark:text-green-400">
                         {dados.resumo.total_perguntas}
                       </div>
-                      <div className="text-sm text-indigo-600/70 dark:text-indigo-400/70 font-medium">Perguntas</div>
+                      <div className="text-sm text-green-600/70 dark:text-green-400/70 font-medium">Perguntas</div>
                     </div>
                   </div>
-                  <div className="text-indigo-700 dark:text-indigo-300 text-sm">
-                    Questões disponíveis no quiz
+                  <div className="text-green-700 dark:text-green-300 text-sm">
+                    Número total de perguntas no quiz
                   </div>
                 </div>
-
                 <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900 dark:to-purple-800 p-6 rounded-2xl border border-purple-200 dark:border-purple-700 shadow-lg">
                   <div className="flex items-center justify-between mb-4">
                     <div className="bg-purple-500 p-3 rounded-xl">
@@ -411,138 +401,103 @@ export default function QuizResultados({ quizId, sessionId, onBack }: QuizResult
                       <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
                         {dados.resumo.taxa_acerto_geral.toFixed(1)}%
                       </div>
-                      <div className="text-sm text-purple-600/70 dark:text-purple-400/70 font-medium">Taxa de Acerto</div>
+                      <div className="text-sm text-purple-600/70 dark:text-purple-400/70 font-medium">Acerto Geral</div>
                     </div>
                   </div>
                   <div className="text-purple-700 dark:text-purple-300 text-sm">
-                    Média geral de acertos
+                    Média de acertos de todos os participantes
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Ranking */}
+            {/* Ranking de Participantes */}
             <div>
               <div className="flex items-center gap-3 mb-6">
-                <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 p-2 rounded-lg">
+                <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-2 rounded-lg">
                   <Award className="text-white text-xl" />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Ranking de Participantes</h2>
               </div>
               
-              {dados.ranking.length === 0 ? (
-                <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-2xl p-12 text-center">
-                  <p className="text-lg text-gray-600 dark:text-gray-300">Nenhum participante encontrado.</p>
-                </div>
-              ) : (
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <Card className="shadow-lg">
+                <CardContent className="p-0">
                   <Table>
-                    <TableHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600">
+                    <TableHeader>
                       <TableRow>
-                        <TableHead className="font-bold text-gray-900 dark:text-white">Posição</TableHead>
-                        <TableHead className="font-bold text-gray-900 dark:text-white">Nome</TableHead>
-                        <TableHead className="font-bold text-gray-900 dark:text-white">RA</TableHead>
-                        <TableHead className="font-bold text-gray-900 dark:text-white text-center">Acertos</TableHead>
-                        <TableHead className="font-bold text-gray-900 dark:text-white text-center">Taxa</TableHead>
-                        <TableHead className="font-bold text-gray-900 dark:text-white text-center">Tempo Total</TableHead>
-                        <TableHead className="font-bold text-gray-900 dark:text-white text-center">Tempo Médio</TableHead>
+                        <TableHead className="w-[50px]">Pos.</TableHead>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>RA</TableHead>
+                        <TableHead className="text-center">Acertos</TableHead>
+                        <TableHead className="text-center">% Acerto</TableHead>
+                        <TableHead className="text-center">Tempo Total</TableHead>
+                        <TableHead className="text-center">Score</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {dados.ranking.map((participante, index) => (
-                        <TableRow key={participante.id} className={index % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50 dark:bg-gray-750"}>
+                        <TableRow key={participante.id} className={`${
+                          index === 0 ? "bg-yellow-50 dark:bg-yellow-900/20" : 
+                          index === 1 ? "bg-gray-100 dark:bg-gray-700/20" : 
+                          index === 2 ? "bg-amber-50 dark:bg-amber-900/20" : ""
+                        }`}>
                           <TableCell className="font-medium">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
-                              index === 0 ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300" :
-                              index === 1 ? "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" :
-                              index === 2 ? "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300" :
-                              "bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
-                            }`}>
-                              {index + 1}
-                            </div>
+                            {index === 0 && <Award className="inline-block mr-1 text-yellow-500" size={16} />}
+                            {index === 1 && <Award className="inline-block mr-1 text-gray-400" size={16} />}
+                            {index === 2 && <Award className="inline-block mr-1 text-amber-700" size={16} />}
+                            {index + 1}
                           </TableCell>
-                          <TableCell className="font-medium text-gray-900 dark:text-white">{participante.nome}</TableCell>
+                          <TableCell>{participante.nome}</TableCell>
                           <TableCell>{participante.ra}</TableCell>
-                          <TableCell className="text-center">{participante.totalAcertos}/{participante.totalRespostas}</TableCell>
-                          <TableCell className="text-center">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              participante.percentualAcerto >= 70 ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" :
-                              participante.percentualAcerto >= 50 ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200" :
-                              "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                            }`}>
-                              {participante.percentualAcerto.toFixed(1)}%
-                            </span>
+                          <TableCell className="text-center">{participante.totalAcertos}/{dados.resumo.total_perguntas}</TableCell>
+                          <TableCell className="text-center">{participante.percentualAcerto.toFixed(1)}%</TableCell>
+                          <TableCell className="text-center">{formatarTempo(participante.tempoTotal)}</TableCell>
+                          <TableCell className="text-center font-bold text-lg">
+                            {typeof participante.score === 'number' ? participante.score.toLocaleString("pt-BR") : 'N/A'}
                           </TableCell>
-                          <TableCell className="text-center">{formatarTempoDetalhado(participante.tempoTotal)}</TableCell>
-                          <TableCell className="text-center">{formatarTempo(participante.tempoMedio)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
-                </div>
-              )}
+                </CardContent>
+              </Card>
             </div>
 
-            {/* Estatísticas por Pergunta */}
+            {/* Análise por Pergunta */}
             <div>
               <div className="flex items-center gap-3 mb-6">
-                <div className="bg-gradient-to-r from-green-500 to-green-600 p-2 rounded-lg">
-                  <Target className="text-white text-xl" />
+                <div className="bg-gradient-to-r from-teal-500 to-teal-600 p-2 rounded-lg">
+                  <BarChart3 className="text-white text-xl" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Estatísticas por Pergunta</h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Análise por Pergunta</h2>
               </div>
               
-              <div className="grid grid-cols-1 gap-6">
-                {dados.perguntas.map((pergunta, index) => (
-                  <Card key={pergunta.id} className="shadow-lg">
-                    <CardContent className="p-6">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3">
-                            <div className="bg-green-100 dark:bg-green-900 p-2 rounded-lg">
-                              <span className="font-bold text-green-700 dark:text-green-300">{index + 1}</span>
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{pergunta.texto}</h3>
-                          </div>
-                        </div>
-                        
-                        <div className="flex flex-wrap gap-4">
-                          <div className="bg-blue-50 dark:bg-blue-900 p-3 rounded-xl text-center min-w-[100px]">
-                            <div className="text-xl font-bold text-blue-700 dark:text-blue-300">{pergunta.totalRespostas}</div>
-                            <div className="text-xs text-blue-600 dark:text-blue-400">Respostas</div>
-                          </div>
-                          
-                          <div className="bg-green-50 dark:bg-green-900 p-3 rounded-xl text-center min-w-[100px]">
-                            <div className="text-xl font-bold text-green-700 dark:text-green-300">{pergunta.totalAcertos}</div>
-                            <div className="text-xs text-green-600 dark:text-green-400">Acertos</div>
-                          </div>
-                          
-                          <div className={`p-3 rounded-xl text-center min-w-[100px] ${
-                            pergunta.percentualAcerto >= 70 ? "bg-green-50 dark:bg-green-900" :
-                            pergunta.percentualAcerto >= 50 ? "bg-yellow-50 dark:bg-yellow-900" :
-                            "bg-red-50 dark:bg-red-900"
-                          }`}>
-                            <div className={`text-xl font-bold ${
-                              pergunta.percentualAcerto >= 70 ? "text-green-700 dark:text-green-300" :
-                              pergunta.percentualAcerto >= 50 ? "text-yellow-700 dark:text-yellow-300" :
-                              "text-red-700 dark:text-red-300"
-                            }`}>
-                              {pergunta.percentualAcerto.toFixed(1)}%
-                            </div>
-                            <div className={`text-xs ${
-                              pergunta.percentualAcerto >= 70 ? "text-green-600 dark:text-green-400" :
-                              pergunta.percentualAcerto >= 50 ? "text-yellow-600 dark:text-yellow-400" :
-                              "text-red-600 dark:text-red-400"
-                            }`}>
-                              Taxa de Acerto
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              <Card className="shadow-lg">
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[50px]">#</TableHead>
+                        <TableHead>Pergunta</TableHead>
+                        <TableHead className="text-center">Total Respostas</TableHead>
+                        <TableHead className="text-center">Acertos</TableHead>
+                        <TableHead className="text-center">% Acerto</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {dados.perguntas.map((pergunta, index) => (
+                        <TableRow key={pergunta.id}>
+                          <TableCell className="font-medium">{index + 1}</TableCell>
+                          <TableCell>{pergunta.texto}</TableCell>
+                          <TableCell className="text-center">{pergunta.totalRespostas}</TableCell>
+                          <TableCell className="text-center">{pergunta.totalAcertos}</TableCell>
+                          <TableCell className="text-center">{pergunta.percentualAcerto.toFixed(1)}%</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>

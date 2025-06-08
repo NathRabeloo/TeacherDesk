@@ -173,7 +173,53 @@ export const QuizService = {
     }
   },
 
-  async enviarRespostas(quiz: Quiz, participanteId: string): Promise<number> {
+  // Nova função para calcular e atualizar o score do participante
+  async calcularEAtualizarScore(participanteId: string, totalAcertos: number): Promise<number> {
+    try {
+      // Obter o tempo total do participante
+      const { data: participanteData, error: getError } = await supabase
+        .from("Participante")
+        .select("tempo_total_ms")
+        .eq("id", participanteId)
+        .single();
+
+      if (getError) {
+        console.error("Erro ao obter participante:", getError);
+        throw getError;
+      }
+
+      const tempoTotalMs = participanteData?.tempo_total_ms || 0;
+      const tempoTotalSec = tempoTotalMs / 1000; // Converter para segundos
+      
+      // Evitar divisão por zero
+      const tempoBase = Math.max(tempoTotalSec, 1);
+      
+      // Fórmula do score: (acertos * 1000) / tempo_total_segundos
+      // Multiplicamos por 1000 para ter números mais expressivos
+      // Quanto mais acertos e menor o tempo, maior o score
+      const score = Math.round((totalAcertos * 1000) / tempoBase);
+      
+      // Atualizar o score no banco de dados
+      const { error: updateScoreError } = await supabase
+        .from("Participante")
+        .update({ score: score })
+        .eq("id", participanteId);
+
+      if (updateScoreError) {
+        console.error("Erro ao atualizar score no banco de dados:", updateScoreError);
+        throw updateScoreError;
+      }
+
+      console.log(`Score calculado e atualizado para o participante ${participanteId}: ${score}`);
+      
+      return score;
+    } catch (error) {
+      console.error("Erro ao calcular e atualizar score:", error);
+      return 0;
+    }
+  },
+
+  async enviarRespostas(quiz: Quiz, participanteId: string): Promise<{acertos: number, score: number}> {
     let correctCount = 0;
 
     try {
@@ -185,7 +231,10 @@ export const QuizService = {
         }
       }
 
-      return correctCount;
+      // Calcular e atualizar o score
+      const score = await this.calcularEAtualizarScore(participanteId, correctCount);
+
+      return { acertos: correctCount, score };
     } catch (error) {
       console.error("Erro ao enviar respostas:", error);
       throw error;
@@ -213,4 +262,5 @@ export const QuizService = {
     }
   }
 };
+
 

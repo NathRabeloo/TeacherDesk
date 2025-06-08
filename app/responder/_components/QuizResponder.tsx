@@ -12,13 +12,16 @@ import { ParticipantInfoForm } from "./ParticipantInfoForm";
 import { QuizQuestion } from "./QuizQuestion"; 
 import { QuizResult } from "./QuizResult";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Trophy } from "lucide-react";
+import { ArrowLeft, ArrowRight, Trophy, Clock, Zap, Award } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { motion, AnimatePresence } from "framer-motion";
+import confetti from "canvas-confetti";
 
 export default function QuizResponder() {
   const [mounted, setMounted] = useState(false);
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
-  const sessionId = searchParams.get("session"); // Novo parâmetro para sessão
+  const sessionId = searchParams.get("session"); // Parâmetro para sessão
   
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [participante, setParticipante] = useState<Participante>({ nome: "", ra: "" });
@@ -26,11 +29,23 @@ export default function QuizResponder() {
   const [etapa, setEtapa] = useState<QuizEtapa>("info");
   const [votado, setVotado] = useState(false);
   const [acertos, setAcertos] = useState<number | null>(null);
+  const [score, setScore] = useState<number>(0); // Novo estado para o score
   const [loading, setLoading] = useState(false);
   const [quizLoaded, setQuizLoaded] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const startTimeRef = useRef<number>(0);
   const [sessionInfo, setSessionInfo] = useState<{id: string, nome: string} | null>(null);
+  
+  // Novos estados para elementos interativos
+  const [tempoDecorrido, setTempoDecorrido] = useState<number>(0);
+  const [showFeedback, setShowFeedback] = useState<boolean>(false);
+  const [feedbackCorreto, setFeedbackCorreto] = useState<boolean>(false);
+  const [streakAcertos, setStreakAcertos] = useState<number>(0);
+  const [showStreakBonus, setShowStreakBonus] = useState<boolean>(false);
+  const [showCountdown, setShowCountdown] = useState<boolean>(false);
+  const [countdown, setCountdown] = useState<number>(3);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const streakTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Garantir que o componente está montado no cliente
   useEffect(() => {
@@ -71,7 +86,22 @@ export default function QuizResponder() {
     fetchQuizAndSession();
   }, [mounted, id, sessionId]);
 
-  // Iniciar o quiz
+  // Timer para atualizar o tempo decorrido
+  useEffect(() => {
+    if (etapa === "quiz" && startTimeRef.current > 0) {
+      timerRef.current = setInterval(() => {
+        setTempoDecorrido(Date.now() - startTimeRef.current);
+      }, 100);
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [etapa, startTimeRef.current]);
+
+  // Iniciar o quiz com contagem regressiva
   const iniciarQuiz = async (dadosParticipante: Participante) => {
     if (!quiz) return;
     
@@ -88,8 +118,23 @@ export default function QuizResponder() {
       
       if (participanteId) {
         setParticipanteId(participanteId);
-        setEtapa("quiz");
-        startTimeRef.current = Date.now(); // Inicia o timer para a primeira pergunta
+        
+        // Iniciar contagem regressiva
+        setShowCountdown(true);
+        setCountdown(3);
+        
+        let count = 3;
+        const countdownInterval = setInterval(() => {
+          count -= 1;
+          setCountdown(count);
+          
+          if (count <= 0) {
+            clearInterval(countdownInterval);
+            setShowCountdown(false);
+            setEtapa("quiz");
+            startTimeRef.current = Date.now(); // Inicia o timer para a primeira pergunta
+          }
+        }, 1000);
       } else {
         throw new Error("Erro ao registrar participante");
       }
@@ -101,6 +146,15 @@ export default function QuizResponder() {
     }
   };
 
+  // Função para disparar confetti quando acertar
+  const triggerConfetti = () => {
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+  };
+
   // Selecionar resposta e salvar tempo
   const selecionarResposta = async (opcaoId: string) => {
     if (!quiz || votado || !participanteId) return;
@@ -110,6 +164,25 @@ export default function QuizResponder() {
 
     const opcaoSelecionada = perguntaAtual.opcoes.find(o => o.id === opcaoId);
     const isCorreta = opcaoSelecionada?.correta || false;
+
+    // Atualizar streak de acertos
+    if (isCorreta) {
+      setStreakAcertos(prev => prev + 1);
+      if (streakAcertos + 1 >= 3) { // 3 acertos consecutivos
+        setShowStreakBonus(true);
+        triggerConfetti();
+        
+        // Esconder o bônus após 2 segundos
+        if (streakTimerRef.current) {
+          clearTimeout(streakTimerRef.current);
+        }
+        streakTimerRef.current = setTimeout(() => {
+          setShowStreakBonus(false);
+        }, 2000);
+      }
+    } else {
+      setStreakAcertos(0);
+    }
 
     try {
       await QuizService.salvarResposta(
@@ -133,6 +206,22 @@ export default function QuizResponder() {
 
         return { ...prevQuiz, perguntas: novasPerguntas };
       });
+
+      // Mostrar feedback de resposta
+      setFeedbackCorreto(isCorreta);
+      setShowFeedback(true);
+      
+      // Esconder feedback após 1.5 segundos e avançar para próxima pergunta
+      setTimeout(() => {
+        setShowFeedback(false);
+        
+        // Se não for a última pergunta, avançar automaticamente
+        if (currentQuestionIndex < (quiz?.perguntas.length || 0) - 1) {
+          setTimeout(() => {
+            goToNextQuestion();
+          }, 500);
+        }
+      }, 1500);
     } catch (error) {
       console.error("Erro ao salvar resposta:", error);
       alert("Erro ao salvar sua resposta. Tente novamente.");
@@ -165,24 +254,35 @@ export default function QuizResponder() {
 
     setLoading(true);
     try {
-      // O cálculo de acertos é feito no frontend, pois as respostas já foram salvas individualmente
-      let correctCount = 0;
-      quiz.perguntas.forEach(pergunta => {
-        const opcaoSelecionada = pergunta.opcoes.find(o => o.id === pergunta.respostaSelecionada);
-        if (opcaoSelecionada?.correta) {
-          correctCount++;
-        }
-      });
+      // Agora enviarRespostas retorna um objeto com acertos e score
+      const resultado = await QuizService.enviarRespostas(quiz, participanteId);
       
-      setAcertos(correctCount);
+      setAcertos(resultado.acertos);
+      setScore(resultado.score);
       setVotado(true);
       setEtapa("resultado");
+      
+      // Disparar confetti para celebrar a conclusão
+      if (resultado.acertos / quiz.perguntas.length >= 0.7) {
+        setTimeout(() => {
+          triggerConfetti();
+        }, 500);
+      }
     } catch (error) {
       console.error("Erro ao enviar respostas:", error);
       alert("Erro ao enviar respostas. Tente novamente.");
     } finally {
       setLoading(false);
     }
+  };
+
+  // Formatar tempo para exibição
+  const formatarTempo = (ms: number) => {
+    const segundos = Math.floor(ms / 1000);
+    const minutos = Math.floor(segundos / 60);
+    const segundosRestantes = segundos % 60;
+    
+    return `${minutos.toString().padStart(2, '0')}:${segundosRestantes.toString().padStart(2, '0')}`;
   };
 
   // Aguardar montagem no cliente
@@ -200,88 +300,180 @@ export default function QuizResponder() {
     return <LoadingScreen message="Carregando questionário..." subMessage="Preparando seu quiz, aguarde um momento." />;
   }
 
-  // Verificar se o quiz foi encontrado
-  if (!quiz) {
-    return <ErrorScreen />;
+  // Exibir tela de contagem regressiva
+  if (showCountdown) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-700 mb-4">Prepare-se!</h2>
+          <div className="text-8xl font-bold text-blue-600 mb-8 animate-pulse">
+            {countdown}
+          </div>
+          <p className="text-gray-600">O quiz começará em instantes...</p>
+        </div>
+      </div>
+    );
   }
 
-  // Renderizar a etapa atual
+  // Exibir formulário de informações do participante
   if (etapa === "info") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
-        <QuizHeader 
-          quiz={quiz} 
-          sessionInfo={sessionInfo} // Passar informações da sessão
-        />
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <ParticipantInfoForm onSubmit={iniciarQuiz} loading={loading} />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+        <div className="max-w-2xl mx-auto">
+          {quiz && (
+            <>
+              <QuizHeader 
+                quiz={quiz} // Passando o objeto quiz completo
+                sessionInfo={sessionInfo}
+              />
+              <ParticipantInfoForm 
+                onSubmit={iniciarQuiz} 
+                loading={loading} 
+              />
+            </>
+          )}
         </div>
       </div>
     );
   }
 
-  if (etapa === "quiz") {
-    const respondidas = quiz.perguntas.filter(p => p.respostaSelecionada).length;
-    const currentQuestion = quiz.perguntas[currentQuestionIndex];
-
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
-        <QuizHeader 
-          quiz={quiz} 
-          participanteNome={participante.nome} 
-          participanteRA={participante.ra} 
-          respondidas={respondidas}
-          showStats={false}
-          sessionInfo={sessionInfo} // Passar informações da sessão
-        />
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <ProgressBar current={currentQuestionIndex + 1} total={quiz.perguntas.length} />
-        </div>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <QuizQuestion 
-            pergunta={currentQuestion}
-            index={currentQuestionIndex}
-            onSelectOption={selecionarResposta}
-            disabled={votado} // Removido o disabled baseado em respostaSelecionada
-          />
-          <div className="flex justify-between mt-6">
-            <Button 
-              onClick={goToPreviousQuestion} 
-              disabled={currentQuestionIndex === 0 || loading || votado}
-              className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-xl inline-flex items-center"
-            >
-              <ArrowLeft className="mr-2" size={20} />
-              Anterior
-            </Button>
-            {currentQuestionIndex < quiz.perguntas.length - 1 ? (
-              <Button 
-                onClick={goToNextQuestion} 
-                disabled={loading || votado || !currentQuestion.respostaSelecionada}
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl inline-flex items-center"
-              >
-                Próxima
-                <ArrowRight className="ml-2" size={20} />
-              </Button>
-            ) : (
-              <Button 
-                onClick={enviarRespostas} 
-                disabled={loading || votado || !currentQuestion.respostaSelecionada}
-                className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-xl inline-flex items-center"
-              >
-                <Trophy className="mr-2" size={20} />
-                Finalizar Quiz
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+  // Exibir resultado do quiz
   if (etapa === "resultado" && acertos !== null) {
-    return <QuizResult quiz={quiz} participante={participante} acertos={acertos} sessionInfo={sessionInfo} />;
+    return (
+      <QuizResult 
+        quiz={quiz!} 
+        participante={participante} 
+        acertos={acertos} 
+        score={score} // Passando o score para o componente de resultado
+        sessionInfo={sessionInfo}
+      />
+    );
   }
 
-  return null; 
+  // Exibir quiz em andamento
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+      <div className="max-w-2xl mx-auto">
+        {quiz && (
+          <>
+            <QuizHeader 
+              quiz={quiz} // Passando o objeto quiz completo
+              sessionInfo={sessionInfo}
+            />
+            
+            {/* Barra de progresso e informações */}
+            <div className="mb-6">
+              <div className="flex justify-between items-center mb-2">
+                <div className="text-sm text-gray-600">
+                  Pergunta {currentQuestionIndex + 1} de {quiz.perguntas.length}
+                </div>
+                
+                {/* Streak de acertos */}
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 bg-amber-100 text-amber-800 px-3 py-1 rounded-full">
+                    <Zap size={16} />
+                    <span className="font-medium">{streakAcertos}</span>
+                  </div>
+                  
+                  {/* Timer */}
+                  <div className="flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
+                    <Clock size={16} />
+                    <span className="font-medium">{formatarTempo(tempoDecorrido)}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <ProgressBar 
+                value={((currentQuestionIndex + 1) / quiz.perguntas.length) * 100} // Ajustado para passar o valor correto
+                className="h-2"
+              />
+            </div>
+            
+            {/* Animação de streak bonus */}
+            <AnimatePresence>
+              {showStreakBonus && (
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="fixed top-1/4 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50"
+                >
+                  <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-2">
+                    <Award size={24} />
+                    <span className="text-xl font-bold">Sequência de {streakAcertos} acertos!</span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            
+            {/* Pergunta atual */}
+            <div className="relative">
+              {/* Feedback de resposta */}
+              <AnimatePresence>
+                {showFeedback && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0 flex items-center justify-center z-10"
+                  >
+                    <div className={`text-white text-4xl font-bold p-8 rounded-2xl ${
+                      feedbackCorreto 
+                        ? "bg-green-500/90" 
+                        : "bg-red-500/90"
+                    }`}>
+                      {feedbackCorreto ? "Correto!" : "Incorreto!"}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              
+              <div className={showFeedback ? "opacity-30" : ""}>
+                <QuizQuestion
+                  pergunta={quiz.perguntas[currentQuestionIndex]}
+                  onSelectOption={selecionarResposta}
+                  disabled={showFeedback}
+                  index={currentQuestionIndex} // Adicionado o index
+                />
+              </div>
+            </div>
+            
+            {/* Botões de navegação */}
+            <div className="flex justify-between mt-6">
+              <Button
+                variant="outline"
+                onClick={goToPreviousQuestion}
+                disabled={currentQuestionIndex === 0 || showFeedback}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft size={16} />
+                Anterior
+              </Button>
+              
+              {currentQuestionIndex === quiz.perguntas.length - 1 ? (
+                <Button
+                  onClick={enviarRespostas}
+                  disabled={!quiz.perguntas[currentQuestionIndex].respostaSelecionada || showFeedback}
+                  className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white flex items-center gap-2"
+                >
+                  <Trophy size={16} />
+                  Finalizar Quiz
+                </Button>
+              ) : (
+                <Button
+                  onClick={goToNextQuestion}
+                  disabled={!quiz.perguntas[currentQuestionIndex].respostaSelecionada || showFeedback}
+                  className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white flex items-center gap-2"
+                >
+                  Próxima
+                  <ArrowRight size={16} />
+                </Button>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
 }
 

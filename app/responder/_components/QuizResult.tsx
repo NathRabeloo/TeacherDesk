@@ -2,20 +2,21 @@
 
 import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { CheckCircle, XCircle, Tag } from "lucide-react";
+import { CheckCircle, XCircle, Tag, Award } from "lucide-react";
 import { Quiz, Participante } from "./types";
 
 type QuizResultProps = {
   quiz: Quiz;
   participante: Participante;
   acertos: number;
+  score: number; // Certifique-se de que esta linha está presente
   sessionInfo?: {
     id: string;
     nome: string;
   } | null;
 };
 
-export const QuizResult: React.FC<QuizResultProps> = ({ quiz, participante, acertos, sessionInfo }) => {
+export const QuizResult: React.FC<QuizResultProps> = ({ quiz, participante, acertos, score, sessionInfo }) => {
   const porcentagem = quiz.perguntas.length > 0 
     ? Math.round((acertos / quiz.perguntas.length) * 100) 
     : 0;
@@ -46,6 +47,21 @@ export const QuizResult: React.FC<QuizResultProps> = ({ quiz, participante, acer
             <div className="text-xl text-gray-700">
               {porcentagem}% de acertos
             </div>
+            
+            {/* Novo componente para exibir o score */}
+            <div className="bg-gradient-to-r from-amber-100 to-amber-200 p-4 rounded-xl shadow-inner">
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <Award className="text-amber-600 h-6 w-6" />
+                <span className="text-lg font-semibold text-amber-800">Sua pontuação</span>
+              </div>
+              <div className="text-3xl font-bold text-amber-600">
+                {score.toLocaleString("pt-BR")}
+              </div>
+              <div className="text-xs text-amber-700 mt-1">
+                Baseado em acertos e tempo de resposta
+              </div>
+            </div>
+            
             <div className={`text-lg font-semibold ${
               porcentagem >= 70 ? "text-green-600" : 
               porcentagem >= 50 ? "text-yellow-600" : "text-red-600"
@@ -127,7 +143,7 @@ export const QuizResult: React.FC<QuizResultProps> = ({ quiz, participante, acer
               }
             </p>
             <p className="text-sm text-gray-500">
-              Quiz finalizado em {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+              Quiz finalizado em {new Date().toLocaleDateString("pt-BR")} às {new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
             </p>
           </CardContent>
         </Card>
@@ -135,4 +151,5 @@ export const QuizResult: React.FC<QuizResultProps> = ({ quiz, participante, acer
     </div>
   );
 };
+
 

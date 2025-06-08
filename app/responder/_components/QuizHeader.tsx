@@ -105,3 +105,4 @@ export const QuizHeader: React.FC<QuizHeaderProps> = ({
   );
 };
 
+
