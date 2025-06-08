@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import ModalAddEvento, { Evento } from "./ModalAddEvento";
 import { createClient } from "@/lib/utils/supabase/client";
-import { FaExclamationTriangle, FaCalendarAlt, FaPlus, FaChevronLeft, FaChevronRight, FaBell, FaCalendarDay, FaClock, FaFlag } from "react-icons/fa";
+import { FaExclamationTriangle, FaCalendarAlt, FaPlus, FaChevronLeft, FaChevronRight, FaBell, FaCalendarDay, FaClock, FaFlag, FaCheck } from "react-icons/fa";
 
 const daysOfWeek = ["SEG", "TER", "QUA", "QUI", "SEX", "SAB", "DOM"];
 const monthNames = [
@@ -22,8 +22,6 @@ const Calendar = () => {
 
   const hoje = new Date();
   const diaAtual = (hoje.getFullYear() === currentYear && hoje.getMonth() === currentMonth) ? hoje.getDate() : null;
-
-  
 
   useEffect(() => {
     const fetchEventos = async () => {
@@ -108,8 +106,19 @@ const Calendar = () => {
     setShowModal(true);
   };
 
-  const removerEvento = (id: number) => {
-    setEventos((oldEventos) => oldEventos.filter((ev) => ev.id !== id));
+  const removerEvento = async (id: number) => {
+    // Atualização no Supabase
+    const { error } = await supabase
+      .from("Evento")
+      .update({ deletedAt: new Date().toISOString() })
+      .eq("id", id);
+
+    if (!error) {
+      // Atualização local
+      setEventos((oldEventos) => oldEventos.filter((ev) => ev.id !== id));
+    } else {
+      console.error("Erro ao remover evento:", error.message);
+    }
   };
 
   // Eventos próximos nos próximos 3 dias
@@ -126,25 +135,24 @@ const Calendar = () => {
   });
 
   return (
-  
-      <div className="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-3 rounded-xl shadow-lg">
-                <FaCalendarAlt className="text-white text-2xl" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                  Calendário de Eventos
-                </h1>
-                <p className="text-lg text-gray-600 dark:text-gray-300 mt-1">
-                  Organize e gerencie seus compromissos importantes
-                </p>
-              </div>
-          </div>
+    <div className="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-3 rounded-xl shadow-lg">
+              <FaCalendarAlt className="text-white text-2xl" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                Calendário de Eventos
+              </h1>
+              <p className="text-lg text-gray-600 dark:text-gray-300 mt-1">
+                Organize e gerencie seus compromissos importantes
+              </p>
+            </div>
           </div>
         </div>
+      </div>
 
       {/* Navegação do Calendário */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
@@ -165,6 +173,14 @@ const Calendar = () => {
             </div>
 
             <div className="flex items-center gap-3">
+              <button
+                onClick={() => changeMonth(1)}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl font-semibold transition-all duration-200"
+              >
+                <span className="hidden sm:inline">Próximo</span>
+                <FaChevronRight />
+              </button>
+
               <div className="relative">
                 <button
                   onClick={() => setShowEventosProximos(!showEventosProximos)}
@@ -216,14 +232,6 @@ const Calendar = () => {
               >
                 <FaPlus />
                 <span className="hidden sm:inline">Novo Evento</span>
-              </button>
-
-              <button
-                onClick={() => changeMonth(1)}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl font-semibold transition-all duration-200"
-              >
-                <span className="hidden sm:inline">Próximo</span>
-                <FaChevronRight />
               </button>
             </div>
           </div>
@@ -412,6 +420,7 @@ const Calendar = () => {
             setShowModal(false);
             setEventoEmEdicao(null);
           }}
+          // Adicione esta prop para o botão de finalizar
         />
       )}
     </div>
