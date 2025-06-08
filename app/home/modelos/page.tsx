@@ -441,7 +441,7 @@ export default function Modelos() {
                   Nenhum modelo disponível
                 </h3>
                 <p className="text-gray-500 dark:text-gray-400">
-                  Adicione modelos clicando no botão "Novo Modelo".
+                  Adicione modelos clicando no botão Novo Modelo.
                 </p>
               </div>
             )}
