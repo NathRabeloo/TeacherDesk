@@ -42,7 +42,7 @@ import {
 
 const tipoColors: Record<string, string> = {
   tecnico: "from-blue-500 to-blue-600",
-  institucional: "from-pink-500 to-pink-600",
+  institucional: "from-pink-500 to-pink-600", 
   plataforma: "from-purple-500 to-purple-600",
   administrativos: "from-green-500 to-green-600",
   outro: "from-gray-500 to-gray-600",
@@ -56,12 +56,10 @@ const tipoIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   outro: FaQuestionCircle,
 };
 
-const ITENS_POR_PAGINA = 6;
-
 const Tutoriais = () => {
   const [tutoriais, setTutoriais] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [tipoFiltro, setTipoFiltro] = useState("");
+  const [tipoFiltro, setTipoFiltro] = useState("all");
   const [modalCriar, setModalCriar] = useState(false);
   const [modalVisualizar, setModalVisualizar] = useState(false);
   const [modalEditar, setModalEditar] = useState(false);
@@ -69,7 +67,10 @@ const Tutoriais = () => {
   const [titulo, setTitulo] = useState("");
   const [tipo, setTipo] = useState("");
   const [descricao, setDescricao] = useState("");
+  
+  // Estados para paginação
   const [paginaAtual, setPaginaAtual] = useState(1);
+  const itensPorPagina = 6;
 
   useEffect(() => {
     carregarTutoriais();
@@ -80,33 +81,66 @@ const Tutoriais = () => {
     setTutoriais(data);
   };
 
+  // Lógica de filtro e paginação
+  const tutoriaisFiltrados = tutoriais.filter((t) => {
+    const matchSearch = t.titulo.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchTipo = tipoFiltro === "all" ? true : t.tipo === tipoFiltro;
+    return matchSearch && matchTipo;
+  });
+
+  const totalPaginas = Math.ceil(tutoriaisFiltrados.length / itensPorPagina);
+  const tutoriaisPaginados = tutoriaisFiltrados.slice(
+    (paginaAtual - 1) * itensPorPagina,
+    paginaAtual * itensPorPagina
+  );
+
+  // Resetar página quando os filtros mudam
+  useEffect(() => {
+    setPaginaAtual(1);
+  }, [searchQuery, tipoFiltro]);
+
   const handleCriar = async () => {
-    const form = new FormData();
-    form.append("titulo", titulo);
-    form.append("tipo", tipo);
-    form.append("descricao", descricao);
-    const result = await criarTutorial(form);
-    if (result.success) {
-      setModalCriar(false);
-      setTitulo("");
-      setTipo("");
-      setDescricao("");
-      carregarTutoriais();
+    try {
+      const form = new FormData();
+      form.append("titulo", titulo);
+      form.append("tipo", tipo);
+      form.append("descricao", descricao);
+      
+      const result = await criarTutorial(form);
+      if (result.success) {
+        setTitulo("");
+        setTipo("");
+        setDescricao("");
+        await carregarTutoriais();
+        setModalCriar(false);
+        setPaginaAtual(1);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Erro ao criar tutorial:", error);
+      return false;
     }
   };
 
   const handleEditar = async () => {
     if (!tutorialSelecionado) return;
-    const form = new FormData();
-    form.append("id", tutorialSelecionado.id);
-    form.append("titulo", titulo);
-    form.append("tipo", tipo);
-    form.append("descricao", descricao);
-    const result = await editarTutorial(form);
-    if (result.success) {
-      setModalEditar(false);
-      setTutorialSelecionado(null);
-      carregarTutoriais();
+    
+    try {
+      const form = new FormData();
+      form.append("id", tutorialSelecionado.id);
+      form.append("titulo", titulo);
+      form.append("tipo", tipo);
+      form.append("descricao", descricao);
+      
+      const result = await editarTutorial(form);
+      if (result.success) {
+        setModalEditar(false);
+        setTutorialSelecionado(null);
+        await carregarTutoriais();
+      }
+    } catch (error) {
+      console.error("Erro ao editar tutorial:", error);
     }
   };
 
@@ -120,39 +154,22 @@ const Tutoriais = () => {
       return;
     }
 
-    const result = await deletarTutorial(tutorial.id);
-    if (result.success) {
-      carregarTutoriais();
-    } else {
-      alert("Erro ao excluir o tutorial.");
+    try {
+      const result = await deletarTutorial(tutorial.id);
+      if (result.success) {
+        await carregarTutoriais();
+        if (tutoriaisPaginados.length === 1 && paginaAtual > 1) {
+          setPaginaAtual(paginaAtual - 1);
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao excluir tutorial:", error);
     }
-  };
-
-  const tutoriaisFiltrados = tutoriais.filter((t) => {
-    const matchSearch = t.titulo.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchTipo = tipoFiltro ? t.tipo === tipoFiltro : true;
-    return matchSearch && matchTipo;
-  });
-
-  const totalPaginas = Math.ceil(tutoriaisFiltrados.length / ITENS_POR_PAGINA);
-  const tutoriaisPagina = tutoriaisFiltrados.slice(
-    (paginaAtual - 1) * ITENS_POR_PAGINA,
-    paginaAtual * ITENS_POR_PAGINA
-  );
-
-  useEffect(() => {
-    setPaginaAtual(1);
-  }, [searchQuery, tipoFiltro]);
-
-  const mudarPagina = (novaPagina: number) => {
-    if (novaPagina < 1 || novaPagina > totalPaginas) return;
-    setPaginaAtual(novaPagina);
   };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-        {/* Cabeçalho do Conteúdo */}
         <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 px-8 py-6 border-b border-gray-200 dark:border-gray-600">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -161,71 +178,69 @@ const Tutoriais = () => {
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Visão Geral
+                  Tutoriais
                 </h2>
                 <p className="text-gray-600 dark:text-gray-300 text-lg mt-1">
-                  Controle suas atividades e acompanhe o progresso
+                  Acesse  tutoriais de apoio
                 </p>
               </div>
             </div>
+            
+            <Button
+              onClick={() => {
+                setModalCriar(true);
+                setTitulo("");
+                setTipo("");
+                setDescricao("");
+              }}
+              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 text-lg font-semibold"
+            >
+              <FaPlus />
+              Novo Tutorial
+            </Button>
           </div>
-          <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 px-8 py-6 border-b border-gray-200 dark:border-gray-600">
-            <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-              <div className="flex flex-col md:flex-row gap-4 items-center flex-1">
-                <div className="relative flex-1 max-w-md">
-                  <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <Input
-                    placeholder="Buscar tutoriais..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 h-12 text-lg border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-blue-500 dark:focus:border-blue-400"
-                  />
-                </div>
 
-                <Select
-                  value={tipoFiltro}
-                  onValueChange={(valor) => {
-                    if (valor === tipoFiltro) {
-                      setTipoFiltro("");
-                    } else {
-                      setTipoFiltro(valor);
-                    }
-                  }}
-                >
-                  <SelectTrigger className="w-full md:w-48 h-12 text-lg border-2 border-gray-300 dark:border-gray-600 rounded-xl">
-                    <SelectValue placeholder="Filtrar por tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="tecnico">Técnico</SelectItem>
-                    <SelectItem value="institucional">Institucional</SelectItem>
-                    <SelectItem value="administrativos">Administrativos</SelectItem>
-                    <SelectItem value="plataforma">Plataforma</SelectItem>
-                    <SelectItem value="outro">Outro</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Button
-                onClick={() => setModalCriar(true)}
-                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 text-lg font-semibold"
-              >
-                <FaPlus />
-                Novo Tutorial
-              </Button>
+          <div className="mt-8 flex flex-col md:flex-row gap-4 items-center">
+            <div className="relative flex-1 max-w-md">
+              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <Input
+                placeholder="Buscar tutoriais..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-12 text-lg border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-blue-500 dark:focus:border-blue-400"
+              />
             </div>
-          </div>
 
-          {/* Grid de Tutoriais */}
-          <div className="p-8">
-            {tutoriaisPagina.length === 0 ? (
-              <div className="text-center py-12">
-                <FaBook className="mx-auto text-6xl text-gray-300 dark:text-gray-600 mb-4" />
-                <p className="text-xl text-gray-500 dark:text-gray-400">Nenhum tutorial encontrado</p>
-                <p className="text-gray-400 dark:text-gray-500 mt-2">Tente ajustar seus filtros de busca</p>
-              </div>
-            ) : (
+            <Select
+              value={tipoFiltro}
+              onValueChange={setTipoFiltro}
+            >
+              <SelectTrigger className="w-full md:w-48 h-12 text-lg border-2 border-gray-300 dark:border-gray-600 rounded-xl">
+                <SelectValue placeholder="Filtrar por tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os tipos</SelectItem>
+                <SelectItem value="tecnico">Técnico</SelectItem>
+                <SelectItem value="institucional">Institucional</SelectItem>
+                <SelectItem value="administrativos">Administrativos</SelectItem>
+                <SelectItem value="plataforma">Plataforma</SelectItem>
+                <SelectItem value="outro">Outro</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="p-8">
+          {tutoriaisPaginados.length === 0 ? (
+            <div className="text-center py-12">
+              <FaBook className="mx-auto text-6xl text-gray-300 dark:text-gray-600 mb-4" />
+              <p className="text-xl text-gray-500 dark:text-gray-400">Nenhum tutorial encontrado</p>
+              <p className="text-gray-400 dark:text-gray-500 mt-2">Tente ajustar seus filtros de busca</p>
+            </div>
+          ) : (
+            <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {tutoriaisPagina.map((tutorial) => {
+                {tutoriaisPaginados.map((tutorial) => {
                   const IconComponent = tipoIcons[tutorial.tipo] || FaQuestionCircle;
                   return (
                     <Card
@@ -260,7 +275,7 @@ const Tutoriais = () => {
                             Visualizar
                           </Button>
 
-                          {!tutorial.fixo ? (
+                          {!tutorial.fixo && (
                             <div className="flex gap-2">
                               <Button
                                 onClick={() => {
@@ -283,53 +298,47 @@ const Tutoriais = () => {
                                 Excluir
                               </Button>
                             </div>
-                          ) : (<></>)}
+                          )}
                         </div>
                       </CardContent>
                     </Card>
                   );
                 })}
               </div>
-            )}
-          </div>
 
-          {/* Paginação */}
-          {totalPaginas > 1 && (
-            <div className="flex justify-center py-8 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={() => mudarPagina(paginaAtual - 1)}
-                  disabled={paginaAtual === 1}
-                  className="px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600"
-                >
-                  Anterior
-                </Button>
-
-                {[...Array(totalPaginas)].map((_, i) => (
+              {totalPaginas > 1 && (
+                <div className="flex justify-center gap-2 mt-8">
                   <Button
-                    key={i}
-                    variant={i + 1 === paginaAtual ? "default" : "outline"}
-                    onClick={() => mudarPagina(i + 1)}
-                    className={`px-4 py-2 rounded-lg border-2 ${i + 1 === paginaAtual
-                        ? "bg-blue-600 text-white border-blue-600"
-                        : "border-gray-300 dark:border-gray-600"
-                      }`}
+                    variant="outline"
+                    onClick={() => setPaginaAtual(p => Math.max(1, p - 1))}
+                    disabled={paginaAtual === 1}
+                    className="rounded-xl"
                   >
-                    {i + 1}
+                    Anterior
                   </Button>
-                ))}
-
-                <Button
-                  variant="outline"
-                  onClick={() => mudarPagina(paginaAtual + 1)}
-                  disabled={paginaAtual === totalPaginas}
-                  className="px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600"
-                >
-                  Próxima
-                </Button>
-              </div>
-            </div>
+                  
+                  {Array.from({ length: totalPaginas }, (_, i) => (
+                    <Button
+                      key={i}
+                      variant={paginaAtual === i + 1 ? "default" : "outline"}
+                      onClick={() => setPaginaAtual(i + 1)}
+                      className="rounded-xl"
+                    >
+                      {i + 1}
+                    </Button>
+                  ))}
+                  
+                  <Button
+                    variant="outline"
+                    onClick={() => setPaginaAtual(p => Math.min(totalPaginas, p + 1))}
+                    disabled={paginaAtual === totalPaginas}
+                    className="rounded-xl"
+                  >
+                    Próximo
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -388,7 +397,6 @@ const Tutoriais = () => {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Descrição
               </label>
-              {/* CORREÇÃO AQUI: Passar content e setContent */}
               <EditorDescricao
                 content={descricao}
                 setContent={setDescricao}
@@ -405,7 +413,12 @@ const Tutoriais = () => {
               Cancelar
             </Button>
             <Button
-              onClick={handleCriar}
+              onClick={async () => {
+                const success = await handleCriar();
+                if (success) {
+                  setModalCriar(false);
+                }
+              }}
               className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-2 rounded-lg font-semibold"
             >
               Criar Tutorial
@@ -527,7 +540,10 @@ const Tutoriais = () => {
               Cancelar
             </Button>
             <Button
-              onClick={handleEditar}
+              onClick={async () => {
+                await handleEditar();
+                setModalEditar(false);
+              }}
               className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-2 rounded-lg font-semibold"
             >
               Salvar Alterações
@@ -535,8 +551,6 @@ const Tutoriais = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-
     </div>
   );
 };
