@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { FaEdit, FaTrash, FaQrcode, FaChartBar, FaSearch, FaFilter, FaPlus, FaUsers, FaQuestionCircle } from "react-icons/fa";
+import { FaEdit, FaTrash, FaQrcode, FaChartBar, FaSearch, FaFilter, FaPlus, FaUsers, FaQuestionCircle, FaHistory } from "react-icons/fa";
 import QRCode from "react-qr-code";
 import { Copy } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { criarSessaoQuiz, listarSessoesQuiz, obterLinkQuizSession, excluirSessaoQuiz } from "../action";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -35,10 +36,17 @@ interface Disciplina {
   nome: string;
 }
 
+interface QuizSession {
+  id: string;
+  nome: string;
+  data: string;
+  participantes: number;
+}
+
 interface QuizListProps {
   onCreateQuiz: () => void;
   onEditQuiz: (quizId: string) => void;
-  onViewResults?: (quizId: string) => void;
+  onViewResults?: (quizId: string, sessionId?: string) => void;
 }
 
 const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewResults }) => {
@@ -50,6 +58,17 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
   const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
   const [isQRCodeOpen, setIsQRCodeOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isSessionDialogOpen, setIsSessionDialogOpen] = useState(false);
+  const [sessoes, setSessoes] = useState<QuizSession[]>([]);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(false);
+  const [newSessionName, setNewSessionName] = useState("");
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
+
+  // Novos estados para QR Code de sessão
+  const [isSessionQRCodeOpen, setIsSessionQRCodeOpen] = useState(false);
+  const [selectedSession, setSelectedSession] = useState<QuizSession | null>(null);
+  const [sessionQRCodeUrl, setSessionQRCodeUrl] = useState("");
+  const [sessionCopied, setSessionCopied] = useState(false);
 
   useEffect(() => {
     const fetchDisciplinas = async () => {
@@ -106,7 +125,7 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
     : "";
 
   const handleCopy = () => {
-    if (!qrCodeUrl) return;  
+    if (!qrCodeUrl) return;
     navigator.clipboard.writeText(qrCodeUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -117,6 +136,117 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
     if (!open) {
       setSelectedQuiz(null);
       setCopied(false);
+    }
+  };
+
+  const handleOpenSessionDialog = async (quiz: Quiz) => {
+    setSelectedQuiz(quiz);
+    setIsSessionDialogOpen(true);
+    setIsLoadingSessions(true);
+    try {
+      const sessoes = await listarSessoesQuiz(quiz.id);
+      setSessoes(sessoes);
+    } catch (error) {
+      console.error("Erro ao listar sessões:", error);
+      alert("Erro ao carregar sessões do quiz");
+    } finally {
+      setIsLoadingSessions(false);
+    }
+  };
+
+  const handleSessionDialogChange = (open: boolean) => {
+    setIsSessionDialogOpen(open);
+    if (!open) {
+      setSelectedQuiz(null);
+      setSessoes([]);
+      setNewSessionName("");
+    }
+  };
+
+  const handleCreateSession = async () => {
+    if (!selectedQuiz) return;
+
+    setIsCreatingSession(true);
+    try {
+      const sessaoNome = newSessionName.trim() || `Sessão ${new Date().toLocaleDateString()}`;
+      const novaSessao = await criarSessaoQuiz(selectedQuiz.id, sessaoNome);
+
+      // Atualizar a lista de sessões
+      const sessoes = await listarSessoesQuiz(selectedQuiz.id);
+      setSessoes(sessoes);
+      setNewSessionName("");
+    } catch (error) {
+      console.error("Erro ao criar sessão:", error);
+      alert("Erro ao criar nova sessão de quiz");
+    } finally {
+      setIsCreatingSession(false);
+    }
+  };
+
+  const handleGetSessionLink = async (sessionId: string) => {
+    try {
+      const linkInfo = await obterLinkQuizSession(sessionId);
+      // Copiar o link para a área de transferência
+      navigator.clipboard.writeText(`${typeof window !== "undefined" ? window.location.origin : ""}${linkInfo.link}`);
+      alert("Link copiado para a área de transferência!");
+    } catch (error) {
+      console.error("Erro ao obter link da sessão:", error);
+      alert("Erro ao gerar link da sessão");
+    }
+  };
+
+  // Nova função para excluir sessão
+  const handleDeleteSession = async (sessionId: string, sessionName: string) => {
+    if (!confirm(`Tem certeza que deseja excluir a sessão "${sessionName}"? Esta ação não pode ser desfeita.`)) {
+      return;
+    }
+
+    try {
+      await excluirSessaoQuiz(sessionId);
+
+      // Atualizar a lista de sessões após exclusão
+      if (selectedQuiz) {
+        const sessoesAtualizadas = await listarSessoesQuiz(selectedQuiz.id);
+        setSessoes(sessoesAtualizadas);
+      }
+
+      alert("Sessão excluída com sucesso!");
+    } catch (error) {
+      console.error("Erro ao excluir sessão:", error);
+      alert("Erro ao excluir sessão. Tente novamente.");
+    }
+  };
+
+  // Nova função para gerar QR Code da sessão
+  const handleGenerateSessionQRCode = async (session: QuizSession) => {
+    try {
+      const linkInfo = await obterLinkQuizSession(session.id);
+      const fullUrl = `${typeof window !== "undefined" ? window.location.origin : ""}${linkInfo.link}`;
+
+      setSelectedSession(session);
+      setSessionQRCodeUrl(fullUrl);
+      setIsSessionQRCodeOpen(true);
+    } catch (error) {
+      console.error("Erro ao gerar QR Code da sessão:", error);
+      alert("Erro ao gerar QR Code da sessão");
+    }
+  };
+
+  // Função para copiar link da sessão (QR Code)
+  const handleCopySessionLink = () => {
+    if (!sessionQRCodeUrl) return;
+    navigator.clipboard.writeText(sessionQRCodeUrl);
+    setSessionCopied(true);
+    setTimeout(() => setSessionCopied(false), 2000);
+  };
+
+  // Função para fechar dialog do QR Code da sessão
+  const handleSessionQRCodeDialogChange = (open: boolean) => {
+    setIsSessionQRCodeOpen(open);
+    if (!open) {
+      setSelectedSession(null);
+      setSessionQRCodeUrl("");
+      setSessionCopied(false);
     }
   };
 
@@ -175,7 +305,7 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
               className="flex-1 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 rounded-xl shadow-sm"
             />
           </div>
-          
+
           <div className="flex items-center gap-3">
             <div className="bg-purple-500 p-2 rounded-lg">
               <FaFilter className="text-white text-lg" />
@@ -198,7 +328,7 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
             </Select>
           </div>
 
-          <Button 
+          <Button
             onClick={onCreateQuiz}
             className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-3"
           >
@@ -224,11 +354,11 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
               Nenhum questionário encontrado
             </h3>
             <p className="text-gray-600 dark:text-gray-300 mb-6 text-lg">
-              {searchQuery || selectedDisciplina 
-                ? "Tente ajustar os filtros de pesquisa" 
+              {searchQuery || selectedDisciplina
+                ? "Tente ajustar os filtros de pesquisa"
                 : "Comece criando seu primeiro questionário"}
             </p>
-            <Button 
+            <Button
               onClick={onCreateQuiz}
               className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-3"
             >
@@ -254,11 +384,10 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
               </TableHeader>
               <TableBody>
                 {filteredQuizzes.map((quiz, index) => (
-                  <TableRow 
-                    key={quiz.id} 
-                    className={`border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150 ${
-                      index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-750'
-                    }`}
+                  <TableRow
+                    key={quiz.id}
+                    className={`border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-750'
+                      }`}
                   >
                     <TableCell className="py-4 px-6">
                       <div className="flex items-center gap-3">
@@ -288,7 +417,7 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
                         >
                           <FaEdit className="text-blue-600 dark:text-blue-400" />
                         </Button>
-                        
+
                         {onViewResults && (
                           <Button
                             size="icon"
@@ -300,7 +429,17 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
                             <FaChartBar className="text-green-600 dark:text-green-400" />
                           </Button>
                         )}
-                        
+
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          onClick={() => handleOpenSessionDialog(quiz)}
+                          title="Gerenciar Sessões"
+                          className="h-10 w-10 rounded-xl border-2 border-amber-200 hover:border-amber-300 hover:bg-amber-50 dark:border-amber-700 dark:hover:border-amber-600 dark:hover:bg-amber-900 transition-all duration-200"
+                        >
+                          <FaHistory className="text-amber-600 dark:text-amber-400" />
+                        </Button>
+
                         <Button
                           size="icon"
                           variant="outline"
@@ -313,7 +452,7 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
                         >
                           <FaQrcode className="text-purple-600 dark:text-purple-400" />
                         </Button>
-                        
+
                         <Button
                           size="icon"
                           variant="outline"
@@ -333,7 +472,7 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
         )}
       </div>
 
-      {/* Dialog do QR Code */}
+      {/* Dialog do QR Code do Quiz */}
       <Dialog open={isQRCodeOpen} onOpenChange={handleQRCodeDialogChange}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -360,20 +499,174 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
                   onClick={handleCopy}
                   className="flex items-center gap-3 px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
                 >
-                  <Copy size={16} />
+                  <Copy className={copied ? "text-green-500" : ""} />
                   {copied ? "Link Copiado!" : "Copiar Link"}
                 </Button>
               </>
             )}
           </div>
-          <DialogFooter>
-            <Button 
-              onClick={() => setIsQRCodeOpen(false)}
-              className="w-full bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white rounded-xl py-3 font-semibold"
-            >
-              Fechar
-            </Button>
-          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog do QR Code da Sessão */}
+      <Dialog open={isSessionQRCodeOpen} onOpenChange={handleSessionQRCodeDialogChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-center text-gray-900 dark:text-white">
+              QR Code da Sessão
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center space-y-6 py-4">
+            {selectedSession && (
+              <>
+                <div className="bg-white p-4 rounded-2xl shadow-lg">
+                  <QRCode value={sessionQRCodeUrl} size={200} />
+                </div>
+                <div className="text-center space-y-2">
+                  <p className="font-semibold text-gray-900 dark:text-white">
+                    {selectedSession.nome}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {selectedQuiz?.titulo}
+                  </p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 break-all bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+                    {sessionQRCodeUrl}
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={handleCopySessionLink}
+                  className="flex items-center gap-3 px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                >
+                  <Copy className={sessionCopied ? "text-green-500" : ""} />
+                  {sessionCopied ? "Link Copiado!" : "Copiar Link"}
+                </Button>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Sessões */}
+      <Dialog open={isSessionDialogOpen} onOpenChange={handleSessionDialogChange}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-center text-gray-900 dark:text-white">
+              Sessões do Questionário
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            {selectedQuiz && (
+              <>
+                <div className="mb-6">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                    {selectedQuiz.titulo}
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Gerencie as sessões deste questionário para aplicá-lo a diferentes grupos.
+                  </p>
+                </div>
+
+                {/* Criar nova sessão */}
+                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl mb-6">
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                    Criar Nova Sessão
+                  </h4>
+                  <div className="flex gap-3">
+                    <Input
+                      placeholder="Nome da sessão (ex: Turma A, Grupo 2)"
+                      value={newSessionName}
+                      onChange={(e) => setNewSessionName(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button
+                      onClick={handleCreateSession}
+                      disabled={isCreatingSession}
+                      className="bg-green-500 hover:bg-green-600 text-white"
+                    >
+                      {isCreatingSession ? "Criando..." : "Criar Sessão"}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Lista de sessões */}
+                <div className="border border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden">
+                  <div className="bg-gray-100 dark:bg-gray-700 py-3 px-4 border-b border-gray-200 dark:border-gray-600">
+                    <h4 className="font-semibold text-gray-900 dark:text-white">
+                      Sessões Existentes
+                    </h4>
+                  </div>
+
+                  {isLoadingSessions ? (
+                    <div className="text-center py-8">
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-2"></div>
+                      <p className="text-gray-600 dark:text-gray-400">Carregando sessões...</p>
+                    </div>
+                  ) : sessoes.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-gray-600 dark:text-gray-400">
+                        Nenhuma sessão encontrada. Crie uma nova sessão para começar.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-200 dark:divide-gray-600">
+                      {sessoes.map((sessao) => (
+                        <div key={sessao.id} className="py-4 px-4 flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-gray-900 dark:text-white">
+                              {sessao.nome}
+                            </p>
+                            <div className="flex gap-4 mt-1 text-sm text-gray-600 dark:text-gray-400">
+                              <span>Data: {sessao.data}</span>
+                              <span>Participantes: {sessao.participantes}</span>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleGenerateSessionQRCode(sessao)}
+                              title="Gerar QR Code da Sessão"
+                              className="text-purple-600 border-purple-200 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-700 dark:hover:bg-purple-900"
+                            >
+                              <FaQrcode className="w-4 h-4" />
+                            </Button>
+
+                            {onViewResults && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  onViewResults(selectedQuiz.id, sessao.id);
+                                  setIsSessionDialogOpen(false);
+                                }}
+                                title="Ver Resultados da Sessão"
+                                className="text-green-600 border-green-200 hover:bg-green-50 dark:text-green-400 dark:border-green-700 dark:hover:bg-green-900"
+                              >
+                                <FaChartBar className="w-4 h-4" />
+                              </Button>
+                            )}
+
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDeleteSession(sessao.id, sessao.nome)}
+                              title="Excluir Sessão"
+                              className="text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-700 dark:hover:bg-red-900"
+                            >
+                              <FaTrash className="w-4 h-4" />
+                            </Button>
+                          </div>
+
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
@@ -381,3 +674,4 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
 };
 
 export default QuizList;
+

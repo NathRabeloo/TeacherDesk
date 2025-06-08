@@ -9,6 +9,7 @@ const supabase = createClient(
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const quizId = searchParams.get("quizId");
+  const sessionId = searchParams.get("sessionId"); // Novo parâmetro para filtrar por sessão
 
   if (!quizId) {
     return NextResponse.json({ error: "ID do quiz é obrigatório." }, { status: 400 });
@@ -67,38 +68,61 @@ export async function GET(req: Request) {
     };
 
     // 2️⃣ Buscar o ranking dos participantes com tempo total do banco
-    const { data: ranking, error: rankingError } = await supabase
+    let participantesQuery = supabase
       .from("Participante")
       .select(`
         id,
         nome,
         ra,
         tempo_total_ms,
-        created_at,
-        Resposta (
-          id,
-          correta,
-          respondido_em
-        )
+        created_at
       `)
       .eq("quiz_id", quizId);
+    
+    // Se tiver sessionId, filtrar por sessão
+    if (sessionId) {
+      participantesQuery = participantesQuery.eq("quiz_session_id", sessionId);
+    }
+    
+    const { data: participantes, error: participantesError } = await participantesQuery;
 
-    if (rankingError) {
-      console.error("Erro ao buscar ranking:", rankingError);
-      throw rankingError;
+    if (participantesError) {
+      console.error("Erro ao buscar participantes:", participantesError);
+      throw participantesError;
+    }
+
+    // Buscar todas as respostas para o quiz, ordenadas para pegar a última
+    const { data: todasRespostas, error: respostasError } = await supabase
+      .from("Resposta")
+      .select("participante_id, pergunta_id, correta, respondido_em")
+      .in("participante_id", participantes?.map(p => p.id) || [])
+      .order("respondido_em", { ascending: false }); // Ordenar para pegar a mais recente
+
+    if (respostasError) {
+      console.error("Erro ao buscar respostas:", respostasError);
+      throw respostasError;
     }
 
     // Processar o ranking para contar acertos e usar tempo do banco
-    const rankingDetalhado = (ranking || []).map(participante => {
-      const respostas = participante.Resposta || [];
-      const totalRespostas = respostas.length;
-      const totalAcertos = respostas.filter(r => r.correta).length;
+    const rankingDetalhado = (participantes || []).map(participante => {
+      const respostasUnicas = new Map();
+      todasRespostas?.filter(r => r.participante_id === participante.id)
+                     .forEach(resposta => {
+                       // A primeira resposta encontrada (mais recente devido à ordenação) é a que vale
+                       if (!respostasUnicas.has(resposta.pergunta_id)) {
+                         respostasUnicas.set(resposta.pergunta_id, resposta);
+                       }
+                     });
+      
+      const respostasFinais = Array.from(respostasUnicas.values());
+      const totalRespostas = respostasFinais.length;
+      const totalAcertos = respostasFinais.filter(r => r.correta).length;
       const percentualAcerto = totalRespostas > 0 ? (totalAcertos / totalRespostas) * 100 : 0;
       
       // Usar o tempo total do banco de dados
       const tempoTotal = participante.tempo_total_ms || 0;
       
-      // Calcular tempo médio por pergunta
+      // Calcular tempo médio por pergunta com base nas respostas únicas
       const tempoMedio = totalRespostas > 0 ? tempoTotal / totalRespostas : 0;
 
       return {
@@ -124,11 +148,7 @@ export async function GET(req: Request) {
       .from("Pergunta")
       .select(`
         id,
-        texto,
-        Resposta (
-          id,
-          correta
-        )
+        texto
       `)
       .eq("quiz_id", quizId);
 
@@ -138,9 +158,20 @@ export async function GET(req: Request) {
     }
 
     const perguntasDetalhadas = (perguntas || []).map(pergunta => {
-      const respostas = pergunta.Resposta || [];
-      const totalRespostas = respostas.length;
-      const totalAcertos = respostas.filter(r => r.correta).length;
+      // Filtrar respostas apenas para os participantes da sessão atual (se houver)
+      const respostasRelevantes = todasRespostas?.filter(r => r.pergunta_id === pergunta.id);
+      
+      const respostasUnicasPorPergunta = new Map();
+      respostasRelevantes?.forEach(resposta => {
+        // A primeira resposta encontrada (mais recente devido à ordenação) é a que vale
+        if (!respostasUnicasPorPergunta.has(resposta.participante_id)) {
+          respostasUnicasPorPergunta.set(resposta.participante_id, resposta);
+        }
+      });
+      
+      const respostasFinaisDaPergunta = Array.from(respostasUnicasPorPergunta.values());
+      const totalRespostas = respostasFinaisDaPergunta.length;
+      const totalAcertos = respostasFinaisDaPergunta.filter(r => r.correta).length;
       const percentualAcerto = totalRespostas > 0 ? (totalAcertos / totalRespostas) * 100 : 0;
       
       return {
@@ -152,17 +183,53 @@ export async function GET(req: Request) {
       };
     });
 
+    // Recalcular taxa de acerto geral com base nas respostas únicas
+    let totalRespostasGeral = 0;
+    let totalAcertosGeral = 0;
+
+    participantes?.forEach(participante => {
+      const respostasUnicasPorParticipante = new Map();
+      todasRespostas?.filter(r => r.participante_id === participante.id)
+                     .forEach(resposta => {
+                       if (!respostasUnicasPorParticipante.has(resposta.pergunta_id)) {
+                         respostasUnicasPorParticipante.set(resposta.pergunta_id, resposta);
+                       }
+                     });
+      const respostasFinaisDoParticipante = Array.from(respostasUnicasPorParticipante.values());
+      totalRespostasGeral += respostasFinaisDoParticipante.length;
+      totalAcertosGeral += respostasFinaisDoParticipante.filter(r => r.correta).length;
+    });
+
     // Ajustar os nomes das propriedades para coincidir com o que o frontend espera
     const resumoFormatado = {
-      total_participantes: resumoFinal.total_participantes,
+      total_participantes: participantes?.length || 0, // Usar o número real de participantes filtrados
       total_perguntas: resumoFinal.total_perguntas,
-      taxa_acerto_geral: resumoFinal.percentual_acerto_geral || 0
+      taxa_acerto_geral: totalRespostasGeral > 0 ? (totalAcertosGeral / totalRespostasGeral) * 100 : 0
     };
+
+    // Buscar informações da sessão, se houver
+    let sessaoInfo = null;
+    if (sessionId) {
+      const { data: sessao } = await supabase
+        .from("QuizSession")
+        .select("id, nome_sessao, created_at")
+        .eq("id", sessionId)
+        .single();
+      
+      if (sessao) {
+        sessaoInfo = {
+          id: sessao.id,
+          nome: sessao.nome_sessao || `Sessão de ${new Date(sessao.created_at).toLocaleDateString()}`,
+          data: new Date(sessao.created_at).toLocaleDateString()
+        };
+      }
+    }
 
     return NextResponse.json({
       resumo: resumoFormatado,
       ranking: rankingDetalhado,
-      perguntas: perguntasDetalhadas
+      perguntas: perguntasDetalhadas,
+      sessao: sessaoInfo // Incluir informações da sessão na resposta
     });
 
   } catch (error) {
@@ -173,3 +240,4 @@ export async function GET(req: Request) {
     }, { status: 500 });
   }
 }
+
