@@ -648,16 +648,27 @@ export const deletarTutorial = async (tutorialId: string) => {
 export const criarBibliografia = async (formData: FormData) => {
   const titulo = formData.get("titulo")?.toString();
   const link = formData.get("link")?.toString();
+  const disciplina_id = formData.get("disciplina_id")?.toString();
 
-  if (!titulo || !link) {
+  if (!titulo || !link || !disciplina_id) {
     return { error: "Todos os campos são obrigatórios" };
   }
 
   const supabase = createClient();
+  const {
+    data: { user },
+    error: authError
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { error: "Usuário não autenticado" };
+  }
+
+  const user_id = user.id;
 
   const { data, error } = await supabase
     .from("Bibliografia")
-    .insert([{ titulo, link }])
+    .insert([{ titulo, link, disciplina_id, user_id }])
     .select()
     .single();
 
@@ -670,13 +681,28 @@ export const criarBibliografia = async (formData: FormData) => {
 };
 
 // Listar Bibliografias
-export const listarBibliografias = async () => {
+export const listarBibliografias = async (filtroDisciplinaId?: string, disciplinaId?: string | undefined) => {
   const supabase = createClient();
+  const {
+    data: { user },
+    error: authError
+  } = await supabase.auth.getUser();
 
-  const { data, error } = await supabase
+  if (authError || !user) {
+    return { error: "Usuário não autenticado" };
+  }
+
+  let query = supabase
     .from("Bibliografia")
     .select("*")
+    .eq("user_id", user.id)
     .order("created_at", { ascending: false });
+
+  if (filtroDisciplinaId) {
+    query = query.eq("disciplina_id", filtroDisciplinaId);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error("Erro ao listar bibliografias:", error.message);
@@ -691,17 +717,29 @@ export const editarBibliografia = async (formData: FormData) => {
   const id = formData.get("id")?.toString();
   const titulo = formData.get("titulo")?.toString();
   const link = formData.get("link")?.toString();
+  const disciplina_id = formData.get("disciplina_id")?.toString();
 
-  if (!id || !titulo || !link) {
+  if (!id || !titulo || !link || !disciplina_id) {
     return { error: "Todos os campos são obrigatórios" };
   }
 
   const supabase = createClient();
+  const {
+    data: { user },
+    error: authError
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { error: "Usuário não autenticado" };
+  }
+
+  const user_id = user.id;
 
   const { data, error } = await supabase
     .from("Bibliografia")
-    .update({ titulo, link })
+    .update({ titulo, link, disciplina_id, user_id })
     .eq("id", id)
+    .eq("user_id", user.id) // garante que só edita se for o dono
     .select()
     .single();
 
@@ -713,14 +751,24 @@ export const editarBibliografia = async (formData: FormData) => {
   return { success: true, data };
 };
 
+
 // Deletar Bibliografia
 export const deletarBibliografia = async (id: string) => {
   const supabase = createClient();
+  const {
+    data: { user },
+    error: authError
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { error: "Usuário não autenticado" };
+  }
 
   const { error } = await supabase
     .from("Bibliografia")
     .delete()
-    .eq("id", id);
+    .eq("id", id)
+    .eq("user_id", user.id); // só permite deletar se for dono
 
   if (error) {
     console.error("Erro ao deletar bibliografia:", error.message);
@@ -728,4 +776,65 @@ export const deletarBibliografia = async (id: string) => {
   }
 
   return { success: true };
+};
+
+// === FUNÇÕES PARA BIBLIOGRAFIA PÚBLICA ===
+
+export async function listarTodasBibliografias(filtroDisciplinaId?: string) {
+  const supabase = createClient();
+
+  let query = supabase
+    .from("Bibliografia")
+    .select(`
+      id,
+      titulo,
+      link,
+      created_at,
+      disciplina_id,
+      Disciplina (
+        id,
+        nome
+      )
+    `)
+    .order("created_at", { ascending: false });
+
+  if (filtroDisciplinaId && filtroDisciplinaId !== "all") {
+    query = query.eq("disciplina_id", filtroDisciplinaId);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("Erro ao buscar bibliografias:", error.message);
+    return [];
+  }
+
+  return data;
+}
+
+export const buscarBibliografia = async (id: string) => {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from('Bibliografia')
+    .select(`
+      id, titulo, 
+      disciplina_id, 
+      disciplina!inner(nome)
+    `)
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    console.error('Erro ao buscar bibliografia:', error.message);
+    return { error: error.message };
+  }
+
+
+  const bibliografia = data ? {
+    ...data,
+    disciplina_nome: Array.isArray(data.disciplina) && data.disciplina.length > 0 ? data.disciplina[0].nome : 'Não informada'
+  } : null;
+
+  return { data: bibliografia };
 };
