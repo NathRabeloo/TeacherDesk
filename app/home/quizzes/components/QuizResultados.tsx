@@ -4,9 +4,9 @@ import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, RefreshCw, Users, Target, TrendingUp, Clock, Award, BarChart3, Tag } from "lucide-react";
+import { ArrowLeft, RefreshCw, Users, Target, TrendingUp, Clock, Award, BarChart3, Tag, Trophy, Medal, Star } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RankingItem } from "../../../responder/_components/types"; // Importar RankingItem do types.ts
+import { RankingItem } from "../../../responder/_components/types"; 
 
 interface Resultado {
   resumo: {
@@ -14,7 +14,7 @@ interface Resultado {
     total_perguntas: number;
     taxa_acerto_geral: number;
   };
-  ranking: RankingItem[]; // Usar o tipo RankingItem
+  ranking: RankingItem[]; 
   perguntas: {
     id: string;
     texto: string;
@@ -48,7 +48,6 @@ export default function QuizResultados({ quizId, sessionId, onBack }: QuizResult
     
     setIsLoadingSessions(true);
     try {
-      // Usar a função listarSessoesQuiz do action.ts
       const response = await fetch(`/api/quizzes/sessoes?quizId=${quizId}`);
       if (!response.ok) {
         throw new Error("Erro ao buscar sessões");
@@ -138,12 +137,37 @@ export default function QuizResultados({ quizId, sessionId, onBack }: QuizResult
     return `${segundosRestantes}s`;
   };
 
+  const getRankingIcon = (posicao: number) => {
+    switch (posicao) {
+      case 1:
+        return <Trophy className="w-5 h-5 text-yellow-500" />;
+      case 2:
+        return <Medal className="w-5 h-5 text-gray-400" />;
+      case 3:
+        return <Medal className="w-5 h-5 text-amber-600" />;
+      default:
+        return <span className="w-5 h-5 flex items-center justify-center text-sm font-bold text-gray-500">{posicao}</span>;
+    }
+  };
+
+  const getRankingBadgeColor = (posicao: number) => {
+    switch (posicao) {
+      case 1:
+        return "bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900";
+      case 2:
+        return "bg-gradient-to-r from-gray-300 to-gray-400 text-gray-800";
+      case 3:
+        return "bg-gradient-to-r from-amber-500 to-amber-600 text-amber-900";
+      default:
+        return "bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800";
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-            {/* Header */}
             <div className="bg-gradient-to-r from-purple-500 to-purple-600 px-8 py-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
@@ -168,7 +192,6 @@ export default function QuizResultados({ quizId, sessionId, onBack }: QuizResult
               </div>
             </div>
 
-            {/* Loading Content */}
             <div className="p-8">
               <div className="text-center py-16">
                 <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-4 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
@@ -189,7 +212,6 @@ export default function QuizResultados({ quizId, sessionId, onBack }: QuizResult
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-            {/* Header */}
             <div className="bg-gradient-to-r from-red-500 to-red-600 px-8 py-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
@@ -214,7 +236,6 @@ export default function QuizResultados({ quizId, sessionId, onBack }: QuizResult
               </div>
             </div>
 
-            {/* Error Content */}
             <div className="p-8">
               <div className="text-center py-16">
                 <div className="bg-red-100 dark:bg-red-900 p-4 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
@@ -242,7 +263,6 @@ export default function QuizResultados({ quizId, sessionId, onBack }: QuizResult
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-            {/* Header */}
             <div className="bg-gradient-to-r from-gray-500 to-gray-600 px-8 py-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
@@ -267,7 +287,6 @@ export default function QuizResultados({ quizId, sessionId, onBack }: QuizResult
               </div>
             </div>
 
-            {/* No Data Content */}
             <div className="p-8">
               <div className="text-center py-16">
                 <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
@@ -389,7 +408,7 @@ export default function QuizResultados({ quizId, sessionId, onBack }: QuizResult
                     </div>
                   </div>
                   <div className="text-green-700 dark:text-green-300 text-sm">
-                    Número total de perguntas no quiz
+                    Total de questões no quiz
                   </div>
                 </div>
                 <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900 dark:to-purple-800 p-6 rounded-2xl border border-purple-200 dark:border-purple-700 shadow-lg">
@@ -401,11 +420,11 @@ export default function QuizResultados({ quizId, sessionId, onBack }: QuizResult
                       <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
                         {dados.resumo.taxa_acerto_geral.toFixed(1)}%
                       </div>
-                      <div className="text-sm text-purple-600/70 dark:text-purple-400/70 font-medium">Acerto Geral</div>
+                      <div className="text-sm text-purple-600/70 dark:text-purple-400/70 font-medium">Taxa de Acerto</div>
                     </div>
                   </div>
                   <div className="text-purple-700 dark:text-purple-300 text-sm">
-                    Média de acertos de todos os participantes
+                    Média geral de acertos
                   </div>
                 </div>
               </div>
@@ -414,90 +433,193 @@ export default function QuizResultados({ quizId, sessionId, onBack }: QuizResult
             {/* Ranking de Participantes */}
             <div>
               <div className="flex items-center gap-3 mb-6">
-                <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-2 rounded-lg">
-                  <Award className="text-white text-xl" />
+                <div className="bg-gradient-to-r from-amber-500 to-amber-600 p-2 rounded-lg">
+                  <Trophy className="text-white text-xl" />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Ranking de Participantes</h2>
               </div>
               
-              <Card className="shadow-lg">
-                <CardContent className="p-0">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden">
+                <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[50px]">Pos.</TableHead>
-                        <TableHead>Nome</TableHead>
-                        <TableHead>RA</TableHead>
-                        <TableHead className="text-center">Acertos</TableHead>
-                        <TableHead className="text-center">% Acerto</TableHead>
-                        <TableHead className="text-center">Tempo Total</TableHead>
-                        <TableHead className="text-center">Score</TableHead>
+                      <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 border-b border-gray-200 dark:border-gray-600">
+                        <TableHead className="text-left py-4 px-6 font-bold text-gray-900 dark:text-white">Posição</TableHead>
+                        <TableHead className="text-left py-4 px-6 font-bold text-gray-900 dark:text-white">Participante</TableHead>
+                        <TableHead className="text-center py-4 px-6 font-bold text-gray-900 dark:text-white">Score</TableHead>
+                        <TableHead className="text-center py-4 px-6 font-bold text-gray-900 dark:text-white">Acertos</TableHead>
+                        <TableHead className="text-center py-4 px-6 font-bold text-gray-900 dark:text-white">Taxa de Acerto</TableHead>
+                        <TableHead className="text-center py-4 px-6 font-bold text-gray-900 dark:text-white">Tempo Total</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {dados.ranking.map((participante, index) => (
-                        <TableRow key={participante.id} className={`${
-                          index === 0 ? "bg-yellow-50 dark:bg-yellow-900/20" : 
-                          index === 1 ? "bg-gray-100 dark:bg-gray-700/20" : 
-                          index === 2 ? "bg-amber-50 dark:bg-amber-900/20" : ""
-                        }`}>
-                          <TableCell className="font-medium">
-                            {index === 0 && <Award className="inline-block mr-1 text-yellow-500" size={16} />}
-                            {index === 1 && <Award className="inline-block mr-1 text-gray-400" size={16} />}
-                            {index === 2 && <Award className="inline-block mr-1 text-amber-700" size={16} />}
-                            {index + 1}
+                        <TableRow 
+                          key={participante.id} 
+                          className={`
+                            border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors
+                            ${index < 3 ? 'bg-gradient-to-r from-yellow-50/30 to-amber-50/30 dark:from-yellow-900/20 dark:to-amber-900/20' : ''}
+                          `}
+                        >
+                          <TableCell className="py-4 px-6">
+                            <div className="flex items-center gap-3">
+                              <div className={`
+                                inline-flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm
+                                ${getRankingBadgeColor(index + 1)}
+                              `}>
+                                {getRankingIcon(index + 1)}
+                              </div>
+                              <span className="font-semibold text-gray-700 dark:text-gray-300">#{index + 1}</span>
+                            </div>
                           </TableCell>
-                          <TableCell>{participante.nome}</TableCell>
-                          <TableCell>{participante.ra}</TableCell>
-                          <TableCell className="text-center">{participante.totalAcertos}/{dados.resumo.total_perguntas}</TableCell>
-                          <TableCell className="text-center">{participante.percentualAcerto.toFixed(1)}%</TableCell>
-                          <TableCell className="text-center">{formatarTempo(participante.tempoTotal)}</TableCell>
-                          <TableCell className="text-center font-bold text-lg">
-                            {typeof participante.score === 'number' ? participante.score.toLocaleString("pt-BR") : 'N/A'}
+                          <TableCell className="py-4 px-6">
+                            <div>
+                              <div className="font-semibold text-gray-900 dark:text-white text-lg">
+                                {participante.nome}
+                              </div>
+                              <div className="text-sm text-gray-500 dark:text-gray-400 font-mono">
+                                RA: {participante.ra}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-4 px-6 text-center">
+                            <div className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-gradient-to-r from-purple-100 to-purple-200 dark:from-purple-800 dark:to-purple-700">
+                              <Star className="w-4 h-4 text-purple-600 dark:text-purple-300" />
+                              <span className="font-bold text-purple-800 dark:text-purple-200 text-lg">
+                                {participante.score || 0}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-4 px-6 text-center">
+                            <div className="font-semibold text-gray-900 dark:text-white">
+                              {participante.totalAcertos}/{participante.totalRespostas}
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-4 px-6 text-center">
+                            <div className={`
+                              inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold
+                              ${participante.percentualAcerto >= 80 
+                                ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100' 
+                                : participante.percentualAcerto >= 60 
+                                ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100' 
+                                : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
+                              }
+                            `}>
+                              {participante.percentualAcerto.toFixed(1)}%
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-4 px-6 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <Clock className="w-4 h-4 text-gray-500" />
+                              <span className="font-mono text-sm text-gray-700 dark:text-gray-300">
+                                {formatarTempoDetalhado(participante.tempoTotal)}
+                              </span>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </div>
 
             {/* Análise por Pergunta */}
             <div>
               <div className="flex items-center gap-3 mb-6">
-                <div className="bg-gradient-to-r from-teal-500 to-teal-600 p-2 rounded-lg">
-                  <BarChart3 className="text-white text-xl" />
+                <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 p-2 rounded-lg">
+                  <Target className="text-white text-xl" />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Análise por Pergunta</h2>
               </div>
               
-              <Card className="shadow-lg">
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[50px]">#</TableHead>
-                        <TableHead>Pergunta</TableHead>
-                        <TableHead className="text-center">Total Respostas</TableHead>
-                        <TableHead className="text-center">Acertos</TableHead>
-                        <TableHead className="text-center">% Acerto</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {dados.perguntas.map((pergunta, index) => (
-                        <TableRow key={pergunta.id}>
-                          <TableCell className="font-medium">{index + 1}</TableCell>
-                          <TableCell>{pergunta.texto}</TableCell>
-                          <TableCell className="text-center">{pergunta.totalRespostas}</TableCell>
-                          <TableCell className="text-center">{pergunta.totalAcertos}</TableCell>
-                          <TableCell className="text-center">{pergunta.percentualAcerto.toFixed(1)}%</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
+              <div className="grid gap-6">
+                {dados.perguntas.map((pergunta, index) => (
+                  <Card key={pergunta.id} className="border border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-xl transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 text-white px-3 py-1 rounded-full text-sm font-bold">
+                              Pergunta {index + 1}
+                            </div>
+                          </div>
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                            {pergunta.texto}
+                          </h3>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 p-4 rounded-xl border border-blue-200 dark:border-blue-700">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                                {pergunta.totalRespostas}
+                              </div>
+                              <div className="text-sm text-blue-600/70 dark:text-blue-400/70 font-medium">
+                                Total de Respostas
+                              </div>
+                            </div>
+                            <Users className="w-8 h-8 text-blue-500" />
+                          </div>
+                        </div>
+                        
+                        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 p-4 rounded-xl border border-green-200 dark:border-green-700">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                                {pergunta.totalAcertos}
+                              </div>
+                              <div className="text-sm text-green-600/70 dark:text-green-400/70 font-medium">
+                                Acertos
+                              </div>
+                            </div>
+                            <Target className="w-8 h-8 text-green-500" />
+                          </div>
+                        </div>
+                        
+                        <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 p-4 rounded-xl border border-purple-200 dark:border-purple-700">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                                {pergunta.percentualAcerto.toFixed(1)}%
+                              </div>
+                              <div className="text-sm text-purple-600/70 dark:text-purple-400/70 font-medium">
+                                Taxa de Acerto
+                              </div>
+                            </div>
+                            <Award className="w-8 h-8 text-purple-500" />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Barra de progresso visual */}
+                      <div className="mt-4">
+                        <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
+                          <span>Dificuldade da pergunta</span>
+                          <span>
+                            {pergunta.percentualAcerto >= 80 ? 'Fácil' : 
+                             pergunta.percentualAcerto >= 60 ? 'Média' : 
+                             pergunta.percentualAcerto >= 40 ? 'Difícil' : 'Muito Difícil'}
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                          <div 
+                            className={`h-3 rounded-full transition-all duration-500 ${
+                              pergunta.percentualAcerto >= 80 ? 'bg-gradient-to-r from-green-400 to-green-500' :
+                              pergunta.percentualAcerto >= 60 ? 'bg-gradient-to-r from-yellow-400 to-yellow-500' :
+                              pergunta.percentualAcerto >= 40 ? 'bg-gradient-to-r from-orange-400 to-orange-500' :
+                              'bg-gradient-to-r from-red-400 to-red-500'
+                            }`}
+                            style={{ width: `${pergunta.percentualAcerto}%` }}
+                          />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
           </div>
         </div>

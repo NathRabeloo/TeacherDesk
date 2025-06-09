@@ -12,7 +12,6 @@ interface Question {
 export async function listarDisciplinas() {
   const supabase = createClient();
   
-  // Verificar se o usuário está autenticado
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
     throw new Error("Usuário não autenticado");
@@ -494,9 +493,7 @@ export async function obterResultadosQuiz(quizId: string, sessionId?: string) {
       const tempoMedio = totalRespostas > 0 ? tempoTotal / totalRespostas : 0;
       
       // Usar o score do banco de dados ou calcular se não estiver disponível
-      const score = participante.score || 
-        (totalAcertos > 0 && tempoTotal > 0 ? 
-          Math.round((totalAcertos * 1000) / (tempoTotal / 1000)) : 0);
+      const score = participante.score; // Usar o score do banco de dados
 
       return {
         id: participante.id,
