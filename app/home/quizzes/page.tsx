@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import Header from "../../_components/Header";
 import QuizList from "./components/QuizList";
 import QuizForm from "./components/QuizForm";
 import QuizResultados from "./components/QuizResultados";
@@ -38,9 +37,9 @@ const PainelQuizzes = () => {
       case "list":
         return "Painel de Controle dos Quizzes";
       case "create":
-        return "Criar Novo Quiz";
+        return "";
       case "edit":
-        return "Editar Quiz";
+        return "";
       case "results":
         return "Resultados do Quiz";
       default:

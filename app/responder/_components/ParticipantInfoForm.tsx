@@ -102,7 +102,7 @@ export const ParticipantInfoForm: React.FC<ParticipantInfoFormProps> = ({ onSubm
             {participante.nome && (
               <p className="text-gray-500 text-sm mt-2 flex items-center gap-2">
                 <CheckCircle className={participante.nome.length < 30 ? "text-green-500" : "text-amber-500"} size={16} />
-                {participante.nome.length}/30 caracteres
+                {participante.nome.length}/30 maximo de caracteres
               </p>
             )}
           </div>
