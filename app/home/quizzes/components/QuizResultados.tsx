@@ -597,7 +597,7 @@ export default function QuizResultados({ quizId, sessionId, onBack }: QuizResult
                       {/* Barra de progresso visual */}
                       <div className="mt-4">
                         <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
-                          <span>Dificuldade da pergunta</span>
+                          <span>Dificuldade de acordo com acertos</span>
                           <span>
                             {pergunta.percentualAcerto >= 80 ? 'Fácil' : 
                              pergunta.percentualAcerto >= 60 ? 'Média' : 
