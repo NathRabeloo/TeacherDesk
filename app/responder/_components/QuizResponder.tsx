@@ -11,9 +11,7 @@ import { ProgressBar } from "./ProgressBar";
 import { ParticipantInfoForm } from "./ParticipantInfoForm";
 import { QuizQuestion } from "./QuizQuestion"; 
 import { QuizResult } from "./QuizResult";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Trophy, Clock, Zap, Award } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+import { Trophy, Clock, Zap, Award } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 
@@ -155,6 +153,34 @@ export default function QuizResponder() {
     });
   };
 
+  // Função para finalizar o quiz automaticamente
+  const finalizarQuizAutomatico = async () => {
+    if (!quiz || !participanteId) return;
+
+    setLoading(true);
+    try {
+      // Agora enviarRespostas retorna um objeto com acertos e score
+      const resultado = await QuizService.enviarRespostas(quiz, participanteId);
+      
+      setAcertos(resultado.acertos);
+      setScore(resultado.score);
+      setVotado(true);
+      setEtapa("resultado");
+      
+      // Disparar confetti para celebrar a conclusão
+      if (resultado.acertos / quiz.perguntas.length >= 0.7) {
+        setTimeout(() => {
+          triggerConfetti();
+        }, 500);
+      }
+    } catch (error) {
+      console.error("Erro ao enviar respostas:", error);
+      alert("Erro ao enviar respostas. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Selecionar resposta e salvar tempo
   const selecionarResposta = async (opcaoId: string) => {
     if (!quiz || votado || !participanteId) return;
@@ -211,68 +237,26 @@ export default function QuizResponder() {
       setFeedbackCorreto(isCorreta);
       setShowFeedback(true);
       
-      // Esconder feedback após 1.5 segundos e avançar para próxima pergunta
+      // Esconder feedback após 1.5 segundos e prosseguir
       setTimeout(() => {
         setShowFeedback(false);
         
         // Se não for a última pergunta, avançar automaticamente
         if (currentQuestionIndex < (quiz?.perguntas.length || 0) - 1) {
           setTimeout(() => {
-            goToNextQuestion();
+            setCurrentQuestionIndex(prevIndex => prevIndex + 1);
+            startTimeRef.current = Date.now(); // Reinicia o timer para a próxima pergunta
+          }, 500);
+        } else {
+          // É a última pergunta, finalizar automaticamente
+          setTimeout(() => {
+            finalizarQuizAutomatico();
           }, 500);
         }
       }, 1500);
     } catch (error) {
       console.error("Erro ao salvar resposta:", error);
       alert("Erro ao salvar sua resposta. Tente novamente.");
-    }
-  };
-
-  const goToNextQuestion = () => {
-    if (quiz && currentQuestionIndex < quiz.perguntas.length - 1) {
-      setCurrentQuestionIndex(prevIndex => prevIndex + 1);
-      startTimeRef.current = Date.now(); // Reinicia o timer para a próxima pergunta
-    }
-  };
-
-  const goToPreviousQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(prevIndex => prevIndex - 1);
-      startTimeRef.current = Date.now(); // Reinicia o timer para a pergunta anterior
-    }
-  };
-
-  // Enviar respostas (finalizar quiz)
-  const enviarRespostas = async () => {
-    if (!quiz || !participanteId) return;
-
-    // Verifica se todas as perguntas foram respondidas
-    if (quiz.perguntas.some((p) => !p.respostaSelecionada)) {
-      alert("Por favor, responda todas as perguntas antes de enviar.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // Agora enviarRespostas retorna um objeto com acertos e score
-      const resultado = await QuizService.enviarRespostas(quiz, participanteId);
-      
-      setAcertos(resultado.acertos);
-      setScore(resultado.score);
-      setVotado(true);
-      setEtapa("resultado");
-      
-      // Disparar confetti para celebrar a conclusão
-      if (resultado.acertos / quiz.perguntas.length >= 0.7) {
-        setTimeout(() => {
-          triggerConfetti();
-        }, 500);
-      }
-    } catch (error) {
-      console.error("Erro ao enviar respostas:", error);
-      alert("Erro ao enviar respostas. Tente novamente.");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -303,13 +287,13 @@ export default function QuizResponder() {
   // Exibir tela de contagem regressiva
   if (showCountdown) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-700 mb-4">Prepare-se!</h2>
-          <div className="text-8xl font-bold text-blue-600 mb-8 animate-pulse">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-700 mb-4">Prepare-se!</h2>
+          <div className="text-6xl sm:text-8xl font-bold text-blue-600 mb-8 animate-pulse">
             {countdown}
           </div>
-          <p className="text-gray-600">O quiz começará em instantes...</p>
+          <p className="text-gray-600 text-sm sm:text-base">O quiz começará em instantes...</p>
         </div>
       </div>
     );
@@ -318,12 +302,12 @@ export default function QuizResponder() {
   // Exibir formulário de informações do participante
   if (etapa === "info") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 sm:p-6">
         <div className="max-w-2xl mx-auto">
           {quiz && (
             <>
               <QuizHeader 
-                quiz={quiz} // Passando o objeto quiz completo
+                quiz={quiz}
                 sessionInfo={sessionInfo}
               />
               <ParticipantInfoForm 
@@ -344,7 +328,7 @@ export default function QuizResponder() {
         quiz={quiz!} 
         participante={participante} 
         acertos={acertos} 
-        score={score} // Passando o score para o componente de resultado
+        score={score}
         sessionInfo={sessionInfo}
       />
     );
@@ -352,39 +336,70 @@ export default function QuizResponder() {
 
   // Exibir quiz em andamento
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
-      <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* Header compacto no mobile durante o quiz */}
+      <div className="md:hidden bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-1.5 rounded-lg">
+                <div className="w-4 h-4 text-white flex items-center justify-center text-xs font-bold">
+                  {quiz?.titulo.charAt(0).toUpperCase()}
+                </div>
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-gray-900 truncate max-w-[120px]">
+                  {quiz?.titulo}
+                </h2>
+                <p className="text-xs text-gray-600">{participante.nome}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="text-xs text-gray-600">
+                {currentQuestionIndex + 1}/{quiz?.perguntas.length}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Header completo no desktop */}
+      <QuizHeader 
+        quiz={quiz!}
+        participanteNome={participante.nome}
+        participanteRA={participante.ra}
+        respondidas={currentQuestionIndex + 1}
+        showStats={false}
+        sessionInfo={sessionInfo}
+        hideOnMobile={true}
+      />
+      
+      <div className="max-w-2xl mx-auto p-4 sm:p-6">
         {quiz && (
           <>
-            <QuizHeader 
-              quiz={quiz} // Passando o objeto quiz completo
-              sessionInfo={sessionInfo}
-            />
-            
             {/* Barra de progresso e informações */}
-            <div className="mb-6">
+            <div className="mb-4 sm:mb-6">
               <div className="flex justify-between items-center mb-2">
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-gray-600 hidden md:block">
                   Pergunta {currentQuestionIndex + 1} de {quiz.perguntas.length}
                 </div>
                 
-                {/* Streak de acertos */}
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1 bg-amber-100 text-amber-800 px-3 py-1 rounded-full">
-                    <Zap size={16} />
-                    <span className="font-medium">{streakAcertos}</span>
+                {/* Streak de acertos e Timer */}
+                <div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end">
+                  <div className="flex items-center gap-1 bg-amber-100 text-amber-800 px-2 sm:px-3 py-1 rounded-full">
+                    <Zap size={14} className="sm:w-4 sm:h-4" />
+                    <span className="font-medium text-sm">{streakAcertos}</span>
                   </div>
                   
-                  {/* Timer */}
-                  <div className="flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
-                    <Clock size={16} />
-                    <span className="font-medium">{formatarTempo(tempoDecorrido)}</span>
+                  <div className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 sm:px-3 py-1 rounded-full">
+                    <Clock size={14} className="sm:w-4 sm:h-4" />
+                    <span className="font-medium text-sm">{formatarTempo(tempoDecorrido)}</span>
                   </div>
                 </div>
               </div>
               
               <ProgressBar 
-                value={((currentQuestionIndex + 1) / quiz.perguntas.length) * 100} // Ajustado para passar o valor correto
+                value={((currentQuestionIndex + 1) / quiz.perguntas.length) * 100}
                 className="h-2"
               />
             </div>
@@ -396,11 +411,11 @@ export default function QuizResponder() {
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
-                  className="fixed top-1/4 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50"
+                  className="fixed top-1/4 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 px-4"
                 >
-                  <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-2">
-                    <Award size={24} />
-                    <span className="text-xl font-bold">Sequência de {streakAcertos} acertos!</span>
+                  <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-4 sm:px-6 py-3 rounded-xl shadow-lg flex items-center gap-2">
+                    <Award size={20} className="sm:w-6 sm:h-6" />
+                    <span className="text-lg sm:text-xl font-bold">Sequência de {streakAcertos} acertos!</span>
                   </div>
                 </motion.div>
               )}
@@ -417,7 +432,7 @@ export default function QuizResponder() {
                     exit={{ opacity: 0 }}
                     className="absolute inset-0 flex items-center justify-center z-10"
                   >
-                    <div className={`text-white text-4xl font-bold p-8 rounded-2xl ${
+                    <div className={`text-white text-2xl sm:text-4xl font-bold p-6 sm:p-8 rounded-2xl ${
                       feedbackCorreto 
                         ? "bg-green-500/90" 
                         : "bg-red-500/90"
@@ -433,42 +448,23 @@ export default function QuizResponder() {
                   pergunta={quiz.perguntas[currentQuestionIndex]}
                   onSelectOption={selecionarResposta}
                   disabled={showFeedback}
-                  index={currentQuestionIndex} // Adicionado o index
+                  index={currentQuestionIndex}
                 />
               </div>
             </div>
             
-            {/* Botões de navegação */}
-            <div className="flex justify-between mt-6">
-              <Button
-                variant="outline"
-                onClick={goToPreviousQuestion}
-                disabled={currentQuestionIndex === 0 || showFeedback}
-                className="flex items-center gap-2"
-              >
-                <ArrowLeft size={16} />
-                Anterior
-              </Button>
-              
-              {currentQuestionIndex === quiz.perguntas.length - 1 ? (
-                <Button
-                  onClick={enviarRespostas}
-                  disabled={!quiz.perguntas[currentQuestionIndex].respostaSelecionada || showFeedback}
-                  className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white flex items-center gap-2"
-                >
-                  <Trophy size={16} />
-                  Finalizar Quiz
-                </Button>
-              ) : (
-                <Button
-                  onClick={goToNextQuestion}
-                  disabled={!quiz.perguntas[currentQuestionIndex].respostaSelecionada || showFeedback}
-                  className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white flex items-center gap-2"
-                >
-                  Próxima
-                  <ArrowRight size={16} />
-                </Button>
-              )}
+            {/* Indicador de progresso na parte inferior */}
+            <div className="mt-6 text-center">
+              <div className="text-sm text-gray-600">
+                {currentQuestionIndex === quiz.perguntas.length - 1 ? (
+                  <span className="flex items-center justify-center gap-2 text-green-600 font-medium">
+                    <Trophy size={16} />
+                    Última pergunta!
+                  </span>
+                ) : (
+                  `${quiz.perguntas.length - currentQuestionIndex - 1} perguntas restantes`
+                )}
+              </div>
             </div>
           </>
         )}
@@ -476,4 +472,3 @@ export default function QuizResponder() {
     </div>
   );
 }
-

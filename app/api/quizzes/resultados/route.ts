@@ -67,7 +67,7 @@ export async function GET(req: Request) {
       media_acertos_por_participante: 0
     };
 
-    // 2️⃣ Buscar o ranking dos participantes com tempo total do banco
+    // 2️⃣ Buscar o ranking dos participantes com tempo total e score do banco
     let participantesQuery = supabase
       .from("Participante")
       .select(`
@@ -75,6 +75,7 @@ export async function GET(req: Request) {
         nome,
         ra,
         tempo_total_ms,
+        score,
         created_at
       `)
       .eq("quiz_id", quizId);
@@ -103,7 +104,7 @@ export async function GET(req: Request) {
       throw respostasError;
     }
 
-    // Processar o ranking para contar acertos e usar tempo do banco
+    // Processar o ranking para contar acertos e incluir score
     const rankingDetalhado = (participantes || []).map(participante => {
       const respostasUnicas = new Map();
       todasRespostas?.filter(r => r.participante_id === participante.id)
@@ -119,11 +120,11 @@ export async function GET(req: Request) {
       const totalAcertos = respostasFinais.filter(r => r.correta).length;
       const percentualAcerto = totalRespostas > 0 ? (totalAcertos / totalRespostas) * 100 : 0;
       
-      // Usar o tempo total do banco de dados
+      // Usar o tempo total e score do banco de dados
       const tempoTotal = participante.tempo_total_ms || 0;
+      const score = participante.score || 0; // Incluir score do banco
       
       // Calcular tempo médio por pergunta com base nas respostas únicas
-      const tempoMedio = totalRespostas > 0 ? tempoTotal / totalRespostas : 0;
 
       return {
         id: participante.id,
@@ -133,12 +134,12 @@ export async function GET(req: Request) {
         totalAcertos,
         percentualAcerto: Math.round(percentualAcerto * 100) / 100,
         tempoTotal, // em ms, vem do banco
-        tempoMedio: Math.round(tempoMedio) // tempo médio por pergunta em ms
+        score // Score do banco de dados
       };
     }).sort((a, b) => {
-      // Ranking por total de acertos (desc) e menor tempo total
-      if (b.totalAcertos !== a.totalAcertos) {
-        return b.totalAcertos - a.totalAcertos;
+      // Ranking por score (desc) primeiro, depois por menor tempo total
+      if (b.score !== a.score) {
+        return b.score - a.score;
       }
       return a.tempoTotal - b.tempoTotal;
     });
@@ -240,4 +241,3 @@ export async function GET(req: Request) {
     }, { status: 500 });
   }
 }
-
