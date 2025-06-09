@@ -181,13 +181,6 @@ export default function QuizResultados({ quizId, sessionId, onBack }: QuizResult
                       Voltar
                     </Button>
                   )}
-                  <div className="bg-white/20 p-3 rounded-xl">
-                    <BarChart3 className="text-white text-2xl" />
-                  </div>
-                  <div>
-                    <h1 className="text-3xl font-bold text-white">Resultados do Quiz</h1>
-                    <p className="text-purple-100 text-lg mt-1">Carregando dados estatísticos...</p>
-                  </div>
                 </div>
               </div>
             </div>
@@ -324,8 +317,6 @@ export default function QuizResultados({ quizId, sessionId, onBack }: QuizResult
                   <BarChart3 className="text-white text-2xl" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-white">Resultados do Quiz</h1>
-                  <p className="text-purple-100 text-lg mt-1">Análise completa de desempenho e estatísticas</p>
                   {dados.sessao && (
                     <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-amber-100 text-amber-800">
                       <Tag className="w-3.5 h-3.5 mr-1" />
