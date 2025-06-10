@@ -76,7 +76,7 @@ const RangeForm: React.FC<RangeFormProps> = ({ onSubmit, initialData }) => {
 
   return (
     <div className="w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-     
+
 
       <div className="p-6 space-y-6">
         {/* Configuração de Intervalo */}
@@ -149,11 +149,10 @@ const RangeForm: React.FC<RangeFormProps> = ({ onSubmit, initialData }) => {
             type="button"
             onClick={handleRangeDraw}
             disabled={isRangeExhausted}
-            className={`flex-1 flex items-center justify-center space-x-3 px-6 py-4 rounded-xl font-bold text-lg transition-all duration-200 ${
-              isRangeExhausted
+            className={`flex-1 flex items-center justify-center space-x-3 px-6 py-4 rounded-xl font-bold text-lg transition-all duration-200 ${isRangeExhausted
                 ? "bg-gray-300 dark:bg-gray-600 text-gray-500 cursor-not-allowed"
                 : "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105"
-            }`}
+              }`}
           >
             <FaDice className="text-xl" />
             <span>{isRangeExhausted ? "Números Esgotados" : "Sortear Números"}</span>
