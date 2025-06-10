@@ -15,14 +15,15 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
-import { FaUser, FaCog, FaGraduationCap, FaTrophy, FaCalendar, FaEdit } from "react-icons/fa";
+import { FaUser, FaCog, FaEdit } from "react-icons/fa";
 
 const AVATARS = ['masc1', 'masc2', 'masc3', 'fem1', 'fem2', 'fem3'];
+const AVATAR_PADRAO = 'fem1';
 
 export default function MeuPerfil() {
   const [user, setUser] = useState<any>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [avatarSelecionado, setAvatarSelecionado] = useState<string | null>(null);
+  const [avatarSelecionado, setAvatarSelecionado] = useState<string>(AVATAR_PADRAO); // inicializado com padrão
   const router = useRouter();
 
   const supabase = createClient();
@@ -44,9 +45,10 @@ export default function MeuPerfil() {
 
         if (avatarError && avatarError.code !== "PGRST116") {
           console.error("Erro ao buscar avatar:", avatarError.message);
+          setAvatarSelecionado(AVATAR_PADRAO);
+        } else {
+          setAvatarSelecionado(avatarData?.avatar ?? AVATAR_PADRAO);
         }
-
-        setAvatarSelecionado(avatarData?.avatar ?? null);
       }
     }
 
@@ -58,8 +60,6 @@ export default function MeuPerfil() {
       console.warn("Avatar ou user ausente:", avatarSelecionado, user);
       return;
     }
-
-    console.log("Tentando salvar avatar:", avatarSelecionado, "para user:", user.id);
 
     const { data, error } = await supabase
       .from("AvatarUsers")
@@ -87,33 +87,31 @@ export default function MeuPerfil() {
   }
 
   return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-  
-        {/* Card de Perfil */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 px-8 py-6 border-b border-gray-200 dark:border-gray-600">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="p-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-600">
-                  <FaUser className="text-white text-xl" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                    Informações Pessoais
-                  </h2>
-                  <p className="text-gray-600 dark:text-gray-300 text-lg mt-1">
-                    Seus dados e configurações de conta
-                  </p>
-                </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+      {/* Card de Perfil */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 px-8 py-6 border-b border-gray-200 dark:border-gray-600">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="p-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-600">
+                <FaUser className="text-white text-xl" />
               </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Informações Pessoais
+                </h2>
+                <p className="text-gray-600 dark:text-gray-300 text-lg mt-1">
+                  Seus dados e configurações de conta
+                </p>
               </div>
-    
+            </div>
+          </div>
 
           <div className="p-8">
             <Card className="border-2 border-gray-200 dark:border-gray-600 bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-700 shadow-lg">
               <CardContent className="p-8">
                 <div className="flex flex-col lg:flex-row items-center gap-8">
-                  {/* Avatar Section */}
                   <div className="flex flex-col items-center space-y-4">
                     <div className="relative">
                       <img
@@ -134,7 +132,6 @@ export default function MeuPerfil() {
                     </Button>
                   </div>
 
-                  {/* User Info Section */}
                   <div className="flex-1 space-y-6 text-center lg:text-left">
                     <div className="space-y-4">
                       <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-600">
@@ -145,7 +142,7 @@ export default function MeuPerfil() {
                           {user.email}
                         </p>
                       </div>
-                      
+
                       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-xl border border-blue-200 dark:border-blue-700">
                         <p className="text-sm font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide mb-1">
                           ID da Conta
@@ -161,12 +158,12 @@ export default function MeuPerfil() {
             </Card>
           </div>
         </div>
-          </div>
+      </div>
 
-          <div className="p-8">
-            <DisciplinaLista userId={user.id} />
-          </div>
- 
+      <div className="p-8">
+        <DisciplinaLista userId={user.id} />
+      </div>
+
       {/* Modal de Seleção de Avatar */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="max-w-2xl bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-600 shadow-2xl">
@@ -191,11 +188,10 @@ export default function MeuPerfil() {
               <button
                 key={avatar}
                 onClick={() => setAvatarSelecionado(avatar)}
-                className={`group relative rounded-2xl border-4 transition-all duration-200 focus:outline-none hover:scale-105 ${
-                  avatarSelecionado === avatar
-                    ? "border-purple-500 shadow-lg shadow-purple-500/25"
-                    : "border-transparent hover:border-purple-300 hover:shadow-lg"
-                }`}
+                className={`group relative rounded-2xl border-4 transition-all duration-200 focus:outline-none hover:scale-105 ${avatarSelecionado === avatar
+                  ? "border-purple-500 shadow-lg shadow-purple-500/25"
+                  : "border-transparent hover:border-purple-300 hover:shadow-lg"
+                  }`}
               >
                 <img
                   src={`/assets/Avatar/${avatar}.png`}
