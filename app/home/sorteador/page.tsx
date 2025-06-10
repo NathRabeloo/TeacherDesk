@@ -55,25 +55,25 @@ export default function SorteadorPage() {
     };
 
     return (
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                    {/* Cabeçalho do Conteúdo */}
-                    <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 px-8 py-6 border-b border-gray-200 dark:border-gray-600">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-4">
-                                <div className="p-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-600">
-                                    <FaRandom className="text-white text-xl" />
-                                </div>
-                                <div>
-                                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                                        Tipos de Sorteio
-                                    </h2>
-                                    <p className="text-gray-600 dark:text-gray-300 text-lg mt-1">
-                                        Escolha o tipo de sorteio que melhor atende suas necessidades
-                                    </p>
-                                </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                {/* Cabeçalho do Conteúdo */}
+                <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 px-8 py-6 border-b border-gray-200 dark:border-gray-600">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                            <div className="p-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-600">
+                                <FaRandom className="text-white text-xl" />
+                            </div>
+                            <div>
+                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                                    Tipos de Sorteio
+                                </h2>
+                                <p className="text-gray-600 dark:text-gray-300 text-lg mt-1">
+                                    Escolha o tipo de sorteio que melhor atende suas necessidades
+                                </p>
                             </div>
                         </div>
+                    </div>
 
                     {/* Grid de Cartões de Sorteio */}
                     <div className="p-8">
