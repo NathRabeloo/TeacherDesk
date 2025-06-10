@@ -4,7 +4,10 @@ import React, { useState, useRef } from "react";
 import * as XLSX from "xlsx";
 import * as mammoth from "mammoth";
 import SpinningWheel from "./SpinningWheel";
-import { FaFileUpload, FaPlus, FaTrash, FaCog, FaDice, FaSpinner, FaFileAlt, FaEdit } from "react-icons/fa";
+import {
+  FaFileUpload, FaPlus, FaTrash, FaCog,
+  FaDice, FaSpinner, FaFileAlt, FaEdit
+} from "react-icons/fa";
 import confetti from "canvas-confetti";
 
 interface ArquivoFormProps {
@@ -105,54 +108,50 @@ const ArquivoForm: React.FC<ArquivoFormProps> = ({ onSubmit }) => {
   const handleWinnerSelected = (winner: string) => {
     setSelectedResult(winner);
     onSubmit(winner);
-    
+
     if (removeAfterDraw) {
       removeItem(winner);
     }
 
-    // Aguardar um tempo curto antes de focar no resultado e disparar confetti
+    // Após um curto tempo, dar scroll e foco
     setTimeout(() => {
       if (resultRef.current) {
-        // Rolar suavemente até o resultado
-        resultRef.current.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'center' 
+        resultRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        // Garantir o foco visualmente completo
+        requestAnimationFrame(() => {
+          resultRef.current?.focus();
+
+          // Confetti depois do foco
+          setTimeout(() => {
+            confetti({
+              particleCount: 200,
+              spread: 70,
+              origin: { y: 0.6 },
+              colors: ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7']
+            });
+
+            setTimeout(() => {
+              confetti({
+                particleCount: 150,
+                spread: 120,
+                origin: { y: 0.7, x: 0.3 },
+                colors: ['#FF6B6B', '#4ECDC4', '#45B7D1']
+              });
+            }, 300);
+
+            setTimeout(() => {
+              confetti({
+                particleCount: 150,
+                spread: 120,
+                origin: { y: 0.7, x: 0.7 },
+                colors: ['#FFD700', '#96CEB4', '#FFEAA7']
+              });
+            }, 600);
+          }, 100); // pequeno delay após focus
         });
-        
-        // Focar no elemento do resultado
-        resultRef.current.focus();
-        
-        // Disparar confetti após um tempo curto
-        setTimeout(() => {
-          // Confetti principal
-          confetti({
-            particleCount: 200,
-            spread: 70,
-            origin: { y: 0.6 },
-            colors: ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7']
-          });
-          
-          // Confetti adicional com delay
-          setTimeout(() => {
-            confetti({
-              particleCount: 150,
-              spread: 120,
-              origin: { y: 0.7, x: 0.3 },
-              colors: ['#FF6B6B', '#4ECDC4', '#45B7D1']
-            });
-          }, 300);
-          
-          setTimeout(() => {
-            confetti({
-              particleCount: 150,
-              spread: 120,
-              origin: { y: 0.7, x: 0.7 },
-              colors: ['#FFD700', '#96CEB4', '#FFEAA7']
-            });
-          }, 600);
-        }, 800); // Confetti após 800ms do foco
       }
-    }, 800); // Foco após 1.2s do resultado
+    }, 800);
   };
 
   const validItems = arquivoItems.filter((item) => item.trim() !== "");
@@ -338,15 +337,12 @@ const ArquivoForm: React.FC<ArquivoFormProps> = ({ onSubmit }) => {
                 🏆 VENCEDOR! 🏆
               </h2>
             </div>
-            <div className="text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-600 to-orange-600 dark:from-yellow-400 dark:to-orange-400 animate-pulse uppercase mb-6 break-words">
+            <div className="text-7xl font-bold bg-clip-text bg-gradient-to-r from-yellow-600 to-orange-600 dark:from-yellow-400 dark:to-orange-400 animate-pulse uppercase mb-6 break-words">
               🎉 {selectedResult} 🎉
             </div>
-            <p className="text-2xl text-yellow-700 dark:text-yellow-400 font-semibold animate-bounce">
+            <p className="text-2xl text-yellow-500 dark:text-yellow-400 font-semibold animate-bounce">
               Parabéns ao(à) sorteado(a)!
             </p>
-            <div className="mt-4 text-lg text-yellow-600 dark:text-yellow-500">
-              ✨ Que a sorte esteja sempre com você! ✨
-            </div>
           </div>
         )}
 

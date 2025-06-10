@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import confetti from "canvas-confetti"; // certifique-se de ter instalado
 import SpinningWheel from "./SpinningWheel";
 import { FaList, FaPlus, FaTrash, FaCog, FaDice } from "react-icons/fa";
 
@@ -13,6 +14,8 @@ const ListForm: React.FC<ListFormProps> = ({ initialData, onSubmit }) => {
   const [list, setList] = useState<string[]>(initialData?.list || [""]);
   const [removeAfterDraw, setRemoveAfterDraw] = useState(false);
   const [selectedResult, setSelectedResult] = useState("");
+
+  const resultRef = useRef<HTMLDivElement>(null);
 
   const handleListChange = (index: number, value: string) => {
     const updated = [...list];
@@ -34,14 +37,55 @@ const ListForm: React.FC<ListFormProps> = ({ initialData, onSubmit }) => {
 
   const validItems = list.filter((item) => item.trim() !== "");
 
+  // Efeito para scroll, foco e confetti quando selectedResult muda
+  useEffect(() => {
+    if (!selectedResult) return;
+
+    const timeoutId = setTimeout(() => {
+      if (resultRef.current) {
+        resultRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+
+        requestAnimationFrame(() => {
+          resultRef.current?.focus();
+
+          setTimeout(() => {
+            confetti({
+              particleCount: 200,
+              spread: 70,
+              origin: { y: 0.6 },
+              colors: ["#FFD700", "#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7"],
+            });
+
+            setTimeout(() => {
+              confetti({
+                particleCount: 150,
+                spread: 120,
+                origin: { y: 0.7, x: 0.3 },
+                colors: ["#FF6B6B", "#4ECDC4", "#45B7D1"],
+              });
+            }, 300);
+
+            setTimeout(() => {
+              confetti({
+                particleCount: 150,
+                spread: 120,
+                origin: { y: 0.7, x: 0.7 },
+                colors: ["#FFD700", "#96CEB4", "#FFEAA7"],
+              });
+            }, 600);
+          }, 100);
+        });
+      }
+    }, 800);
+
+    return () => clearTimeout(timeoutId);
+  }, [selectedResult]);
+
   return (
-
-
     <div className="p-8">
       <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
         {/* Grid Principal */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-
           {/* Seção da Lista */}
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-600 rounded-xl p-6 border border-blue-200 dark:border-gray-600">
             <div className="flex items-center justify-between mb-6">
@@ -72,7 +116,10 @@ const ListForm: React.FC<ListFormProps> = ({ initialData, onSubmit }) => {
             {/* Lista de Inputs */}
             <div className="max-h-80 overflow-y-auto pr-2 space-y-3">
               {list.map((item, index) => (
-                <div key={index} className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-600">
+                <div
+                  key={index}
+                  className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-600"
+                >
                   <div className="flex-1">
                     <input
                       type="text"
@@ -157,7 +204,11 @@ const ListForm: React.FC<ListFormProps> = ({ initialData, onSubmit }) => {
 
         {/* Resultado */}
         {selectedResult && (
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-200 dark:border-green-700 rounded-2xl p-8 text-center">
+          <div
+            tabIndex={-1}
+            ref={resultRef}
+            className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-200 dark:border-green-700 rounded-2xl p-8 text-center"
+          >
             <div className="flex items-center justify-center space-x-3 mb-4">
               <div className="bg-green-500 p-3 rounded-full">
                 <FaDice className="text-white text-2xl" />
@@ -169,9 +220,7 @@ const ListForm: React.FC<ListFormProps> = ({ initialData, onSubmit }) => {
             <div className="text-6xl font-bold text-green-700 dark:text-green-300 animate-bounce uppercase mb-4">
               🎉 {selectedResult} 🎉
             </div>
-            <p className="text-lg text-green-600 dark:text-green-400">
-              Parabéns ao(à) sorteado(a)!
-            </p>
+            <p className="text-lg text-green-600 dark:text-green-400">Parabéns ao(à) sorteado(a)!</p>
           </div>
         )}
 
@@ -192,7 +241,6 @@ const ListForm: React.FC<ListFormProps> = ({ initialData, onSubmit }) => {
         </div>
       </form>
     </div>
-
   );
 };
 
