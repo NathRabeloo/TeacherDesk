@@ -33,16 +33,13 @@ const SpinningWheel: React.FC<SpinningWheelProps> = ({ items, onFinish }) => {
 
         setTimeout(() => {
             setSpinning(false);
-
             onFinish(winner);
-
             confetti({
                 particleCount: 1500,
                 spread: 100,
                 origin: { y: 0.9, x: 0.5 },
             });
         }, 4000);
-
     };
 
     const colors = [
@@ -59,7 +56,6 @@ const SpinningWheel: React.FC<SpinningWheelProps> = ({ items, onFinish }) => {
     ];
 
     useEffect(() => {
-
         const canvas = canvasRef.current;
 
         if (!canvas) return;
@@ -112,7 +108,6 @@ const SpinningWheel: React.FC<SpinningWheelProps> = ({ items, onFinish }) => {
                 }
                 displayText += "...";
             }
-
             ctx.fillText(displayText, radius - 15, 5);
             ctx.restore();
         });
@@ -137,7 +132,6 @@ const SpinningWheel: React.FC<SpinningWheelProps> = ({ items, onFinish }) => {
                     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-0 h-0 border-l-[18px] border-l-transparent border-r-[18px] border-r-transparent border-t-[28px] border-t-yellow-400 rotate-90">
                     </div>
                 </div>
-
 
                 <div className="relative bg-white dark:bg-gray-800 p-4 rounded-full shadow-2xl border-4 border-gray-200 dark:border-gray-600">
                     <canvas
