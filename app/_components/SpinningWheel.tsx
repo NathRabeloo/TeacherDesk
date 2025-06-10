@@ -12,6 +12,7 @@ interface SpinningWheelProps {
 const SpinningWheel: React.FC<SpinningWheelProps> = ({ items, onFinish }) => {
     const [angle, setAngle] = useState(0);
     const [spinning, setSpinning] = useState(false);
+    const [totalRotation, setTotalRotation] = useState(0);
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     const spin = () => {
@@ -20,25 +21,36 @@ const SpinningWheel: React.FC<SpinningWheelProps> = ({ items, onFinish }) => {
             return;
         }
 
-        const minSpins = 10;
-        const extraSpins = Math.random() * 5;
-        const spins = minSpins + extraSpins;
-        const degrees = spins * 360;
-
-        setAngle(degrees);
+        // Melhorar a rotação com mais variabilidade
+        const minSpins = 8 + Math.random() * 4; // Entre 8 e 12 voltas
+        const extraRotation = Math.random() * 360; // Rotação extra aleatória
+        const newRotation = minSpins * 360 + extraRotation;
+        
+        // Acumular rotação total para evitar que a roleta "enfraqueça"
+        const finalRotation = totalRotation + newRotation;
+        setTotalRotation(finalRotation);
+        setAngle(finalRotation);
         setSpinning(true);
 
-        const winnerIndex = items.length - Math.floor((degrees % 360) / (360 / items.length)) - 1;
-        const winner = winnerIndex < 0 ? items[items.length - 1] : items[winnerIndex];
+        // Corrigir o cálculo do índice do vencedor
+        const normalizedAngle = (360 - (finalRotation % 360)) % 360;
+        const anglePerItem = 360 / items.length;
+        const winnerIndex = Math.floor(normalizedAngle / anglePerItem) % items.length;
+        const winner = items[winnerIndex];
 
         setTimeout(() => {
             setSpinning(false);
-            onFinish(winner);
+            
+            // Confetti imediato da roleta
             confetti({
-                particleCount: 1500,
-                spread: 100,
-                origin: { y: 0.9, x: 0.5 },
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1']
             });
+
+            // Chamar onFinish que irá lidar com o foco e confetti adicional
+            onFinish(winner);
         }, 4000);
     };
 
@@ -57,11 +69,10 @@ const SpinningWheel: React.FC<SpinningWheelProps> = ({ items, onFinish }) => {
 
     useEffect(() => {
         const canvas = canvasRef.current;
-
         if (!canvas) return;
         const ctx = canvas.getContext("2d");
-
         if (!ctx) return;
+        
         const radius = canvas.width / 2;
         const anglePerItem = (2 * Math.PI) / items.length;
 
@@ -73,7 +84,6 @@ const SpinningWheel: React.FC<SpinningWheelProps> = ({ items, onFinish }) => {
             const color = colors[index % colors.length];
 
             const gradient = ctx.createRadialGradient(radius, radius, 0, radius, radius, radius);
-
             gradient.addColorStop(0, color);
             gradient.addColorStop(1, color + "CC");
 
@@ -99,7 +109,6 @@ const SpinningWheel: React.FC<SpinningWheelProps> = ({ items, onFinish }) => {
             ctx.shadowOffsetY = 1;
 
             const maxWidth = radius - 30;
-
             let displayText = item;
 
             if (ctx.measureText(displayText).width > maxWidth) {
@@ -108,6 +117,7 @@ const SpinningWheel: React.FC<SpinningWheelProps> = ({ items, onFinish }) => {
                 }
                 displayText += "...";
             }
+
             ctx.fillText(displayText, radius - 15, 5);
             ctx.restore();
         });
@@ -125,6 +135,7 @@ const SpinningWheel: React.FC<SpinningWheelProps> = ({ items, onFinish }) => {
             <div className="relative">
                 {/* Sombra de fundo */}
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-full blur-xl transform scale-110"></div>
+                
                 {/* Ponteiro elegante */}
                 <div className="absolute top-1/2 right-0 z-10 transform translate-x-1/2 -translate-y-1/2">
                     <div className="w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-t-[30px] border-t-yellow-500 rotate-90 drop-shadow-lg">
@@ -139,7 +150,7 @@ const SpinningWheel: React.FC<SpinningWheelProps> = ({ items, onFinish }) => {
                         width={320}
                         height={320}
                         style={{
-                            transition: spinning ? "transform 4s cubic-bezier(0.33, 1, 0.68, 1)" : "none",
+                            transition: spinning ? "transform 4s cubic-bezier(0.25, 0.46, 0.45, 0.94)" : "none",
                             transform: `rotate(${angle}deg)`,
                         }}
                         className="rounded-full shadow-inner"
@@ -165,7 +176,6 @@ const SpinningWheel: React.FC<SpinningWheelProps> = ({ items, onFinish }) => {
                     : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 hover:scale-105 hover:shadow-xl active:scale-95'
                     } text-white shadow-lg`}
             >
-
                 {/* Efeito de brilho no hover */}
                 <div className={`absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 ${spinning ? '' : 'group-hover:animate-pulse'}`}></div>
                 <div className="relative flex items-center gap-3">

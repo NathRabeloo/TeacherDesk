@@ -5,6 +5,7 @@ import * as XLSX from "xlsx";
 import * as mammoth from "mammoth";
 import SpinningWheel from "./SpinningWheel";
 import { FaFileUpload, FaPlus, FaTrash, FaCog, FaDice, FaSpinner, FaFileAlt, FaEdit } from "react-icons/fa";
+import confetti from "canvas-confetti";
 
 interface ArquivoFormProps {
   initialData?: { list?: string[] };
@@ -16,6 +17,7 @@ const ArquivoForm: React.FC<ArquivoFormProps> = ({ onSubmit }) => {
   const [removeAfterDraw, setRemoveAfterDraw] = useState(false);
   const [selectedResult, setSelectedResult] = useState("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const resultRef = useRef<HTMLDivElement | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleArchiveChange = (index: number, value: string) => {
@@ -100,11 +102,62 @@ const ArquivoForm: React.FC<ArquivoFormProps> = ({ onSubmit }) => {
     }
   };
 
+  const handleWinnerSelected = (winner: string) => {
+    setSelectedResult(winner);
+    onSubmit(winner);
+    
+    if (removeAfterDraw) {
+      removeItem(winner);
+    }
+
+    // Aguardar um tempo curto antes de focar no resultado e disparar confetti
+    setTimeout(() => {
+      if (resultRef.current) {
+        // Rolar suavemente até o resultado
+        resultRef.current.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+        
+        // Focar no elemento do resultado
+        resultRef.current.focus();
+        
+        // Disparar confetti após um tempo curto
+        setTimeout(() => {
+          // Confetti principal
+          confetti({
+            particleCount: 200,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7']
+          });
+          
+          // Confetti adicional com delay
+          setTimeout(() => {
+            confetti({
+              particleCount: 150,
+              spread: 120,
+              origin: { y: 0.7, x: 0.3 },
+              colors: ['#FF6B6B', '#4ECDC4', '#45B7D1']
+            });
+          }, 300);
+          
+          setTimeout(() => {
+            confetti({
+              particleCount: 150,
+              spread: 120,
+              origin: { y: 0.7, x: 0.7 },
+              colors: ['#FFD700', '#96CEB4', '#FFEAA7']
+            });
+          }, 600);
+        }, 800); // Confetti após 800ms do foco
+      }
+    }, 800); // Foco após 1.2s do resultado
+  };
+
   const validItems = arquivoItems.filter((item) => item.trim() !== "");
 
   return (
-
-
     <div className="p-8">
       <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
 
@@ -251,13 +304,7 @@ const ArquivoForm: React.FC<ArquivoFormProps> = ({ onSubmit }) => {
                 {validItems.length >= 2 ? (
                   <SpinningWheel
                     items={validItems}
-                    onFinish={(winner) => {
-                      setSelectedResult(winner);
-                      onSubmit(winner);
-                      if (removeAfterDraw) {
-                        removeItem(winner);
-                      }
-                    }}
+                    onFinish={handleWinnerSelected}
                   />
                 ) : (
                   <div className="text-center py-12">
@@ -278,21 +325,28 @@ const ArquivoForm: React.FC<ArquivoFormProps> = ({ onSubmit }) => {
 
         {/* Resultado */}
         {selectedResult && (
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-200 dark:border-green-700 rounded-2xl p-8 text-center">
-            <div className="flex items-center justify-center space-x-3 mb-4">
-              <div className="bg-green-500 p-3 rounded-full">
-                <FaDice className="text-white text-2xl" />
+          <div 
+            ref={resultRef}
+            tabIndex={-1}
+            className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-4 border-yellow-300 dark:border-yellow-600 rounded-2xl p-8 text-center focus:outline-none focus:ring-8 focus:ring-yellow-400/50 focus:border-yellow-500 shadow-2xl transform transition-all duration-500 hover:scale-105"
+          >
+            <div className="flex items-center justify-center space-x-3 mb-6">
+              <div className="bg-gradient-to-r from-yellow-500 to-orange-500 p-4 rounded-full animate-pulse">
+                <FaDice className="text-white text-3xl" />
               </div>
-              <h2 className="text-3xl font-bold text-green-800 dark:text-green-300">
-                Resultado do Sorteio
+              <h2 className="text-4xl font-bold text-yellow-800 dark:text-yellow-300 animate-bounce">
+                🏆 VENCEDOR! 🏆
               </h2>
             </div>
-            <div className="text-6xl font-bold text-green-700 dark:text-green-300 animate-bounce uppercase mb-4">
+            <div className="text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-600 to-orange-600 dark:from-yellow-400 dark:to-orange-400 animate-pulse uppercase mb-6 break-words">
               🎉 {selectedResult} 🎉
             </div>
-            <p className="text-lg text-green-600 dark:text-green-400">
+            <p className="text-2xl text-yellow-700 dark:text-yellow-400 font-semibold animate-bounce">
               Parabéns ao(à) sorteado(a)!
             </p>
+            <div className="mt-4 text-lg text-yellow-600 dark:text-yellow-500">
+              ✨ Que a sorte esteja sempre com você! ✨
+            </div>
           </div>
         )}
 
