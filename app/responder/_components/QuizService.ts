@@ -1,5 +1,3 @@
-"use client";
-
 import { createClient } from "@supabase/supabase-js";
 import { Quiz, Pergunta, Participante, QuizSession } from "./types";
 
@@ -223,13 +221,19 @@ export const QuizService = {
     let correctCount = 0;
 
     try {
-      // Apenas calcular o total de acertos, pois as respostas já foram salvas individualmente
-      for (const pergunta of quiz.perguntas) {
-        const opcaoSelecionada = pergunta.opcoes.find(o => o.id === pergunta.respostaSelecionada);
-        if (opcaoSelecionada?.correta) {
-          correctCount++;
-        }
+      // Fetch all answers for this participant from the database
+      const { data: respostasDoParticipante, error: respostasError } = await supabase
+        .from("Resposta")
+        .select("correta")
+        .eq("participante_id", participanteId);
+
+      if (respostasError) {
+        console.error("Erro ao buscar respostas do participante:", respostasError);
+        throw respostasError;
       }
+
+      // Calculate correct answers based on fetched data
+      correctCount = respostasDoParticipante.filter(resposta => resposta.correta).length;
 
       // Calcular e atualizar o score
       const score = await this.calcularEAtualizarScore(participanteId, correctCount);

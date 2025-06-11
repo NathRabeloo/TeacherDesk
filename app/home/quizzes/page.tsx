@@ -132,16 +132,6 @@ const PainelQuizzes = () => {
                   </p>
                 </div>
               </div>
-              
-              {activeView === "list" && (
-                <button
-                  onClick={handleCreateQuiz}
-                  className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-3"
-                >
-                  <FaPlus className="text-xl" />
-                  Novo Questionário
-                </button>
-              )}
             </div>
           </div>
 

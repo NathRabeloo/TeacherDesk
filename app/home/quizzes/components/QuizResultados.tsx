@@ -72,7 +72,7 @@ export default function QuizResultados({ quizId, sessionId, onBack }: QuizResult
     setError(null);
     
     try {
-      console.log("Buscando resultados para quiz:", quizId, "sessão:", selectedSessionId);
+      console.log("Buscando resultados para quiz:", quizId, "Turma:", selectedSessionId);
       let url = `/api/quizzes/resultados?quizId=${quizId}`;
       if (selectedSessionId) {
         url += `&sessionId=${selectedSessionId}`;
@@ -334,10 +334,10 @@ export default function QuizResultados({ quizId, sessionId, onBack }: QuizResult
                       onValueChange={(value) => setSelectedSessionId(value === "all" ? undefined : value)}
                     >
                       <SelectTrigger className="w-[200px] bg-transparent border-0 text-white focus:ring-0">
-                        <SelectValue placeholder="Filtrar por sessão" />
+                        <SelectValue placeholder="Filtrar por Turma" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Todas as sessões</SelectItem>
+                        <SelectItem value="all">Todas as Turmas</SelectItem>
                         {sessoes.map((sessao) => (
                           <SelectItem key={sessao.id} value={sessao.id}>
                             {sessao.nome}

@@ -202,7 +202,7 @@ export default function QuizForm({ quizId, onCancel, onSave }: QuizFormProps) {
             {isEditing ? "Editar Quiz" : "Criar Novo Quiz"}
           </h2>
           <p className="text-gray-600 dark:text-gray-300 text-lg mt-1">
-            {isEditing ? "Aprimore seu questionário existente" : "Configure seu questionário interativo"}
+            {isEditing ? "Aprimore seu Quiz existente" : "Configure seu Quiz interativo"}
           </p>
         </div>
       </div>
