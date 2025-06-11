@@ -139,6 +139,7 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
     }
   };
 
+  // Reintroduzindo e adaptando handleOpenSessionDialog
   const handleOpenSessionDialog = async (quiz: Quiz) => {
     setSelectedQuiz(quiz);
     setIsSessionDialogOpen(true);
@@ -154,6 +155,7 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
     }
   };
 
+  // Reintroduzindo handleSessionDialogChange
   const handleSessionDialogChange = (open: boolean) => {
     setIsSessionDialogOpen(open);
     if (!open) {
@@ -163,21 +165,31 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
     }
   };
 
+  // Reintroduzindo e adaptando handleCreateSession
   const handleCreateSession = async () => {
     if (!selectedQuiz) return;
 
     setIsCreatingSession(true);
     try {
-      const sessaoNome = newSessionName.trim() || `Sessão ${new Date().toLocaleDateString()}`;
+      const sessaoNome = newSessionName.trim() || `Turma ${new Date().toLocaleDateString()} - ${new Date().toLocaleTimeString()}`;
       const novaSessao = await criarSessaoQuiz(selectedQuiz.id, sessaoNome);
 
       // Atualizar a lista de sessões
       const sessoes = await listarSessoesQuiz(selectedQuiz.id);
       setSessoes(sessoes);
       setNewSessionName("");
+
+      // Após criar, abrir o QR Code da nova sessão
+      handleGenerateSessionQRCode({
+        id: novaSessao.id,
+        nome: novaSessao.nome_sessao || sessaoNome,
+        data: new Date(novaSessao.created_at).toLocaleDateString(),
+        participantes: 0 // Nova sessão, 0 participantes
+      });
+
     } catch (error) {
-      console.error("Erro ao criar sessão:", error);
-      alert("Erro ao criar nova sessão de quiz");
+      console.error("Erro ao criar turma:", error);
+      alert("Erro ao criar nova turma de quiz");
     } finally {
       setIsCreatingSession(false);
     }
@@ -190,14 +202,14 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
       navigator.clipboard.writeText(`${typeof window !== "undefined" ? window.location.origin : ""}${linkInfo.link}`);
       alert("Link copiado para a área de transferência!");
     } catch (error) {
-      console.error("Erro ao obter link da sessão:", error);
-      alert("Erro ao gerar link da sessão");
+      console.error("Erro ao obter link da Turma:", error);
+      alert("Erro ao gerar link da turma");
     }
   };
 
   // Nova função para excluir sessão
   const handleDeleteSession = async (sessionId: string, sessionName: string) => {
-    if (!confirm(`Tem certeza que deseja excluir a sessão "${sessionName}"? Esta ação não pode ser desfeita.`)) {
+    if (!confirm(`Tem certeza que deseja excluir a turma "${sessionName}"? Esta ação não pode ser desfeita.`)) {
       return;
     }
 
@@ -210,10 +222,10 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
         setSessoes(sessoesAtualizadas);
       }
 
-      alert("Sessão excluída com sucesso!");
+      alert("Turma excluída com sucesso!");
     } catch (error) {
-      console.error("Erro ao excluir sessão:", error);
-      alert("Erro ao excluir sessão. Tente novamente.");
+      console.error("Erro ao excluir Turma:", error);
+      alert("Erro ao excluir Turma. Tente novamente.");
     }
   };
 
@@ -227,8 +239,8 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
       setSessionQRCodeUrl(fullUrl);
       setIsSessionQRCodeOpen(true);
     } catch (error) {
-      console.error("Erro ao gerar QR Code da sessão:", error);
-      alert("Erro ao gerar QR Code da sessão");
+      console.error("Erro ao gerar QR Code da Turma:", error);
+      alert("Erro ao gerar QR Code da Turma");
     }
   };
 
@@ -251,7 +263,7 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
   };
 
   return (
-    <div className="space-y-8">     
+    <div className="space-y-8">
 
       {/* Área de Filtros e Pesquisa */}
       <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-600">
@@ -348,7 +360,7 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
                 {filteredQuizzes.map((quiz, index) => (
                   <TableRow
                     key={quiz.id}
-                    className={`border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-750'
+                    className={`border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-750'}
                       }`}
                   >
                     <TableCell className="py-4 px-6">
@@ -396,24 +408,11 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
                         <Button
                           size="icon"
                           variant="outline"
-                          onClick={() => handleOpenSessionDialog(quiz)}
-                          title="Gerenciar Sessões"
-                          className="h-10 w-10 rounded-xl border-2 border-amber-200 hover:border-amber-300 hover:bg-amber-50 dark:border-amber-700 dark:hover:border-amber-600 dark:hover:bg-amber-900 transition-all duration-200"
+                          onClick={() => handleOpenSessionDialog(quiz)} // Alterado para abrir o modal de gerenciamento
+                          title="Gerenciar Turma / Gerar QR Code"
+                          className="h-10 w-10 rounded-xl border-2 border-orange-200 hover:border-orange-300 hover:bg-orange-50 dark:border-orange-700 dark:hover:border-orange-600 dark:hover:bg-orange-900 transition-all duration-200"
                         >
-                          <FaHistory className="text-amber-600 dark:text-amber-400" />
-                        </Button>
-
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedQuiz(quiz);
-                            setIsQRCodeOpen(true);
-                          }}
-                          title="Gerar QR Code"
-                          className="h-10 w-10 rounded-xl border-2 border-purple-200 hover:border-purple-300 hover:bg-purple-50 dark:border-purple-700 dark:hover:border-purple-600 dark:hover:bg-purple-900 transition-all duration-200"
-                        >
-                          <FaQrcode className="text-purple-600 dark:text-purple-400" />
+                          <FaQrcode className="text-orange-600 dark:text-orange-400" />
                         </Button>
 
                         <Button
@@ -435,289 +434,236 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
         )}
       </div>
 
-      {/* Dialog do QR Code do Quiz */}
-      <Dialog open={isQRCodeOpen} onOpenChange={handleQRCodeDialogChange}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-center text-gray-900 dark:text-white">
-              QR Code do quiz
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col items-center space-y-6 py-4">
-            {selectedQuiz && (
-              <>
-                <div className="bg-white p-4 rounded-2xl shadow-lg">
-                  <QRCode value={qrCodeUrl} size={200} />
-                </div>
-                <div className="text-center space-y-2">
-                  <p className="font-semibold text-gray-900 dark:text-white">
-                    {selectedQuiz.titulo}
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 break-all bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
-                    {qrCodeUrl}
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  onClick={handleCopy}
-                  className="flex items-center gap-3 px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
-                >
-                  <Copy className={copied ? "text-green-500" : ""} />
-                  {copied ? "Link Copiado!" : "Copiar Link"}
-                </Button>
-              </>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog do QR Code da Sessão */}
-      <Dialog open={isSessionQRCodeOpen} onOpenChange={handleSessionQRCodeDialogChange}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-center text-gray-900 dark:text-white">
-              QR Code da Sessão
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col items-center space-y-6 py-4">
-            {selectedSession && (
-              <>
-                <div className="bg-white p-4 rounded-2xl shadow-lg">
-                  <QRCode value={sessionQRCodeUrl} size={200} />
-                </div>
-                <div className="text-center space-y-2">
-                  <p className="font-semibold text-gray-900 dark:text-white">
-                    {selectedSession.nome}
-                  </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {selectedQuiz?.titulo}
-                  </p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 break-all bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
-                    {sessionQRCodeUrl}
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  onClick={handleCopySessionLink}
-                  className="flex items-center gap-3 px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
-                >
-                  <Copy className={sessionCopied ? "text-green-500" : ""} />
-                  {sessionCopied ? "Link Copiado!" : "Copiar Link"}
-                </Button>
-              </>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog de Sessões */}
+      {/* Diálogo de Gerenciamento de Sessões (reintroduzido e adaptado) */}
       <Dialog open={isSessionDialogOpen} onOpenChange={handleSessionDialogChange}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="sm:max-w-[600px] p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-xl">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-center text-gray-900 dark:text-white">
-              Sessões do quiz
+            <DialogTitle className="text-2xl font-bold text-gray-900 dark:text-white text-center mb-4">
+              Gerenciar Turma do Quiz: {selectedQuiz?.titulo}
             </DialogTitle>
           </DialogHeader>
-          <div className="py-4">
-            {selectedQuiz && (
-              <>
-                <div className="mb-6">
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                    {selectedQuiz.titulo}
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    Gerencie as sessões deste quiz para aplicá-lo a diferentes grupos.
-                  </p>
-                </div>
-
-                {/* Criar nova sessão */}
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl mb-6">
-                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-                    Criar Nova Sessão
-                  </h4>
-                  <div className="flex gap-3">
-                    <Input
-                      placeholder="Nome da sessão (ex: Turma A, Grupo 2)"
-                      value={newSessionName}
-                      onChange={(e) => setNewSessionName(e.target.value)}
-                      className="flex-1"
-                    />
-                    <Button
-                      onClick={handleCreateSession}
-                      disabled={isCreatingSession}
-                      className="bg-green-500 hover:bg-green-600 text-white"
-                    >
-                      {isCreatingSession ? "Criando..." : "Criar Sessão"}
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Lista de sessões */}
-                <div className="border border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden">
-                  <div className="bg-gray-100 dark:bg-gray-700 py-3 px-4 border-b border-gray-200 dark:border-gray-600">
-                    <h4 className="font-semibold text-gray-900 dark:text-white">
-                      Sessões Existentes
-                    </h4>
-                  </div>
-
-                  {isLoadingSessions ? (
-                    <div className="text-center py-8">
-                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-2"></div>
-                      <p className="text-gray-600 dark:text-gray-400">Carregando sessões...</p>
-                    </div>
-                  ) : sessoes.length === 0 ? (
-                    <div className="text-center py-8">
-                      <p className="text-gray-600 dark:text-gray-400">
-                        Nenhuma sessão encontrada. Crie uma nova sessão para começar.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="divide-y divide-gray-200 dark:divide-gray-600">
-                      {sessoes.map((sessao) => (
-                        <div key={sessao.id} className="py-4 px-4 flex items-center justify-between">
-                          <div>
-                            <p className="font-medium text-gray-900 dark:text-white">
-                              {sessao.nome}
-                            </p>
-                            <div className="flex gap-4 mt-1 text-sm text-gray-600 dark:text-gray-400">
-                              <span>Data: {sessao.data}</span>
-                              <span>Participantes: {sessao.participantes}</span>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-
+          <div className="grid gap-4 py-4">
+            <div className="flex flex-col sm:flex-row items-center gap-2 mb-4">
+              <Input
+                placeholder="Nome da nova turma (opcional)"
+                value={newSessionName}
+                onChange={(e) => setNewSessionName(e.target.value)}
+                className="flex-1 bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded-xl shadow-sm"
+              />
+              <Button
+                onClick={handleCreateSession}
+                disabled={isCreatingSession}
+                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+              >
+                {isCreatingSession ? "Criando..." : "Criar Nova Turma"}
+              </Button>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">Turmas Existentes:</h3>
+            {isLoadingSessions ? (
+              <div className="text-center py-4">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-2"></div>
+                <p className="text-gray-600 dark:text-gray-300">Carregando turmas...</p>
+              </div>
+            ) : sessoes.length === 0 ? (
+              <div className="text-center py-4 text-gray-600 dark:text-gray-300">
+                Nenhuma Turma criada para este quiz ainda.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-50 dark:bg-gray-700">
+                      <TableHead className="text-gray-700 dark:text-gray-200">Nome da Turma</TableHead>
+                      <TableHead className="text-gray-700 dark:text-gray-200">Data de Criação</TableHead>
+                      <TableHead className="text-gray-700 dark:text-gray-200">Participantes</TableHead>
+                      <TableHead className="text-right text-gray-700 dark:text-gray-200">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sessoes.map((sessao) => (
+                      <TableRow key={sessao.id} className="border-b border-gray-100 dark:border-gray-700">
+                        <TableCell className="font-medium text-gray-900 dark:text-white">{sessao.nome}</TableCell>
+                        <TableCell className="text-gray-700 dark:text-gray-300">{sessao.data}</TableCell>
+                        <TableCell className="text-gray-700 dark:text-gray-300">{sessao.participantes}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
                             <Button
-                              size="sm"
+                              size="icon"
                               variant="outline"
                               onClick={() => handleGenerateSessionQRCode(sessao)}
-                              title="Gerar QR Code da Sessão"
-                              className="text-purple-600 border-purple-200 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-700 dark:hover:bg-purple-900"
+                              title="Gerar QR Code"
+                              className="h-9 w-9 rounded-xl border-2 border-orange-200 hover:border-orange-300 hover:bg-orange-50 dark:border-orange-700 dark:hover:border-orange-600 dark:hover:bg-orange-900 transition-all duration-200"
                             >
-                              <FaQrcode className="w-4 h-4" />
+                              <FaQrcode className="text-orange-600 dark:text-orange-400" />
                             </Button>
-
                             {onViewResults && (
                               <Button
-                                size="sm"
+                                size="icon"
                                 variant="outline"
-                                onClick={() => {
-                                  onViewResults(selectedQuiz.id, sessao.id);
-                                  setIsSessionDialogOpen(false);
-                                }}
-                                title="Ver Resultados da Sessão"
-                                className="text-green-600 border-green-200 hover:bg-green-50 dark:text-green-400 dark:border-green-700 dark:hover:bg-green-900"
+                                onClick={() => onViewResults(selectedQuiz!.id, sessao.id)}
+                                title="Ver Resultados da Turma"
+                                className="h-9 w-9 rounded-xl border-2 border-green-200 hover:border-green-300 hover:bg-green-50 dark:border-green-700 dark:hover:border-green-600 dark:hover:bg-green-900 transition-all duration-200"
                               >
-                                <FaChartBar className="w-4 h-4" />
+                                <FaChartBar className="text-green-600 dark:text-green-400" />
                               </Button>
                             )}
-
                             <Button
-                              size="sm"
-                              variant="outline"
+                              size="icon"
+                              variant="destructive"
                               onClick={() => handleDeleteSession(sessao.id, sessao.nome)}
-                              title="Excluir Sessão"
-                              className="text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-700 dark:hover:bg-red-900"
+                              title="Excluir Turma"
+                              className="h-9 w-9 rounded-xl border-2 border-red-200 hover:border-red-300 hover:bg-red-50 dark:border-red-700 dark:hover:border-red-600 dark:hover:bg-red-900 transition-all duration-200"
                             >
-                              <FaTrash className="w-4 h-4" />
+                              <FaTrash className="text-red-600 dark:text-red-400" />
                             </Button>
                           </div>
-
-                        </div>
-                        
-                      ))}
-                    </div>
-                    
-                  )}
-                </div>
-                
-              </>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </div>
+          <DialogFooter className="mt-4">
+            <Button
+              onClick={() => handleSessionDialogChange(false)}
+              className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-xl shadow-sm"
+            >
+              Fechar
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
- 
 
-
-
- <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-600">
-      <p className="text-2xl font-bold mt-2 mb-4 align-middle">Instruções</p>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        
-        {/* Editar */}
-        <div className="bg-gradient-to-br from-blue-500/80 to-blue-600/80 backdrop-blur-sm p-4 rounded-xl shadow-md text-white">
-          <div className="flex items-center gap-3">
-            <div className="flex-shrink-0">
-              <div className="h-10 w-10 rounded-lg border-2 border-white/30 bg-white/20 flex items-center justify-center">
-                <FaEdit className="text-white text-base" />
+      {/* Diálogo de QR Code da Sessão (simplificado) */}
+      <Dialog open={isSessionQRCodeOpen} onOpenChange={handleSessionQRCodeDialogChange}>
+        <DialogContent className="sm:max-w-[425px] p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-gray-900 dark:text-white text-center mb-2">
+              QR Code da Turma
+            </DialogTitle>
+            <p className="text-center text-gray-600 dark:text-gray-400 mb-4">
+              Compartilhe este QR Code ou link para os participantes acessarem o quiz.
+            </p>
+          </DialogHeader>
+          <div className="flex flex-col items-center justify-center p-4 bg-gray-50 dark:bg-gray-700 rounded-xl mb-4">
+            {sessionQRCodeUrl ? (
+              <QRCode value={sessionQRCodeUrl} size={200} level="H" />
+            ) : (
+              <p className="text-gray-500 dark:text-gray-400">Gerando QR Code...</p>
+            )}
+          </div>
+          {sessionQRCodeUrl && (
+            <div className="flex flex-col gap-2 items-center">
+              <div className="relative w-full">
+                <Input
+                  type="text"
+                  value={sessionQRCodeUrl}
+                  readOnly
+                  className="w-full pr-10 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded-xl"
+                />
+                <Button
+                  size="icon"
+                  onClick={handleCopySessionLink}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
+                  title="Copiar link"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
               </div>
+              {sessionCopied && <span className="text-green-500 text-sm">Copiado!</span>}
             </div>
-            <div className="flex-1">
-              <p className="text-lg font-bold">Editar Quiz</p>
-              <p className="text-blue-100 text-xs font-medium leading-relaxed">
-                Permite fazer alterações nas perguntas, respostas ou título do quiz.
-              </p>
+          )}
+          <DialogFooter className="mt-4">
+            <Button
+              onClick={() => handleSessionQRCodeDialogChange(false)}
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-xl"
+            >
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-600">
+        <p className="text-2xl font-bold mt-2 mb-4 align-middle">Instruções</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          {/* Editar */}
+          <div className="bg-gradient-to-br from-blue-500/80 to-blue-600/80 backdrop-blur-sm p-4 rounded-xl shadow-md text-white">
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0">
+                <div className="h-10 w-10 rounded-lg border-2 border-white/30 bg-white/20 flex items-center justify-center">
+                  <FaEdit className="text-white text-base" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <p className="text-lg font-bold">Editar Quiz</p>
+                <p className="text-blue-100 text-xs font-medium leading-relaxed">
+                  Permite fazer alterações nas perguntas, respostas ou título do quiz.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Estatísticas */}
-        <div className="bg-gradient-to-br from-green-500/80 to-green-600/80 backdrop-blur-sm p-4 rounded-xl shadow-md text-white">
-          <div className="flex items-center gap-3">
-            <div className="flex-shrink-0">
-              <div className="h-10 w-10 rounded-lg border-2 border-white/30 bg-white/20 flex items-center justify-center">
-                <FaChartBar className="text-white text-base" />
+          {/* Estatísticas */}
+          <div className="bg-gradient-to-br from-green-500/80 to-green-600/80 backdrop-blur-sm p-4 rounded-xl shadow-md text-white">
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0">
+                <div className="h-10 w-10 rounded-lg border-2 border-white/30 bg-white/20 flex items-center justify-center">
+                  <FaChartBar className="text-white text-base" />
+                </div>
               </div>
-            </div>
-            <div className="flex-1">
-              <p className="text-lg font-bold">Visualizar Estatísticas</p>
-              <p className="text-green-100 text-xs font-medium leading-relaxed">
-                Mostra os dados de desempenho dos participantes, como quantas pessoas responderam, acertos e erros.
-              </p>
+              <div className="flex-1">
+                <p className="text-lg font-bold">Visualizar Estatísticas</p>
+                <p className="text-green-100 text-xs font-medium leading-relaxed">
+                  Mostra os dados de desempenho dos participantes, como quantas pessoas responderam, acertos e erros.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* QR Code */}
-        <div className="bg-gradient-to-br from-purple-500/80 to-purple-600/80 backdrop-blur-sm p-4 rounded-xl shadow-md text-white">
-          <div className="flex items-center gap-3">
-            <div className="flex-shrink-0">
-              <div className="h-10 w-10 rounded-lg border-2 border-white/30 bg-white/20 flex items-center justify-center">
-                <FaQrcode className="text-white text-base" />
+          {/* QR Code */}
+          <div className="bg-gradient-to-br from-purple-500/80 to-purple-600/80 backdrop-blur-sm p-4 rounded-xl shadow-md text-white">
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0">
+                <div className="h-10 w-10 rounded-lg border-2 border-white/30 bg-white/20 flex items-center justify-center">
+                  <FaQrcode className="text-white text-base" />
+                </div>
               </div>
-            </div>
-            <div className="flex-1">
-              <p className="text-lg font-bold">Gerar QR Code</p>
-              <p className="text-purple-100 text-xs font-medium leading-relaxed">
-                Cria um código QR que pode ser escaneado para acessar o quiz rapidamente.
-              </p>
+              <div className="flex-1">
+                <p className="text-lg font-bold">Gerar QR Code</p>
+                <p className="text-purple-100 text-xs font-medium leading-relaxed">
+                  Cria um código QR que pode ser escaneado para acessar o quiz rapidamente.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Excluir */}
-        <div className="bg-gradient-to-br from-red-500/80 to-red-600/80 backdrop-blur-sm p-4 rounded-xl shadow-md text-white">
-          <div className="flex items-center gap-3">
-            <div className="flex-shrink-0">
-              <div className="h-10 w-10 rounded-lg border-2 border-white/30 bg-white/20 flex items-center justify-center">
-                <FaTrash className="text-white text-base" />
+          {/* Excluir */}
+          <div className="bg-gradient-to-br from-red-500/80 to-red-600/80 backdrop-blur-sm p-4 rounded-xl shadow-md text-white">
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0">
+                <div className="h-10 w-10 rounded-lg border-2 border-white/30 bg-white/20 flex items-center justify-center">
+                  <FaTrash className="text-white text-base" />
+                </div>
               </div>
-            </div>
-            <div className="flex-1">
-              <p className="text-lg font-bold">Excluir Quiz</p>
-              <p className="text-red-100 text-xs font-medium leading-relaxed">
-                Remove o quiz de forma permanente. Essa ação não pode ser desfeita.
-              </p>
+              <div className="flex-1">
+                <p className="text-lg font-bold">Excluir Quiz</p>
+                <p className="text-red-100 text-xs font-medium leading-relaxed">
+                  Remove o quiz de forma permanente. Essa ação não pode ser desfeita.
+                </p>
+              </div>
             </div>
           </div>
+
         </div>
-      
-              </div>
 
-              </div>
-
-       </div>
+      </div>
+    </div>
   );
 };
 
 export default QuizList;
+
 
