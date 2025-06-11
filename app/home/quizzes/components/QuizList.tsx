@@ -509,7 +509,7 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
                             )}
                             <Button
                               size="icon"
-                              variant="destructive"
+                              variant="outline"
                               onClick={() => handleDeleteSession(sessao.id, sessao.nome)}
                               title="Excluir Turma"
                               className="h-9 w-9 rounded-xl border-2 border-red-200 hover:border-red-300 hover:bg-red-50 dark:border-red-700 dark:hover:border-red-600 dark:hover:bg-red-900 transition-all duration-200"
