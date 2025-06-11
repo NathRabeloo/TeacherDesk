@@ -251,45 +251,7 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
   };
 
   return (
-    <div className="space-y-8">
-      {/* Estatísticas Gerais */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-2xl shadow-lg text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-blue-100 text-sm font-medium">Total de Questionários</p>
-              <p className="text-3xl font-bold mt-1">{quizzes.length}</p>
-            </div>
-            <div className="bg-blue-400 bg-opacity-30 p-3 rounded-xl">
-              <FaQuestionCircle className="text-2xl" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-green-500 to-green-600 p-6 rounded-2xl shadow-lg text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-green-100 text-sm font-medium">Disciplinas Ativas</p>
-              <p className="text-3xl font-bold mt-1">{disciplinas.length}</p>
-            </div>
-            <div className="bg-green-400 bg-opacity-30 p-3 rounded-xl">
-              <FaUsers className="text-2xl" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-6 rounded-2xl shadow-lg text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-purple-100 text-sm font-medium">Questionários Filtrados</p>
-              <p className="text-3xl font-bold mt-1">{filteredQuizzes.length}</p>
-            </div>
-            <div className="bg-purple-400 bg-opacity-30 p-3 rounded-xl">
-              <FaFilter className="text-2xl" />
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="space-y-8">     
 
       {/* Área de Filtros e Pesquisa */}
       <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-600">
@@ -299,7 +261,7 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
               <FaSearch className="text-white text-lg" />
             </div>
             <Input
-              placeholder="Buscar questionário por título..."
+              placeholder="Buscar quiz por título..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 rounded-xl shadow-sm"
@@ -333,7 +295,7 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
             className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-3"
           >
             <FaPlus className="text-lg" />
-            Novo Questionário
+            Novo quiz
           </Button>
         </div>
       </div>
@@ -343,7 +305,7 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
         {isLoading ? (
           <div className="text-center py-16">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
-            <p className="text-xl text-gray-600 dark:text-gray-300">Carregando questionários...</p>
+            <p className="text-xl text-gray-600 dark:text-gray-300">Carregando quizs...</p>
           </div>
         ) : filteredQuizzes.length === 0 ? (
           <div className="text-center py-16">
@@ -351,19 +313,19 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
               <FaQuestionCircle className="text-4xl text-gray-400" />
             </div>
             <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              Nenhum questionário encontrado
+              Nenhum quiz encontrado
             </h3>
             <p className="text-gray-600 dark:text-gray-300 mb-6 text-lg">
               {searchQuery || selectedDisciplina
                 ? "Tente ajustar os filtros de pesquisa"
-                : "Comece criando seu primeiro questionário"}
+                : "Comece criando seu primeiro quiz"}
             </p>
             <Button
               onClick={onCreateQuiz}
               className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-3"
             >
               <FaPlus className="text-xl" />
-              Criar Primeiro Questionário
+              Criar Primeiro quiz
             </Button>
           </div>
         ) : (
@@ -372,7 +334,7 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
               <TableHeader>
                 <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 border-b border-gray-200 dark:border-gray-600">
                   <TableHead className="text-left py-4 px-6 font-bold text-gray-900 dark:text-white text-lg">
-                    Título do Questionário
+                    Título do quiz
                   </TableHead>
                   <TableHead className="text-left py-4 px-6 font-bold text-gray-900 dark:text-white text-lg">
                     Disciplina
@@ -406,13 +368,14 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
                         {disciplinas.find((d) => d.id === quiz.disciplina_id)?.nome ?? "N/A"}
                       </span>
                     </TableCell>
+
                     <TableCell className="py-4 px-6">
                       <div className="flex justify-center gap-2">
                         <Button
                           size="icon"
                           variant="outline"
                           onClick={() => onEditQuiz(quiz.id)}
-                          title="Editar Questionário"
+                          title="Editar quiz"
                           className="h-10 w-10 rounded-xl border-2 border-blue-200 hover:border-blue-300 hover:bg-blue-50 dark:border-blue-700 dark:hover:border-blue-600 dark:hover:bg-blue-900 transition-all duration-200"
                         >
                           <FaEdit className="text-blue-600 dark:text-blue-400" />
@@ -457,7 +420,7 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
                           size="icon"
                           variant="outline"
                           onClick={() => handleDelete(quiz.id)}
-                          title="Excluir Questionário"
+                          title="Excluir quiz"
                           className="h-10 w-10 rounded-xl border-2 border-red-200 hover:border-red-300 hover:bg-red-50 dark:border-red-700 dark:hover:border-red-600 dark:hover:bg-red-900 transition-all duration-200"
                         >
                           <FaTrash className="text-red-600 dark:text-red-400" />
@@ -477,7 +440,7 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold text-center text-gray-900 dark:text-white">
-              QR Code do Questionário
+              QR Code do quiz
             </DialogTitle>
           </DialogHeader>
           <div className="flex flex-col items-center space-y-6 py-4">
@@ -552,7 +515,7 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold text-center text-gray-900 dark:text-white">
-              Sessões do Questionário
+              Sessões do quiz
             </DialogTitle>
           </DialogHeader>
           <div className="py-4">
@@ -563,7 +526,7 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
                     {selectedQuiz.titulo}
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400">
-                    Gerencie as sessões deste questionário para aplicá-lo a diferentes grupos.
+                    Gerencie as sessões deste quiz para aplicá-lo a diferentes grupos.
                   </p>
                 </div>
 
@@ -660,16 +623,99 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
                           </div>
 
                         </div>
+                        
                       ))}
                     </div>
+                    
                   )}
                 </div>
+                
               </>
             )}
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+ 
+
+
+
+ <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-600">
+      <p className="text-2xl font-bold mt-2 mb-4 align-middle">Instruções</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        {/* Editar */}
+        <div className="bg-gradient-to-br from-blue-500/80 to-blue-600/80 backdrop-blur-sm p-4 rounded-xl shadow-md text-white">
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0">
+              <div className="h-10 w-10 rounded-lg border-2 border-white/30 bg-white/20 flex items-center justify-center">
+                <FaEdit className="text-white text-base" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <p className="text-lg font-bold">Editar Quiz</p>
+              <p className="text-blue-100 text-xs font-medium leading-relaxed">
+                Permite fazer alterações nas perguntas, respostas ou título do quiz.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Estatísticas */}
+        <div className="bg-gradient-to-br from-green-500/80 to-green-600/80 backdrop-blur-sm p-4 rounded-xl shadow-md text-white">
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0">
+              <div className="h-10 w-10 rounded-lg border-2 border-white/30 bg-white/20 flex items-center justify-center">
+                <FaChartBar className="text-white text-base" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <p className="text-lg font-bold">Visualizar Estatísticas</p>
+              <p className="text-green-100 text-xs font-medium leading-relaxed">
+                Mostra os dados de desempenho dos participantes, como quantas pessoas responderam, acertos e erros.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* QR Code */}
+        <div className="bg-gradient-to-br from-purple-500/80 to-purple-600/80 backdrop-blur-sm p-4 rounded-xl shadow-md text-white">
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0">
+              <div className="h-10 w-10 rounded-lg border-2 border-white/30 bg-white/20 flex items-center justify-center">
+                <FaQrcode className="text-white text-base" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <p className="text-lg font-bold">Gerar QR Code</p>
+              <p className="text-purple-100 text-xs font-medium leading-relaxed">
+                Cria um código QR que pode ser escaneado para acessar o quiz rapidamente.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Excluir */}
+        <div className="bg-gradient-to-br from-red-500/80 to-red-600/80 backdrop-blur-sm p-4 rounded-xl shadow-md text-white">
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0">
+              <div className="h-10 w-10 rounded-lg border-2 border-white/30 bg-white/20 flex items-center justify-center">
+                <FaTrash className="text-white text-base" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <p className="text-lg font-bold">Excluir Quiz</p>
+              <p className="text-red-100 text-xs font-medium leading-relaxed">
+                Remove o quiz de forma permanente. Essa ação não pode ser desfeita.
+              </p>
+            </div>
+          </div>
+        </div>
+      
+              </div>
+
+              </div>
+
+       </div>
   );
 };
 
