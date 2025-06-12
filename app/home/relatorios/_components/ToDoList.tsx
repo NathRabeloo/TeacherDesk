@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -12,12 +12,58 @@ type Task = {
   id: number;
   text: string;
   done: boolean;
-  createdAt: Date;
+  createdAt: string; 
 };
+
+const STORAGE_KEY = "todo-tasks-v1";
 
 export function TodoList() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState("");
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Função para carregar tarefas do localStorage
+  const loadTasks = () => {
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            setTasks(parsed);
+          }
+        }
+      }
+    } catch (error) {
+      console.warn("Erro ao carregar tarefas do localStorage:", error);
+      setTasks([]);
+    } finally {
+      setIsLoaded(true);
+    }
+  };
+
+  // Função para salvar tarefas no localStorage
+  const saveTasks = (tasksToSave: Task[]) => {
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(tasksToSave));
+      }
+    } catch (error) {
+      console.warn("Erro ao salvar tarefas no localStorage:", error);
+    }
+  };
+
+  // Carregar tarefas ao inicializar o componente
+  useEffect(() => {
+    loadTasks();
+  }, []);
+
+  // Salvar tarefas sempre que o estado mudar (apenas após carregar)
+  useEffect(() => {
+    if (isLoaded) {
+      saveTasks(tasks);
+    }
+  }, [tasks, isLoaded]);
 
   const addTask = () => {
     const trimmedTask = newTask.trim();
@@ -28,15 +74,14 @@ export function TodoList() {
     );
     if (alreadyExists) return;
 
-    setTasks((prev) => [
-      ...prev,
-      { 
-        id: Date.now(), 
-        text: trimmedTask, 
-        done: false,
-        createdAt: new Date()
-      },
-    ]);
+    const newTaskObj: Task = {
+      id: Date.now(),
+      text: trimmedTask,
+      done: false,
+      createdAt: new Date().toISOString()
+    };
+
+    setTasks((prev) => [...prev, newTaskObj]);
     setNewTask("");
   };
 
@@ -57,6 +102,21 @@ export function TodoList() {
 
   const completedTasks = tasks.filter((t) => t.done);
   const pendingTasks = tasks.filter((t) => !t.done);
+
+  // Função para formatar data
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      const dateStr = date.toLocaleDateString('pt-BR');
+      const timeStr = date.toLocaleTimeString('pt-BR', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+      return { dateStr, timeStr };
+    } catch {
+      return { dateStr: "Data inválida", timeStr: "" };
+    }
+  };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -167,6 +227,7 @@ export function TodoList() {
                       task={task} 
                       onToggle={toggleTaskDone}
                       onDelete={deleteTask}
+                      formatDate={formatDate}
                     />
                   ))}
                 </div>
@@ -185,6 +246,7 @@ export function TodoList() {
                       task={task} 
                       onToggle={toggleTaskDone}
                       onDelete={deleteTask}
+                      formatDate={formatDate}
                     />
                   ))}
                 </div>
@@ -201,12 +263,16 @@ export function TodoList() {
 function TaskItem({ 
   task, 
   onToggle, 
-  onDelete 
+  onDelete,
+  formatDate
 }: { 
   task: Task; 
   onToggle: (id: number) => void;
   onDelete: (id: number) => void;
+  formatDate: (date: string) => { dateStr: string; timeStr: string };
 }) {
+  const { dateStr, timeStr } = formatDate(task.createdAt);
+  
   return (
     <div className={`group flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-200 ${
       task.done 
@@ -232,7 +298,7 @@ function TaskItem({
           {task.text}
         </Label>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          Criada em {task.createdAt.toLocaleDateString('pt-BR')} às {task.createdAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+          Criada em {dateStr} {timeStr && `às ${timeStr}`}
         </p>
       </div>
       
