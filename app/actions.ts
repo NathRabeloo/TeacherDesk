@@ -838,3 +838,50 @@ export const buscarBibliografia = async (id: string) => {
 
   return { data: bibliografia };
 };
+
+
+export async function carregarMetas() {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("metas")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Erro ao carregar metas:", error.message);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function adicionarMeta(indicador: string, quantidade: number) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from("metas")
+    .insert({ indicador, quantidade, user_id: user.id })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Erro ao adicionar meta:", error.message);
+    return null;
+  }
+
+  return data;
+}
+
+export async function removerMeta(id: string) {
+  const supabase = createClient();
+  const { error } = await supabase.from("metas").delete().eq("id", id);
+  if (error) {
+    console.error("Erro ao remover meta:", error.message);
+  }
+}
