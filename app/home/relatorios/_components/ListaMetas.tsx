@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FaThLarge, FaPlus, FaTrash, FaTrophy, FaChartLine } from "react-icons/fa";
 import { carregarMetas, adicionarMeta as adicionarMetaAPI, removerMeta as removerMetaAPI } from "../../../actions";
 
-type MetaIndicador = "quizzes" | "diarios" | "enquetes" | "respostas_enquete" | "respostas_quiz";
+type MetaIndicador = "quizzes" | "diarios" ;
 
 type Meta = {
   id: string;
@@ -25,9 +25,6 @@ const indicadorLabels: Record<MetaIndicador, string> = {
 const indicadorIcons: Record<MetaIndicador, JSX.Element> = {
   quizzes: <FaChartLine className="text-blue-500" />,
   diarios: <FaThLarge className="text-green-500" />,
-  enquetes: <FaTrophy className="text-purple-500" />,
-  respostas_enquete: <FaPlus className="text-orange-500" />,
-  respostas_quiz: <FaTrash className="text-red-500" />,
 };
 
 export function ListaMetas({ dados }: { dados: Record<MetaIndicador, number> }) {

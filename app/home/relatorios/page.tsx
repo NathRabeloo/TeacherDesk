@@ -101,7 +101,7 @@ export default async function RelatoriosPage() {
   .from("vw_desempenho_por_disciplina_usuario")
   .select("disciplina, percentual_acerto_geral")
   .eq("user_id", userId);
-  
+
   if (desempenhoError) {
     console.error("Erro ao buscar desempenho:", desempenhoError.message);
   }
@@ -149,7 +149,6 @@ export default async function RelatoriosPage() {
               dados={{
                 quizzes: totalQuizzesUsuario ?? 0,
                 diarios: totalPlanosUsuario ?? 0,
-                respostas_quiz: totalRespostasQuiz ?? 0,
               }}
             />
 
