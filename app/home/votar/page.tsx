@@ -1,11 +1,10 @@
 "use client";
 
-import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { FaVoteYea, FaChartBar, FaUsers, FaTrophy, FaCheck, FaPoll } from "react-icons/fa";
+import { FaPoll, FaCheckCircle, FaChartBar } from "react-icons/fa";
+import { buscarEnquete, registrarVoto } from "@/app/actions";
 
 type Opcao = {
   id: string;
@@ -13,88 +12,104 @@ type Opcao = {
   votos: number;
 };
 
-function VotarPageInner() {
-  const searchParams = useSearchParams();
-  const id = searchParams.get("id");
-
+export default function VotarPage() {
   const [pergunta, setPergunta] = useState("");
   const [opcoes, setOpcoes] = useState<Opcao[]>([]);
-  const [votado, setVotado] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [loadingEnquete, setLoadingEnquete] = useState(true);
+  const [opcaoSelecionada, setOpcaoSelecionada] = useState<string | null>(null);
+  const [jaVotou, setJaVotou] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadingVoto, setLoadingVoto] = useState(false);
   const [erro, setErro] = useState("");
+  const [enqueteId, setEnqueteId] = useState<string | null>(null);
 
   useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const id = urlParams.get("id");
+    
     if (!id) {
-      setErro("Enquete não encontrada.");
-      setLoadingEnquete(false);
+      setErro("ID da enquete não fornecido");
+      setLoading(false);
       return;
     }
 
-    setLoadingEnquete(true);
-    fetch(`/api/enquete?id=${id}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Erro ao carregar enquete");
-        return res.json();
-      })
-      .then((data) => {
-        setPergunta(data.pergunta);
-        setOpcoes(data.opcoes);
-        setErro("");
-      })
-      .catch(() => {
-        setErro("Enquete não encontrada ou erro ao carregar");
-        setPergunta("");
-        setOpcoes([]);
-      })
-      .finally(() => setLoadingEnquete(false));
-  }, [id]);
+    setEnqueteId(id);
+    carregarEnquete(id);
+  }, []);
 
-  const votar = async (opcaoId: string) => {
-    if (!id) return;
-    setLoading(true);
-
+  const carregarEnquete = async (id: string) => {
     try {
-      const res = await fetch("/api/enquete/votar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ enqueteId: id, opcaoId }),
-      });
+      setLoading(true);
+      const result = await buscarEnquete(id);
+      
+      if (result.error) {
+        setErro(result.error);
+        return;
+      }
 
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.error || "Erro ao registrar voto");
-
-      setOpcoes((oldOpcoes) =>
-        oldOpcoes.map((opcao) =>
-          opcao.id === opcaoId ? { ...opcao, votos: opcao.votos + 1 } : opcao
-        )
-      );
-
-      setVotado(true);
-    } catch (error: any) {
-      alert(error.message || "Falha ao registrar voto. Tente novamente.");
+      if (result.success) {
+        setPergunta(result.pergunta);
+        setOpcoes(result.opcoes);
+        
+        // Verificar se já votou (usando localStorage para controle local)
+        const jaVotouKey = `votou_enquete_${id}`;
+        const jaVotouLocal = localStorage.getItem(jaVotouKey);
+        if (jaVotouLocal) {
+          setJaVotou(true);
+          setOpcaoSelecionada(jaVotouLocal);
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao carregar enquete:", error);
+      setErro("Erro inesperado ao carregar enquete");
     } finally {
       setLoading(false);
     }
   };
 
-  const totalVotos = opcoes.reduce((total, opcao) => total + opcao.votos, 0);
+  const handleVotar = async () => {
+    if (!opcaoSelecionada || !enqueteId) return;
 
-  const getPercentual = (votos: number) => {
-    if (totalVotos === 0) return 0;
-    return Math.round((votos / totalVotos) * 100);
+    setLoadingVoto(true);
+    try {
+      const result = await registrarVoto(enqueteId, opcaoSelecionada);
+      
+      if (result.error) {
+        alert("Erro ao registrar voto: " + result.error);
+        return;
+      }
+
+      if (result.success) {
+        // Marcar como votado no localStorage
+        const jaVotouKey = `votou_enquete_${enqueteId}`;
+        localStorage.setItem(jaVotouKey, opcaoSelecionada);
+        
+        setJaVotou(true);
+        
+        // Recarregar dados para mostrar resultados atualizados
+        await carregarEnquete(enqueteId);
+      }
+    } catch (error) {
+      console.error("Erro ao votar:", error);
+      alert("Erro inesperado ao registrar voto");
+    } finally {
+      setLoadingVoto(false);
+    }
   };
 
-  if (loadingEnquete) {
+  const calcularPercentual = (votos: number) => {
+    const totalVotos = opcoes.reduce((total, opcao) => total + opcao.votos, 0);
+    return totalVotos > 0 ? Math.round((votos / totalVotos) * 100) : 0;
+  };
+
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700 flex items-center justify-center">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-8">
-          <div className="flex items-center space-x-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-            <p className="text-lg text-gray-600 dark:text-gray-300">Carregando enquete...</p>
-          </div>
-        </div>
+        <Card className="w-full max-w-md mx-4">
+          <CardContent className="p-8 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-300">Carregando enquete...</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -102,230 +117,173 @@ function VotarPageInner() {
   if (erro) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700 flex items-center justify-center">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-red-200 dark:border-red-700 p-8 max-w-md">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FaPoll className="text-red-600 dark:text-red-400 text-2xl" />
+        <Card className="w-full max-w-md mx-4">
+          <CardContent className="p-8 text-center">
+            <div className="p-4 rounded-full bg-red-100 dark:bg-red-900/20 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+              <FaPoll className="text-red-500 text-2xl" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Erro</h2>
-            <p className="text-red-600 dark:text-red-400">{erro}</p>
-          </div>
-        </div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+              Erro
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300">
+              {erro}
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
-      {/* Header Section */}
-      <div className="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="bg-gradient-to-r from-purple-500 to-pink-600 p-3 rounded-xl shadow-lg">
-                <FaVoteYea className="text-white text-2xl" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                  Sistema de Enquetes
-                </h1>
-                <p className="text-lg text-gray-600 dark:text-gray-300 mt-1">
-                  Participe e faça sua escolha
-                </p>
-              </div>
-            </div>
-            
-            {/* Estatísticas Rápidas */}
-            <div className="hidden lg:flex items-center space-x-6">
-              <div className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-full mb-2">
-                  <FaChartBar className="text-purple-600 dark:text-purple-400 text-xl" />
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Resultados</p>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full mb-2">
-                  <FaUsers className="text-green-600 dark:text-green-400 text-xl" />
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Participantes</p>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center w-12 h-12 bg-yellow-100 dark:bg-yellow-900 rounded-full mb-2">
-                  <FaTrophy className="text-yellow-600 dark:text-yellow-400 text-xl" />
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Vencedor</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Conteúdo Principal */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-          {/* Cabeçalho da Enquete */}
-          <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 px-8 py-6 border-b border-gray-200 dark:border-gray-600">
-            <div className="flex items-center space-x-4">
-              <div className="p-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-600">
-                <FaPoll className="text-white text-xl" />
-              </div>
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {pergunta}
-                </h2>
-                <p className="text-gray-600 dark:text-gray-300 text-lg mt-1">
-                  {votado ? "Obrigado pela sua participação!" : "Escolha uma das opções abaixo"}
-                </p>
-              </div>
-              {totalVotos > 0 && (
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                    {totalVotos}
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        <Card className="bg-white dark:bg-gray-800 shadow-xl border-2 border-gray-200 dark:border-gray-700">
+          <CardContent className="p-8">
+            {!jaVotou ? (
+              // Interface de Votação
+              <div className="space-y-6">
+                <div className="text-center mb-8">
+                  <div className="p-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                    <FaPoll className="text-white text-2xl" />
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    {totalVotos === 1 ? "voto" : "votos"}
-                  </div>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                    Enquete
+                  </h1>
+                  <p className="text-gray-600 dark:text-gray-300">
+                    Selecione uma opção e vote
+                  </p>
                 </div>
-              )}
-            </div>
-          </div>
 
-          {/* Opções de Votação */}
-          <div className="p-8">
-            {opcoes.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <FaPoll className="text-gray-400 text-2xl" />
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-6 rounded-xl border-2 border-blue-200 dark:border-blue-700 mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white text-center">
+                    {pergunta}
+                  </h2>
                 </div>
-                <p className="text-gray-600 dark:text-gray-400 text-lg">Nenhuma opção disponível.</p>
+
+                <div className="space-y-3">
+                  {opcoes.map((opcao) => (
+                    <button
+                      key={opcao.id}
+                      onClick={() => setOpcaoSelecionada(opcao.id)}
+                      className={`w-full p-4 text-left rounded-xl border-2 transition-all duration-200 ${
+                        opcaoSelecionada === opcao.id
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                          : 'border-gray-300 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white'
+                      }`}
+                      disabled={loadingVoto}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-4 h-4 rounded-full border-2 ${
+                          opcaoSelecionada === opcao.id
+                            ? 'border-blue-500 bg-blue-500'
+                            : 'border-gray-400 dark:border-gray-500'
+                        }`}>
+                          {opcaoSelecionada === opcao.id && (
+                            <div className="w-full h-full rounded-full bg-white scale-50"></div>
+                          )}
+                        </div>
+                        <span className="text-lg font-medium">{opcao.texto}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                <Button
+                  onClick={handleVotar}
+                  disabled={!opcaoSelecionada || loadingVoto}
+                  className="w-full py-4 text-lg font-semibold bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loadingVoto ? "Registrando voto..." : "Confirmar Voto"}
+                </Button>
               </div>
             ) : (
-              <div className="space-y-4">
-                {opcoes.map((opcao, index) => {
-                  const percentual = getPercentual(opcao.votos);
-                  const gradients = [
-                    "from-blue-500 to-blue-600",
-                    "from-green-500 to-green-600", 
-                    "from-purple-500 to-purple-600",
-                    "from-orange-500 to-orange-600",
-                    "from-pink-500 to-pink-600",
-                    "from-indigo-500 to-indigo-600"
-                  ];
-                  const gradient = gradients[index % gradients.length];
+              // Interface de Resultados
+              <div className="space-y-6">
+                <div className="text-center mb-8">
+                  <div className="p-4 rounded-full bg-gradient-to-r from-green-500 to-blue-600 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                    <FaCheckCircle className="text-white text-2xl" />
+                  </div>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                    Voto Registrado!
+                  </h1>
+                  <p className="text-gray-600 dark:text-gray-300">
+                    Obrigado por participar da enquete
+                  </p>
+                </div>
 
-                  return (
-                    <Card 
-                      key={opcao.id} 
-                      className={`transition-all duration-300 transform hover:scale-[1.02] border-2 ${
-                        votado 
-                          ? "border-gray-200 dark:border-gray-600" 
-                          : "border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 cursor-pointer"
-                      } bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl`}
-                    >
-                      <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-3 mb-3">
-                              <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                                {opcao.texto}
-                              </span>
-                              {votado && (
-                                <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-                                  <span>{opcao.votos} {opcao.votos === 1 ? "voto" : "votos"}</span>
-                                  <span>({percentual}%)</span>
-                                </div>
-                              )}
-                            </div>
-                            
-                            {/* Barra de Progresso */}
-                            {votado && totalVotos > 0 && (
-                              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mb-3">
-                                <div 
-                                  className={`bg-gradient-to-r ${gradient} h-3 rounded-full transition-all duration-700 ease-out`}
-                                  style={{ width: `${percentual}%` }}
-                                ></div>
-                              </div>
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-6 rounded-xl border-2 border-blue-200 dark:border-blue-700 mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white text-center mb-4">
+                    {pergunta}
+                  </h2>
+                  <div className="flex items-center justify-center">
+                    <FaChartBar className="text-blue-500 mr-2" />
+                    <span className="text-gray-700 dark:text-gray-300 font-medium">
+                      Resultados em tempo real
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {opcoes.map((opcao) => {
+                    const percentual = calcularPercentual(opcao.votos);
+                    const foiEscolhida = opcaoSelecionada === opcao.id;
+                    
+                    return (
+                      <div 
+                        key={opcao.id} 
+                        className={`p-4 rounded-xl border-2 ${
+                          foiEscolhida 
+                            ? 'border-green-500 bg-green-50 dark:bg-green-900/20' 
+                            : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700'
+                        }`}
+                      >
+                        <div className="flex justify-between items-center mb-3">
+                          <div className="flex items-center space-x-2">
+                            <span className={`font-semibold ${
+                              foiEscolhida 
+                                ? 'text-green-700 dark:text-green-300' 
+                                : 'text-gray-900 dark:text-white'
+                            }`}>
+                              {opcao.texto}
+                            </span>
+                            {foiEscolhida && (
+                              <FaCheckCircle className="text-green-500 text-sm" />
                             )}
                           </div>
-                          
-                          <div className="ml-4">
-                            {votado ? (
-                              <div className="flex items-center justify-center w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full">
-                                <FaCheck className="text-green-600 dark:text-green-400 text-lg" />
-                              </div>
-                            ) : (
-                              <Button 
-                                disabled={loading} 
-                                onClick={() => votar(opcao.id)}
-                                className={`bg-gradient-to-r ${gradient} hover:shadow-lg text-white font-semibold px-6 py-3 rounded-xl transition-all duration-200 transform hover:scale-105`}
-                              >
-                                {loading ? (
-                                  <div className="flex items-center space-x-2">
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                    <span>Votando...</span>
-                                  </div>
-                                ) : (
-                                  "Votar"
-                                )}
-                              </Button>
-                            )}
-                          </div>
+                          <span className={`text-lg font-bold ${
+                            foiEscolhida 
+                              ? 'text-green-600 dark:text-green-400' 
+                              : 'text-blue-600 dark:text-blue-400'
+                          }`}>
+                            {opcao.votos} ({percentual}%)
+                          </span>
                         </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
+                        <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
+                          <div 
+                            className={`h-3 rounded-full transition-all duration-1000 ${
+                              foiEscolhida 
+                                ? 'bg-gradient-to-r from-green-500 to-green-600' 
+                                : 'bg-gradient-to-r from-blue-500 to-purple-600'
+                            }`}
+                            style={{ width: `${percentual}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
 
-            {/* Mensagem de Sucesso */}
-            {votado && (
-              <div className="mt-8 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-200 dark:border-green-700 rounded-2xl p-6">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
-                    <FaCheck className="text-green-600 dark:text-green-400 text-xl" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-green-800 dark:text-green-200">
-                      Voto registrado com sucesso!
-                    </h3>
-                    <p className="text-green-600 dark:text-green-300 mt-1">
-                      Obrigado pela sua participação. Você pode ver os resultados atualizados acima.
-                    </p>
-                  </div>
+                <div className="text-center pt-4">
+                  <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">
+                    Total de votos: {opcoes.reduce((total, opcao) => total + opcao.votos, 0)}
+                  </p>
                 </div>
               </div>
             )}
-          </div>
-        </div>
-      </div>
-
-      {/* Rodapé */}
-      <div className="bg-white dark:bg-gray-800 mt-12 border-t border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="text-center text-gray-600 dark:text-gray-400">
-            <p className="text-lg">Sistema de Enquetes Interativas</p>
-            <p className="text-sm mt-2">Sua opinião é importante para nós</p>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
 }
 
-export default function VotarPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700 flex items-center justify-center">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-8">
-          <div className="flex items-center space-x-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-            <p className="text-lg text-gray-600 dark:text-gray-300">Carregando enquete...</p>
-          </div>
-        </div>
-      </div>
-    }>
-      <VotarPageInner />
-    </Suspense>
-  );
-}

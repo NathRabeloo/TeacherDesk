@@ -13,18 +13,24 @@ import {
 } from "@/components/ui/dialog";
 import { FaPoll, FaChartBar, FaHistory, FaPlus, FaQrcode, FaLink, FaDownload, FaTrash, FaPlay, FaStop } from "react-icons/fa";
 import QRCode from "react-qr-code";
+import { 
+  criarEnquete, 
+  listarEnquetesUsuario, 
+  desativarEnquete, 
+  buscarResultados,
+  exportarDadosEnquete 
+} from "@/app/actions";
 
 type Opcao = { texto: string; votos: number };
 type EnqueteSalva = {
-  enqueteId: string;
+  id: string;
   pergunta: string;
-  opcoes: Opcao[];
+  ativa: boolean;
+  criada_em: string;
+  opcoes?: Opcao[];
   resultados?: Opcao[];
-  urlVotacao: string;
+  urlVotacao?: string;
 };
-
-const STORAGE_KEY = "enqueteCriada";
-const STORAGE_HISTORICO = "historicoEnquetes";
 
 export default function EnquetePage() {
   const [pergunta, setPergunta] = useState("");
@@ -36,39 +42,33 @@ export default function EnquetePage() {
   const [resultados, setResultados] = useState<Opcao[]>([]);
   const [historicoEnquetes, setHistoricoEnquetes] = useState<EnqueteSalva[]>([]);
   const [copied, setCopied] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [perguntaAtual, setPerguntaAtual] = useState("");
 
+  // Carregar enquetes do usuário ao inicializar
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const data = JSON.parse(saved);
-      setPergunta(data.pergunta);
-      setOpcoes(data.opcoes);
-      setEnqueteId(data.enqueteId);
-      setUrlVotacao(data.urlVotacao);
-      setEnqueteAtiva(true);
-    }
-
-    const historico = localStorage.getItem(STORAGE_HISTORICO);
-    if (historico) {
-      setHistoricoEnquetes(JSON.parse(historico));
-    }
+    carregarEnquetesUsuario();
   }, []);
 
-  useEffect(() => {
-    if (enqueteAtiva && enqueteId) {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ pergunta, opcoes, enqueteId, urlVotacao })
-      );
-    } else {
-      localStorage.removeItem(STORAGE_KEY);
+  const carregarEnquetesUsuario = async () => {
+    try {
+      const result = await listarEnquetesUsuario();
+      if (result.success && result.enquetes) {
+        setHistoricoEnquetes(result.enquetes);
+        
+        // Verificar se há uma enquete ativa
+        const enqueteAtivaEncontrada = result.enquetes.find((e: EnqueteSalva) => e.ativa);
+        if (enqueteAtivaEncontrada) {
+          setEnqueteId(enqueteAtivaEncontrada.id);
+          setPergunta(enqueteAtivaEncontrada.pergunta);
+          setPerguntaAtual(enqueteAtivaEncontrada.pergunta);
+          setUrlVotacao(`${window.location.origin}/home/votar?id=${encodeURIComponent(enqueteAtivaEncontrada.id)}`);
+          setEnqueteAtiva(true);
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao carregar enquetes:", error);
     }
-  }, [enqueteAtiva, enqueteId, pergunta, opcoes, urlVotacao]);
-
-  const atualizarHistorico = (enquete: EnqueteSalva) => {
-    const novoHistorico = [enquete, ...historicoEnquetes.filter(e => e.enqueteId !== enquete.enqueteId)];
-    setHistoricoEnquetes(novoHistorico);
-    localStorage.setItem(STORAGE_HISTORICO, JSON.stringify(novoHistorico));
   };
 
   const adicionarOpcao = () => {
@@ -82,10 +82,10 @@ export default function EnquetePage() {
     }
   };
 
-  const limparHistorico = () => {
-    localStorage.removeItem(STORAGE_HISTORICO);
-    setHistoricoEnquetes([]);
-    alert("Histórico limpo com sucesso!");
+  const limparHistorico = async () => {
+    // Não vamos mais limpar do localStorage, mas podemos recarregar a lista
+    await carregarEnquetesUsuario();
+    alert("Lista de enquetes atualizada!");
   };
 
   const atualizarTextoOpcao = (index: number, novoTexto: string) => {
@@ -104,60 +104,80 @@ export default function EnquetePage() {
       return;
     }
 
-    const formData = new FormData();
-    formData.append("pergunta", pergunta);
-    formData.append(
-      "opcoes",
-      JSON.stringify(opcoes.map(({ texto }) => ({ texto })))
-    );
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append("pergunta", pergunta);
+      formData.append(
+        "opcoes",
+        JSON.stringify(opcoes.map(({ texto }) => ({ texto })))
+      );
 
-    const response = await fetch("/api/enquete", {
-      method: "POST",
-      body: formData,
-    });
-    const data = await response.json();
+      const result = await criarEnquete(formData);
 
-    if (data.error) {
-      alert("Erro ao criar enquete: " + data.error);
-      return;
+      if (result.error) {
+        alert("Erro ao criar enquete: " + result.error);
+        return;
+      }
+
+      if (result.success && result.enqueteId) {
+        setEnqueteId(result.enqueteId);
+        setPerguntaAtual(pergunta);
+        const url = `${window.location.origin}/home/votar?id=${encodeURIComponent(result.enqueteId)}`;
+        setUrlVotacao(url);
+        setEnqueteAtiva(true);
+        
+        // Recarregar lista de enquetes
+        await carregarEnquetesUsuario();
+      }
+    } catch (error) {
+      console.error("Erro ao criar enquete:", error);
+      alert("Erro inesperado ao criar enquete");
+    } finally {
+      setLoading(false);
     }
-
-    setEnqueteId(data.enqueteId);
-    const url = `${window.location.origin}/home/votar?id=${encodeURIComponent(
-      data.enqueteId
-    )}`;
-    setUrlVotacao(url);
-    setEnqueteAtiva(true);
   };
 
   const encerrarEnquete = async () => {
     if (!enqueteId) return;
 
-    const response = await fetch(`/api/enquete/resultados?enqueteId=${enqueteId}`);
-    const data = await response.json();
+    setLoading(true);
+    try {
+      // Desativar enquete
+      const desativarResult = await desativarEnquete(enqueteId);
+      if (desativarResult.error) {
+        alert("Erro ao encerrar enquete: " + desativarResult.error);
+        return;
+      }
 
-    if (data.error) {
-      alert("Erro ao buscar resultados: " + data.error);
-      return;
+      // Buscar resultados
+      const resultadosData = await buscarResultados(enqueteId);
+      if (resultadosData.error) {
+        alert("Erro ao buscar resultados: " + resultadosData.error);
+        return;
+      }
+
+      if (resultadosData.success) {
+        setResultados(resultadosData.resultados);
+        setMostrarResultado(true);
+        setEnqueteAtiva(false);
+        
+        // Limpar formulário
+        setPergunta("");
+        setOpcoes([{ texto: "", votos: 0 }]);
+        setEnqueteId(null);
+        setUrlVotacao("");
+        setPerguntaAtual("");
+        
+        // Recarregar lista de enquetes
+        await carregarEnquetesUsuario();
+      }
+    } catch (error) {
+      console.error("Erro ao encerrar enquete:", error);
+      alert("Erro inesperado ao encerrar enquete");
+    } finally {
+      setLoading(false);
     }
-
-    setResultados(data.resultados);
-    setMostrarResultado(true);
-
-    atualizarHistorico({
-      enqueteId,
-      pergunta,
-      opcoes,
-      resultados: data.resultados,
-      urlVotacao,
-    });
-
-    setEnqueteAtiva(false);
-    setPergunta("");
-    setOpcoes([{ texto: "", votos: 0 }]);
-    setEnqueteId(null);
-    setUrlVotacao("");
-    localStorage.removeItem(STORAGE_KEY);
   };
 
   const criarOutraEnquete = () => {
@@ -168,60 +188,93 @@ export default function EnquetePage() {
     setUrlVotacao("");
     setEnqueteId(null);
     setResultados([]);
-    localStorage.removeItem(STORAGE_KEY);
+    setPerguntaAtual("");
   };
 
-  const exportarResultadosTxt = () => {
-    if (!resultados.length) {
-      alert("Nenhum resultado para exportar.");
+  const exportarResultadosTxt = async () => {
+    if (!enqueteId) {
+      alert("Nenhuma enquete selecionada para exportar.");
       return;
     }
-    const linhas = resultados.map(
-      (opcao) => `${opcao.texto}: ${opcao.votos} votos`
-    );
-    const conteudo = `Resultados da enquete:\n${pergunta}\n\n${linhas.join(
-      "\n"
-    )}`;
 
-    const blob = new Blob([conteudo], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `resultados-enquete-${enqueteId}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      const result = await exportarDadosEnquete(enqueteId);
+      if (result.error) {
+        alert("Erro ao exportar dados: " + result.error);
+        return;
+      }
+
+      if (result.success && result.conteudo) {
+        const blob = new Blob([result.conteudo], { type: "text/plain;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `enquete-${enqueteId}-${new Date().toISOString().split('T')[0]}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error("Erro ao exportar:", error);
+      alert("Erro inesperado ao exportar dados");
+    }
   };
 
-  const exportarHistoricoTxt = () => {
+  const exportarHistoricoTxt = async () => {
     if (!historicoEnquetes.length) {
       alert("Nenhum histórico para exportar.");
       return;
     }
 
-    let conteudo = "Histórico de Enquetes e Resultados:\n\n";
+    try {
+      let conteudo = "HISTÓRICO DE ENQUETES\n";
+      conteudo += "====================\n\n";
 
-    historicoEnquetes.forEach((enquete, idx) => {
-      conteudo += `Enquete ${idx + 1}:\nPergunta: ${enquete.pergunta}\n`;
-      conteudo += "Resultados:\n";
-      enquete.resultados?.forEach((opcao) => {
-        conteudo += `  - ${opcao.texto}: ${opcao.votos} votos\n`;
-      });
-      conteudo += "\n";
-    });
+      for (let i = 0; i < historicoEnquetes.length; i++) {
+        const enquete = historicoEnquetes[i];
+        conteudo += `ENQUETE ${i + 1}\n`;
+        conteudo += `---------\n`;
+        conteudo += `Pergunta: ${enquete.pergunta}\n`;
+        conteudo += `Status: ${enquete.ativa ? 'Ativa' : 'Encerrada'}\n`;
+        conteudo += `Criada em: ${new Date(enquete.criada_em).toLocaleString('pt-BR')}\n`;
+        
+        // Buscar resultados se a enquete estiver encerrada
+        if (!enquete.ativa) {
+          try {
+            const resultadosData = await buscarResultados(enquete.id);
+            if (resultadosData.success) {
+              const totalVotos = resultadosData.resultados.reduce((total: number, opcao: any) => total + opcao.votos, 0);
+              conteudo += `Total de votos: ${totalVotos}\n`;
+              conteudo += `Resultados:\n`;
+              resultadosData.resultados.forEach((opcao: any, index: number) => {
+                const percentual = totalVotos > 0 ? Math.round((opcao.votos / totalVotos) * 100) : 0;
+                conteudo += `  ${index + 1}. ${opcao.texto}: ${opcao.votos} votos (${percentual}%)\n`;
+              });
+            }
+          } catch (error) {
+            conteudo += `Erro ao carregar resultados desta enquete\n`;
+          }
+        }
+        
+        conteudo += "\n";
+      }
 
-    const blob = new Blob([conteudo], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `historico-enquetes.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+      conteudo += `\nExportado em: ${new Date().toLocaleString('pt-BR')}\n`;
+
+      const blob = new Blob([conteudo], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `historico-enquetes-${new Date().toISOString().split('T')[0]}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Erro ao exportar histórico:", error);
+      alert("Erro inesperado ao exportar histórico");
+    }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
-     
-  
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
@@ -255,6 +308,7 @@ export default function EnquetePage() {
                         value={pergunta}
                         onChange={(e) => setPergunta(e.target.value)}
                         className="text-lg p-4 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-blue-500 dark:bg-gray-700"
+                        disabled={loading}
                       />
                     </div>
 
@@ -272,6 +326,7 @@ export default function EnquetePage() {
                                 value={opcao.texto}
                                 onChange={(e) => atualizarTextoOpcao(index, e.target.value)}
                                 className="text-lg p-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-blue-500 dark:bg-gray-700"
+                                disabled={loading}
                               />
                             </div>
                             {opcoes.length > 2 && (
@@ -280,6 +335,7 @@ export default function EnquetePage() {
                                 size="sm"
                                 onClick={() => removerOpcao(index)}
                                 className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-lg"
+                                disabled={loading}
                               >
                                 <FaTrash />
                               </Button>
@@ -295,6 +351,7 @@ export default function EnquetePage() {
                         variant="outline"
                         onClick={adicionarOpcao}
                         className="flex-1 py-3 text-lg font-semibold border-2 border-blue-300 text-blue-600 hover:bg-blue-50 dark:border-blue-600 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                        disabled={loading}
                       >
                         <FaPlus className="mr-2" />
                         Adicionar Opção
@@ -302,9 +359,10 @@ export default function EnquetePage() {
                       <Button
                         onClick={gerarEnquete}
                         className="flex-1 py-3 text-lg font-semibold bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg"
+                        disabled={loading}
                       >
                         <FaPlay className="mr-2" />
-                        Gerar Enquete
+                        {loading ? "Gerando..." : "Gerar Enquete"}
                       </Button>
                     </div>
                   </div>
@@ -319,7 +377,7 @@ export default function EnquetePage() {
                         </h3>
                       </div>
                       <p className="text-gray-700 dark:text-gray-300 mb-4 text-lg">
-                        {pergunta}
+                        {perguntaAtual}
                       </p>
                       <div className="flex items-center justify-center bg-white dark:bg-gray-800 p-6 rounded-xl border-2 border-gray-200 dark:border-gray-600 mb-4">
                         <QRCode value={urlVotacao} size={200} />
@@ -338,6 +396,7 @@ export default function EnquetePage() {
                               setTimeout(() => setCopied(false), 2000);
                             }}
                             className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
+                            disabled={loading}
                           >
                             <FaLink className="mr-2" />
                             {copied ? "Link Copiado!" : "Copiar Link"}
@@ -346,9 +405,10 @@ export default function EnquetePage() {
                             onClick={encerrarEnquete}
                             variant="destructive"
                             className="flex-1"
+                            disabled={loading}
                           >
                             <FaStop className="mr-2" />
-                            Encerrar Enquete
+                            {loading ? "Encerrando..." : "Encerrar Enquete"}
                           </Button>
                         </div>
                       </div>
@@ -404,7 +464,7 @@ export default function EnquetePage() {
             <CardContent className="p-8">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center space-x-4">
-                  <div className="p-3 rounded-xl bg-gradient-to-r from-green-500 to-teal-600">
+                  <div className="p-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-600">
                     <FaHistory className="text-white text-xl" />
                   </div>
                   <div>
@@ -412,51 +472,66 @@ export default function EnquetePage() {
                       Histórico de Enquetes
                     </h2>
                     <p className="text-gray-600 dark:text-gray-300 text-lg">
-                      Visualize e gerencie suas enquetes anteriores
+                      Suas enquetes criadas e resultados
                     </p>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <Button
                     onClick={exportarHistoricoTxt}
-                    className="bg-green-500 hover:bg-green-600 text-white"
+                    variant="outline"
+                    className="border-2 border-purple-300 text-purple-600 hover:bg-purple-50 dark:border-purple-600 dark:text-purple-400 dark:hover:bg-purple-900/20"
                   >
                     <FaDownload className="mr-2" />
                     Exportar Histórico
                   </Button>
                   <Button
                     onClick={limparHistorico}
-                    variant="destructive"
+                    variant="outline"
+                    className="border-2 border-red-300 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-900/20"
                   >
                     <FaTrash className="mr-2" />
-                    Limpar Histórico
+                    Atualizar Lista
                   </Button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {historicoEnquetes.map((enquete, idx) => (
-                  <Card
-                    key={enquete.enqueteId}
-                    className="border-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:shadow-lg transition-shadow duration-200"
-                  >
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {historicoEnquetes.map((enquete, index) => (
+                  <Card key={enquete.id} className="border-2 border-gray-200 dark:border-gray-600 hover:border-purple-300 dark:hover:border-purple-600 transition-colors">
                     <CardContent className="p-6">
-                      <div className="flex items-center space-x-3 mb-4">
-                        <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                          {idx + 1}
-                        </div>
-                        <h3 className="font-bold text-gray-900 dark:text-white text-lg">
-                          {enquete.pergunta}
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                          Enquete #{index + 1}
                         </h3>
+                        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                          enquete.ativa 
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                            : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
+                        }`}>
+                          {enquete.ativa ? 'Ativa' : 'Encerrada'}
+                        </span>
                       </div>
-                      <div className="space-y-2">
-                        {enquete.resultados?.map((opcao, i) => (
-                          <div key={i} className="flex justify-between items-center p-2 bg-white dark:bg-gray-800 rounded-lg">
-                            <span className="text-gray-700 dark:text-gray-300">{opcao.texto}</span>
-                            <span className="font-bold text-blue-600 dark:text-blue-400">{opcao.votos} votos</span>
-                          </div>
-                        ))}
-                      </div>
+                      <p className="text-gray-700 dark:text-gray-300 mb-4 line-clamp-2">
+                        {enquete.pergunta}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                        Criada em: {new Date(enquete.criada_em).toLocaleDateString('pt-BR')}
+                      </p>
+                      {!enquete.ativa && (
+                        <Button
+                          onClick={() => {
+                            setEnqueteId(enquete.id);
+                            exportarResultadosTxt();
+                          }}
+                          variant="outline"
+                          size="sm"
+                          className="w-full border-2 border-blue-300 text-blue-600 hover:bg-blue-50 dark:border-blue-600 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                        >
+                          <FaDownload className="mr-2" />
+                          Exportar Resultados
+                        </Button>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
@@ -464,59 +539,75 @@ export default function EnquetePage() {
             </CardContent>
           </Card>
         )}
-      </div>
 
-      {/* Modal de Resultados */}
-      <Dialog open={mostrarResultado} onOpenChange={setMostrarResultado}>
-        <DialogContent className="max-w-2xl bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-600 shadow-2xl">
-          <DialogHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 -m-6 mb-6 p-6 border-b border-gray-200 dark:border-gray-600">
-            <div className="flex items-center space-x-4">
-              <div className="p-3 rounded-xl bg-gradient-to-r from-green-500 to-teal-600">
-                <FaChartBar className="text-white text-xl" />
-              </div>
-              <div>
-                <DialogTitle className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Resultados da Enquete
-                </DialogTitle>
-                <p className="text-gray-600 dark:text-gray-300 text-lg">
-                  {pergunta}
-                </p>
+        {/* Dialog de Resultados */}
+        <Dialog open={mostrarResultado} onOpenChange={setMostrarResultado}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+                <FaChartBar className="mr-3 text-blue-500" />
+                Resultados da Enquete
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-6">
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-6 rounded-xl border-2 border-blue-200 dark:border-blue-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Pergunta: {perguntaAtual}
+                </h3>
+                <div className="space-y-4">
+                  {resultados.map((opcao, index) => {
+                    const totalVotos = resultados.reduce((total, o) => total + o.votos, 0);
+                    const percentual = totalVotos > 0 ? Math.round((opcao.votos / totalVotos) * 100) : 0;
+                    
+                    return (
+                      <div key={index} className="bg-white dark:bg-gray-800 p-4 rounded-lg border-2 border-gray-200 dark:border-gray-600">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-semibold text-gray-900 dark:text-white">
+                            {opcao.texto}
+                          </span>
+                          <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                            {opcao.votos} votos ({percentual}%)
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                          <div 
+                            className="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-500"
+                            style={{ width: `${percentual}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-6 text-center">
+                  <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">
+                    Total de votos: {resultados.reduce((total, opcao) => total + opcao.votos, 0)}
+                  </p>
+                </div>
               </div>
             </div>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            {resultados.length > 0 ? (
-              resultados.map((opcao, idx) => (
-                <div key={idx} className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600">
-                  <span className="text-lg font-medium text-gray-900 dark:text-white">{opcao.texto}</span>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">{opcao.votos}</span>
-                    <span className="text-gray-600 dark:text-gray-400">votos</span>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-center text-gray-600 dark:text-gray-400 py-8">Nenhum resultado disponível.</p>
-            )}
-          </div>
 
-          <DialogFooter className="flex flex-col sm:flex-row gap-3 mt-6 -mx-6 -mb-6 p-6 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
-            <Button onClick={exportarResultadosTxt} className="flex-1 bg-green-500 hover:bg-green-600 text-white">
-              <FaDownload className="mr-2" />
-              Exportar Resultados
-            </Button>
-            <Button variant="outline" onClick={criarOutraEnquete} className="flex-1">
-              <FaPlus className="mr-2" />
-              Criar Outra Enquete
-            </Button>
-            <Button variant="secondary" onClick={() => setMostrarResultado(false)} className="flex-1">
-              Fechar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
+            <DialogFooter className="flex gap-3">
+              <Button
+                onClick={exportarResultadosTxt}
+                className="bg-gradient-to-r from-green-500 to-blue-600 text-white hover:from-green-600 hover:to-blue-700"
+              >
+                <FaDownload className="mr-2" />
+                Exportar Resultados
+              </Button>
+              <Button
+                onClick={criarOutraEnquete}
+                className="bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700"
+              >
+                <FaPlus className="mr-2" />
+                Criar Nova Enquete
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }
+

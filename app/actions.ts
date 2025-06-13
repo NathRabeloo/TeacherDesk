@@ -429,8 +429,9 @@ export const deletarDisciplina = async (disciplinaId: string) => {
   return { success: true };
 };
 
+// --- ENQUETES CRUD ---
 
-//Aqui inicia os referentes a Enquete
+// Criar uma nova enquete (corrigido para vincular ao usuário)
 export const criarEnquete = async (formData: FormData) => {
   const pergunta = formData.get("pergunta")?.toString();
   const opcoesJson = formData.get("opcoes")?.toString();
@@ -455,14 +456,28 @@ export const criarEnquete = async (formData: FormData) => {
 
   const supabase = createClient();
 
-  // Criar enquete
+  // Obter usuário autenticado
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (!user || userError) {
+    console.error("Usuário não autenticado:", userError?.message);
+    return { error: "Usuário não autenticado" };
+  }
+
+  // Criar enquete vinculada ao usuário
   const { data: enqueteData, error: enqueteError } = await supabase
     .from("enquetes")
-    .insert({ pergunta, ativa: true })
+    .insert({ 
+      pergunta, 
+      user_id: user.id, // Vincula ao usuário criador
+      ativa: true 
+    })
     .select("id")
     .single();
 
-  if (enqueteError) return { error: enqueteError.message };
+  if (enqueteError) {
+    console.error("Erro ao criar enquete:", enqueteError.message);
+    return { error: enqueteError.message };
+  }
 
   // Criar opções vinculadas
   const opcoesToInsert = opcoes.map((opcao: { texto: string }) => ({
@@ -474,11 +489,15 @@ export const criarEnquete = async (formData: FormData) => {
     .from("opcoes_enquete")
     .insert(opcoesToInsert);
 
-  if (opcoesError) return { error: opcoesError.message };
+  if (opcoesError) {
+    console.error("Erro ao criar opções:", opcoesError.message);
+    return { error: opcoesError.message };
+  }
 
   return { success: true, enqueteId: enqueteData.id };
 };
 
+// Buscar enquete por ID (corrigido para retornar pergunta)
 export const buscarEnquete = async (id: string) => {
   const supabase = createClient();
 
@@ -487,22 +506,53 @@ export const buscarEnquete = async (id: string) => {
     .from("enquetes")
     .select("id, pergunta, ativa")
     .eq("id", id)
+    .eq("ativa", true)
     .single();
 
-  if (enqueteError) return { error: enqueteError.message };
-  if (!enquete || !enquete.ativa) return { error: "Enquete não encontrada ou inativa" };
+  if (enqueteError) {
+    console.error("Erro ao buscar enquete:", enqueteError.message);
+    return { error: enqueteError.message };
+  }
+  
+  if (!enquete) {
+    return { error: "Enquete não encontrada ou inativa" };
+  }
 
-  // Busca opções da enquete
+  // Busca opções da enquete com contagem de votos
   const { data: opcoes, error: opcoesError } = await supabase
     .from("opcoes_enquete")
     .select("id, texto")
     .eq("enquete_id", id);
 
-  if (opcoesError) return { error: opcoesError.message };
+  if (opcoesError) {
+    console.error("Erro ao buscar opções:", opcoesError.message);
+    return { error: opcoesError.message };
+  }
 
-  return { enquete, opcoes };
+  // Contar votos para cada opção
+  const opcoesComVotos = await Promise.all(
+    opcoes.map(async (opcao) => {
+      const { count } = await supabase
+        .from("respostas_enquete")
+        .select("*", { count: "exact", head: true })
+        .eq("opcao_id", opcao.id);
+
+      return {
+        id: opcao.id,
+        texto: opcao.texto,
+        votos: count || 0,
+      };
+    })
+  );
+
+  return { 
+    success: true,
+    pergunta: enquete.pergunta, 
+    opcoes: opcoesComVotos 
+  };
 };
 
+// Registrar voto em uma enquete
 export const registrarVoto = async (enqueteId: string, opcaoId: string) => {
   const supabase = createClient();
 
@@ -513,8 +563,14 @@ export const registrarVoto = async (enqueteId: string, opcaoId: string) => {
     .eq("id", enqueteId)
     .single();
 
-  if (enqueteError) return { error: enqueteError.message };
-  if (!enquete || !enquete.ativa) return { error: "Enquete não está ativa" };
+  if (enqueteError) {
+    console.error("Erro ao verificar enquete:", enqueteError.message);
+    return { error: enqueteError.message };
+  }
+  
+  if (!enquete || !enquete.ativa) {
+    return { error: "Enquete não está ativa" };
+  }
 
   // Verifica se opção pertence à enquete
   const { data: opcao, error: opcaoError } = await supabase
@@ -524,42 +580,179 @@ export const registrarVoto = async (enqueteId: string, opcaoId: string) => {
     .eq("enquete_id", enqueteId)
     .single();
 
-  if (opcaoError) return { error: opcaoError.message };
-  if (!opcao) return { error: "Opção inválida para esta enquete" };
+  if (opcaoError) {
+    console.error("Erro ao verificar opção:", opcaoError.message);
+    return { error: opcaoError.message };
+  }
+  
+  if (!opcao) {
+    return { error: "Opção inválida para esta enquete" };
+  }
 
   // Insere voto
   const { error: votoError } = await supabase
     .from("respostas_enquete")
     .insert({ enquete_id: enqueteId, opcao_id: opcaoId });
 
-  if (votoError) return { error: votoError.message };
+  if (votoError) {
+    console.error("Erro ao registrar voto:", votoError.message);
+    return { error: votoError.message };
+  }
 
   return { success: true };
 };
 
+// Buscar resultados da enquete
 export const buscarResultados = async (enqueteId: string) => {
   const supabase = createClient();
 
-  // Busca opções e conta votos usando join e agregação
-  const { data, error } = await supabase
+  // Buscar enquete para obter a pergunta
+  const { data: enquete, error: enqueteError } = await supabase
+    .from("enquetes")
+    .select("pergunta")
+    .eq("id", enqueteId)
+    .single();
+
+  if (enqueteError) {
+    console.error("Erro ao buscar enquete:", enqueteError.message);
+    return { error: enqueteError.message };
+  }
+
+  // Busca opções e conta votos
+  const { data: opcoes, error: opcoesError } = await supabase
     .from("opcoes_enquete")
-    .select(`
-      id,
-      texto,
-      votos: respostas_enquete!inner (id)
-    `)
+    .select("id, texto")
     .eq("enquete_id", enqueteId);
 
-  if (error) return { error: error.message };
+  if (opcoesError) {
+    console.error("Erro ao buscar opções:", opcoesError.message);
+    return { error: opcoesError.message };
+  }
 
-  // Mapear para mostrar total de votos por opção
-  const resultados = data.map((opcao: any) => ({
-    id: opcao.id,
-    texto: opcao.texto,
-    votos: opcao.votos.length,
-  }));
+  // Contar votos para cada opção
+  const resultados = await Promise.all(
+    opcoes.map(async (opcao) => {
+      const { count } = await supabase
+        .from("respostas_enquete")
+        .select("*", { count: "exact", head: true })
+        .eq("opcao_id", opcao.id);
 
-  return { resultados };
+      return {
+        id: opcao.id,
+        texto: opcao.texto,
+        votos: count || 0,
+      };
+    })
+  );
+
+  return { 
+    success: true,
+    pergunta: enquete.pergunta,
+    resultados 
+  };
+};
+
+// Listar enquetes do usuário
+export const listarEnquetesUsuario = async () => {
+  const supabase = createClient();
+
+  // Obter usuário autenticado
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (!user || userError) {
+    console.error("Usuário não autenticado:", userError?.message);
+    return { error: "Usuário não autenticado" };
+  }
+
+  const { data: enquetes, error } = await supabase
+    .from("enquetes")
+    .select("id, pergunta, ativa, criada_em")
+    .eq("user_id", user.id)
+    .order("criada_em", { ascending: false });
+
+  if (error) {
+    console.error("Erro ao listar enquetes:", error.message);
+    return { error: error.message };
+  }
+
+  return { success: true, enquetes };
+};
+
+// Desativar enquete
+export const desativarEnquete = async (enqueteId: string) => {
+  const supabase = createClient();
+
+  // Obter usuário autenticado
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (!user || userError) {
+    console.error("Usuário não autenticado:", userError?.message);
+    return { error: "Usuário não autenticado" };
+  }
+
+  const { error } = await supabase
+    .from("enquetes")
+    .update({ ativa: false })
+    .eq("id", enqueteId)
+    .eq("user_id", user.id); // Só permite desativar se for o criador
+
+  if (error) {
+    console.error("Erro ao desativar enquete:", error.message);
+    return { error: error.message };
+  }
+
+  return { success: true };
+};
+
+// Exportar dados da enquete (incluindo pergunta)
+export const exportarDadosEnquete = async (enqueteId: string) => {
+  const supabase = createClient();
+
+  // Obter usuário autenticado
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (!user || userError) {
+    console.error("Usuário não autenticado:", userError?.message);
+    return { error: "Usuário não autenticado" };
+  }
+
+  // Verificar se a enquete pertence ao usuário
+  const { data: enquete, error: enqueteError } = await supabase
+    .from("enquetes")
+    .select("pergunta, user_id")
+    .eq("id", enqueteId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (enqueteError || !enquete) {
+    return { error: "Enquete não encontrada ou você não tem permissão para exportá-la" };
+  }
+
+  // Buscar resultados
+  const resultadosData = await buscarResultados(enqueteId);
+  if (resultadosData.error) {
+    return { error: resultadosData.error };
+  }
+
+  if (!resultadosData.success || !resultadosData.resultados) {
+    return { error: "Não foi possível obter os resultados da enquete." };
+  }
+
+  // Gerar conteúdo do arquivo
+  const totalVotos = resultadosData.resultados.reduce((total: number, opcao: any) => total + opcao.votos, 0);
+  
+  let conteudo = `DADOS DA ENQUETE\n`;
+  conteudo += `================\n\n`;
+  conteudo += `Pergunta: ${enquete.pergunta}\n`;
+  conteudo += `Total de votos: ${totalVotos}\n\n`;
+  conteudo += `RESULTADOS:\n`;
+  conteudo += `-----------\n`;
+  
+  resultadosData.resultados!.forEach((opcao: any, index: number) => {
+    const percentual = totalVotos > 0 ? Math.round((opcao.votos / totalVotos) * 100) : 0;
+    conteudo += `${index + 1}. ${opcao.texto}: ${opcao.votos} votos (${percentual}%)\n`;
+  });
+
+  conteudo += `\nExportado em: ${new Date().toLocaleString('pt-BR')}\n`;
+
+  return { success: true, conteudo };
 };
 
 // Criar tutorial (sem autenticação)
@@ -592,15 +785,32 @@ export const listarTutoriais = async () => {
 
     const { data, error } = await supabase
         .from("tutoriais")
-        .select("id, titulo, tipo, descricao, fixo")
-        .order("id", { ascending: false });
+        .select("id, titulo, tipo, descricao, criado_em")
+        .order("criado_em", { ascending: false });
 
     if (error) {
         console.error("Erro ao listar tutoriais:", error.message);
-        return [];
+        return { error: error.message };
     }
 
-    return data;
+    return { success: true, data };
+};
+
+export const buscarTutorial = async (id: string) => {
+    const supabase = createClient();
+
+    const { data, error } = await supabase
+        .from("tutoriais")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+    if (error) {
+        console.error("Erro ao buscar tutorial:", error.message);
+        return { error: error.message };
+    }
+
+    return { success: true, data };
 };
 
 export const editarTutorial = async (formData: FormData) => {
@@ -615,26 +825,27 @@ export const editarTutorial = async (formData: FormData) => {
 
     const supabase = createClient();
 
-    const { error } = await supabase
+    const { data, error } = await supabase
         .from("tutoriais")
         .update({ titulo, tipo, descricao })
-        .eq("id", id);
+        .eq("id", id)
+        .select();
 
     if (error) {
         console.error("Erro ao editar tutorial:", error.message);
         return { error: error.message };
     }
 
-    return { success: true };
+    return { success: true, data };
 };
 
-export const deletarTutorial = async (tutorialId: string) => {
+export const deletarTutorial = async (id: string) => {
     const supabase = createClient();
 
     const { error } = await supabase
         .from("tutoriais")
         .delete()
-        .eq("id", tutorialId);
+        .eq("id", id);
 
     if (error) {
         console.error("Erro ao deletar tutorial:", error.message);
@@ -644,197 +855,42 @@ export const deletarTutorial = async (tutorialId: string) => {
     return { success: true };
 };
 
-// Criar Bibliografia
-export const criarBibliografia = async (formData: FormData) => {
-  const titulo = formData.get("titulo")?.toString();
-  const link = formData.get("link")?.toString();
-  const disciplina_id = formData.get("disciplina_id")?.toString();
-
-  if (!titulo || !link || !disciplina_id) {
-    return { error: "Todos os campos são obrigatórios" };
-  }
-
+// Deletar Enquete
+export const deletarEnquete = async (enqueteId: string) => {
   const supabase = createClient();
-  const {
-    data: { user },
-    error: authError
-  } = await supabase.auth.getUser();
 
-  if (authError || !user) {
-    return { error: "Usuário não autenticado" };
+  // Verificar se o usuário está autenticado
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (!user || authError) {
+    console.error("Usuário não autenticado:", authError?.message);
+    return { error: "Usuário não autenticado." };
   }
 
-  const user_id = user.id;
-
-  const { data, error } = await supabase
-    .from("Bibliografia")
-    .insert([{ titulo, link, disciplina_id, user_id }])
-    .select()
-    .single();
-
-  if (error) {
-    console.error("Erro ao criar bibliografia:", error.message);
-    return { error: error.message };
-  }
-
-  return { success: true, data };
-};
-
-// Listar Bibliografias
-export const listarBibliografias = async (filtroDisciplinaId?: string, disciplinaId?: string | undefined) => {
-  const supabase = createClient();
-  const {
-    data: { user },
-    error: authError
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return { error: "Usuário não autenticado" };
-  }
-
-  let query = supabase
-    .from("Bibliografia")
-    .select("*")
+  // Verificar se a enquete pertence ao usuário
+  const { data: enquete, error: enqueteError } = await supabase
+    .from("enquetes")
+    .select("id, user_id")
+    .eq("id", enqueteId)
     .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
-
-  if (filtroDisciplinaId) {
-    query = query.eq("disciplina_id", filtroDisciplinaId);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error("Erro ao listar bibliografias:", error.message);
-    return { error: error.message };
-  }
-
-  return { data };
-};
-
-// Editar Bibliografia
-export const editarBibliografia = async (formData: FormData) => {
-  const id = formData.get("id")?.toString();
-  const titulo = formData.get("titulo")?.toString();
-  const link = formData.get("link")?.toString();
-  const disciplina_id = formData.get("disciplina_id")?.toString();
-
-  if (!id || !titulo || !link || !disciplina_id) {
-    return { error: "Todos os campos são obrigatórios" };
-  }
-
-  const supabase = createClient();
-  const {
-    data: { user },
-    error: authError
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return { error: "Usuário não autenticado" };
-  }
-
-  const user_id = user.id;
-
-  const { data, error } = await supabase
-    .from("Bibliografia")
-    .update({ titulo, link, disciplina_id, user_id })
-    .eq("id", id)
-    .eq("user_id", user.id) // garante que só edita se for o dono
-    .select()
     .single();
 
-  if (error) {
-    console.error("Erro ao editar bibliografia:", error.message);
-    return { error: error.message };
+  if (enqueteError || !enquete) {
+    console.error("Enquete não encontrada ou não pertence ao usuário:", enqueteError?.message);
+    return { error: "Enquete não encontrada ou você não tem permissão para excluí-la." };
   }
 
-  return { success: true, data };
-};
-
-
-// Deletar Bibliografia
-export const deletarBibliografia = async (id: string) => {
-  const supabase = createClient();
-  const {
-    data: { user },
-    error: authError
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return { error: "Usuário não autenticado" };
-  }
-
-  const { error } = await supabase
-    .from("Bibliografia")
+  // Deletar a enquete (as respostas e opções serão deletadas automaticamente devido ao CASCADE)
+  const { error: deleteError } = await supabase
+    .from("enquetes")
     .delete()
-    .eq("id", id)
-    .eq("user_id", user.id); // só permite deletar se for dono
+    .eq("id", enqueteId)
+    .eq("user_id", user.id);
 
-  if (error) {
-    console.error("Erro ao deletar bibliografia:", error.message);
-    return { error: error.message };
+  if (deleteError) {
+    console.error("Erro ao deletar enquete:", deleteError.message);
+    return { error: deleteError.message };
   }
 
   return { success: true };
 };
 
-// === FUNÇÕES PARA BIBLIOGRAFIA PÚBLICA ===
-
-export async function listarTodasBibliografias(filtroDisciplinaId?: string) {
-  const supabase = createClient();
-
-  let query = supabase
-    .from("Bibliografia")
-    .select(`
-      id,
-      titulo,
-      link,
-      created_at,
-      disciplina_id,
-      Disciplina (
-        id,
-        nome
-      )
-    `)
-    .order("created_at", { ascending: false });
-
-  if (filtroDisciplinaId && filtroDisciplinaId !== "all") {
-    query = query.eq("disciplina_id", filtroDisciplinaId);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error("Erro ao buscar bibliografias:", error.message);
-    return [];
-  }
-
-  return data;
-}
-
-export const buscarBibliografia = async (id: string) => {
-  const supabase = createClient();
-
-  const { data, error } = await supabase
-    .from('Bibliografia')
-    .select(`
-      id, titulo, 
-      disciplina_id, 
-      disciplina!inner(nome)
-    `)
-    .eq('id', id)
-    .single();
-
-  if (error) {
-    console.error('Erro ao buscar bibliografia:', error.message);
-    return { error: error.message };
-  }
-
-
-  const bibliografia = data ? {
-    ...data,
-    disciplina_nome: Array.isArray(data.disciplina) && data.disciplina.length > 0 ? data.disciplina[0].nome : 'Não informada'
-  } : null;
-
-  return { data: bibliografia };
-};
