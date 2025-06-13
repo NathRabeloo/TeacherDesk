@@ -17,7 +17,7 @@ import {
   FaGlobe,
 } from "react-icons/fa";
 
-import { listarTodasBibliografias } from "@/app/actions";
+import { listarTodasBibliografias, listarTodasDisciplinas } from "@/app/actions";
 
 interface BibliografiaPublicaItem {
   id: number;
@@ -25,14 +25,13 @@ interface BibliografiaPublicaItem {
   link: string;
   disciplina_id: string;
   disciplina_nome: string;
-  user_name: string;
+  nome_professor: string;
   created_at: string;
 }
 
 interface DisciplinaPublica {
   id: string;
   nome: string;
-  user_count: number;
 }
 
 const BibliografiaPublica: React.FC = () => {
@@ -42,7 +41,7 @@ const BibliografiaPublica: React.FC = () => {
 
   const [paginaAtual, setPaginaAtual] = useState(1);
   const [buscaTitulo, setBuscaTitulo] = useState("");
-  const [filtroDisciplina, setFiltroDisciplina] = useState(""); // campo aberto agora
+  const [filtroDisciplinaId, setFiltroDisciplinaId] = useState(""); // filtro agora pelo id da disciplina
   const [carregando, setCarregando] = useState(true);
 
   const itensPorPagina = 16;
@@ -54,27 +53,11 @@ const BibliografiaPublica: React.FC = () => {
   async function carregarDados() {
     setCarregando(true);
     try {
-      // Carregar disciplinas públicas (não está mais usando para filtro, mas mantido para info)
-      const disciplinasData = await listarTodasBibliografias("");
-      const disciplinaMap: { [id: string]: DisciplinaPublica } = {};
-      (disciplinasData || []).forEach((item: any) => {
-        if (item.Disciplina && Array.isArray(item.Disciplina)) {
-          item.Disciplina.forEach((disc: any) => {
-            if (!disciplinaMap[disc.id]) {
-              disciplinaMap[disc.id] = {
-                id: disc.id,
-                nome: disc.nome,
-                user_count: 1,
-              };
-            } else {
-              disciplinaMap[disc.id].user_count += 1;
-            }
-          });
-        }
-      });
-      setDisciplinas(Object.values(disciplinaMap));
+      // Buscar disciplinas
+      const disciplinasData = await listarTodasDisciplinas();
+      setDisciplinas(disciplinasData);
 
-      // Carregar bibliografias públicas
+      // Carregar bibliografias públicas sem filtro inicial
       await carregarBibliografiaPublica();
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
@@ -83,9 +66,11 @@ const BibliografiaPublica: React.FC = () => {
     }
   }
 
-  async function carregarBibliografiaPublica() {
+  async function carregarBibliografiaPublica(filtroDisciplinaId?: string) {
     try {
-      const data = await listarTodasBibliografias("");
+      // Passa filtroDisciplinaId para backend
+      const data = await listarTodasBibliografias(filtroDisciplinaId || "");
+
       setBibliografia(
         (data ?? []).map((item: any) => ({
           id: item.id,
@@ -93,10 +78,10 @@ const BibliografiaPublica: React.FC = () => {
           link: item.link,
           disciplina_id: item.disciplina_id,
           disciplina_nome:
-            item.Disciplina && Array.isArray(item.Disciplina) && item.Disciplina.length > 0
-              ? item.Disciplina[0].nome
-              : "",
-          user_name: item.user_name ?? "",
+            item.Disciplina && item.Disciplina.nome
+              ? item.Disciplina.nome
+              : "Não informada",
+          nome_professor: item.nome_professor || "Anônimo",
           created_at: item.created_at,
         }))
       );
@@ -106,6 +91,16 @@ const BibliografiaPublica: React.FC = () => {
     }
   }
 
+  // Atualiza filtro e recarrega bibliografias
+  const handleFiltroDisciplinaChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const id = e.target.value;
+    setFiltroDisciplinaId(id);
+    setPaginaAtual(1);
+    setCarregando(true);
+    await carregarBibliografiaPublica(id === "all" ? "" : id);
+    setCarregando(false);
+  };
+
   const abrirLinkConfirmado = () => {
     if (modalConfirmarLinkAberto) {
       window.open(modalConfirmarLinkAberto.link, "_blank", "noopener,noreferrer");
@@ -113,22 +108,19 @@ const BibliografiaPublica: React.FC = () => {
     }
   };
 
-  const limparFiltros = () => {
+  const limparFiltros = async () => {
     setBuscaTitulo("");
-    setFiltroDisciplina("");
+    setFiltroDisciplinaId("");
     setPaginaAtual(1);
+    setCarregando(true);
+    await carregarBibliografiaPublica();
+    setCarregando(false);
   };
 
-  // Filtrar bibliografias
-  const bibliografiasFiltradas = bibliografia.filter((item) => {
-    const matchTitulo = item.titulo.toLowerCase().includes(buscaTitulo.toLowerCase());
-    // Aqui filtro por disciplina com contains no nome, ignorando maiúsculas/minúsculas
-    const matchDisciplina =
-      filtroDisciplina.trim() === "" ||
-      item.disciplina_nome.toLowerCase().includes(filtroDisciplina.toLowerCase());
-
-    return matchTitulo && matchDisciplina;
-  });
+  // Filtrar bibliografias só por título (pois o filtro da disciplina já foi aplicado no backend)
+  const bibliografiasFiltradas = bibliografia.filter((item) =>
+    item.titulo.toLowerCase().includes(buscaTitulo.toLowerCase())
+  );
 
   const livrosVisiveis = bibliografiasFiltradas.slice(
     (paginaAtual - 1) * itensPorPagina,
@@ -137,10 +129,10 @@ const BibliografiaPublica: React.FC = () => {
 
   const totalPaginas = Math.ceil(bibliografiasFiltradas.length / itensPorPagina);
 
-  // Resetar página quando filtros mudarem
+  // Resetar página quando o filtro de título mudar
   useEffect(() => {
     setPaginaAtual(1);
-  }, [buscaTitulo, filtroDisciplina]);
+  }, [buscaTitulo]);
 
   if (carregando) {
     return (
@@ -189,7 +181,6 @@ const BibliografiaPublica: React.FC = () => {
         {/* Filtros */}
         <div className="p-8 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
           <div className="space-y-4">
-            {/* Primeira linha de filtros */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Campo de Busca por Título */}
               <div className="relative">
@@ -202,14 +193,20 @@ const BibliografiaPublica: React.FC = () => {
                 <FaSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
               </div>
 
-              {/* Campo aberto para disciplina */}
-              <div className="relative">
-                <Input
-                  placeholder="Filtrar por disciplina (nome)"
-                  value={filtroDisciplina}
-                  onChange={(e) => setFiltroDisciplina(e.target.value)}
-                  className="pl-4 pr-4 py-3 text-lg border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-emerald-500 dark:focus:border-emerald-400 transition-colors"
-                />
+              {/* Select para filtro por disciplina */}
+              <div>
+                <select
+                  value={filtroDisciplinaId}
+                  onChange={handleFiltroDisciplinaChange}
+                  className="w-full py-3 px-4 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:border-emerald-500 dark:focus:border-emerald-400 transition-colors"
+                >
+                  <option value="">Todas as disciplinas</option>
+                  {disciplinas.map((disc) => (
+                    <option key={disc.id} value={disc.id}>
+                      {disc.nome}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -235,66 +232,70 @@ const BibliografiaPublica: React.FC = () => {
           {livrosVisiveis.map((item) => (
             <div
               key={item.id}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-4 flex flex-col"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 flex flex-col justify-between"
             >
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold text-lg text-gray-900 dark:text-white truncate" title={item.titulo}>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
                   {item.titulo}
                 </h3>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  aria-label={`Abrir link da bibliografia ${item.titulo}`}
-                  onClick={() => setModalConfirmLink(item)}
-                >
-                  <FaExternalLinkAlt className="text-blue-600 dark:text-blue-400" />
-                </Button>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+                  Disciplina: <strong>{item.disciplina_nome}</strong>
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+                  Professor: <strong>{item.nome_professor}</strong>
+                </p>
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-300 mb-2 truncate">
-                Disciplina: {item.disciplina_nome || "Não informada"}
-              </p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-auto">
-                Compartilhado por: {item.user_name || "Anônimo"}
-              </p>
+
+              <button
+                className="mt-4 inline-flex items-center space-x-2 text-blue-600 hover:underline"
+                onClick={() => setModalConfirmLink(item)}
+                aria-label={`Abrir link da bibliografia ${item.titulo}`}
+              >
+                <FaExternalLinkAlt />
+                <span>Abrir Link</span>
+              </button>
             </div>
           ))}
         </div>
 
         {/* Paginação */}
-        <div className="flex justify-center space-x-3 py-6">
-          <Button
-            disabled={paginaAtual === 1}
-            onClick={() => setPaginaAtual((p) => Math.max(1, p - 1))}
-          >
-            Anterior
-          </Button>
-          <span className="flex items-center text-gray-700 dark:text-gray-300">
-            Página {paginaAtual} de {totalPaginas}
-          </span>
-          <Button
-            disabled={paginaAtual === totalPaginas}
-            onClick={() => setPaginaAtual((p) => Math.min(totalPaginas, p + 1))}
-          >
-            Próxima
-          </Button>
-        </div>
+        {totalPaginas > 1 && (
+          <div className="flex justify-center space-x-4 mt-6">
+            <Button
+              disabled={paginaAtual === 1}
+              onClick={() => setPaginaAtual((p) => Math.max(p - 1, 1))}
+            >
+              Anterior
+            </Button>
+            <span className="inline-flex items-center px-3 text-gray-700 dark:text-gray-300">
+              Página {paginaAtual} de {totalPaginas}
+            </span>
+            <Button
+              disabled={paginaAtual === totalPaginas}
+              onClick={() => setPaginaAtual((p) => Math.min(p + 1, totalPaginas))}
+            >
+              Próxima
+            </Button>
+          </div>
+        )}
       </div>
 
-      {/* Modal de confirmação para abrir link */}
-      <Dialog open={modalConfirmarLinkAberto !== null} onOpenChange={() => setModalConfirmLink(null)}>
+      {/* Modal para confirmar abertura do link */}
+      <Dialog open={!!modalConfirmarLinkAberto} onOpenChange={() => setModalConfirmLink(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Abrir link</DialogTitle>
           </DialogHeader>
-          <p className="mb-4">
-            Você está prestes a abrir um link externo. Deseja continuar?
+          <p className="mb-6">
+            Você está prestes a abrir o seguinte link externo:{" "}
+            <strong>{modalConfirmarLinkAberto?.titulo}</strong>
           </p>
-          <div className="flex justify-end space-x-2">
+          <DialogFooter className="flex justify-end space-x-4">
             <Button variant="outline" onClick={() => setModalConfirmLink(null)}>
               Cancelar
             </Button>
-            <Button onClick={abrirLinkConfirmado}>Abrir link</Button>
-          </div>
+            <Button onClick={abrirLinkConfirmado}>Abrir Link</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
