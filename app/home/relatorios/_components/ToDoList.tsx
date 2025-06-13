@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -8,55 +8,103 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FaTasks, FaPlus, FaTrash, FaCheckCircle, FaListUl, FaClock } from "react-icons/fa";
 
+import { carregarTarefas, adicionarTarefa, atualizarStatusTarefa, removerTarefa } from "../../../actions";
+
 type Task = {
-  id: number;
-  text: string;
-  done: boolean;
-  createdAt: Date;
+  id: string;       // UUID do supabase
+  titulo: string;   // título da tarefa
+  concluida: boolean;  // concluído ou não
+  created_at: string; 
 };
 
 export function TodoList() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  const addTask = () => {
+  // Carrega as tarefas do banco ao montar
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      const tarefas = await carregarTarefas();
+      setTasks(tarefas);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  // Adiciona nova tarefa no banco e atualiza estado
+  const addTask = async () => {
     const trimmedTask = newTask.trim();
     if (!trimmedTask) return;
 
     const alreadyExists = tasks.some(
-      (task) => task.text.toLowerCase() === trimmedTask.toLowerCase()
+      (task) => task.titulo.toLowerCase() === trimmedTask.toLowerCase()
     );
     if (alreadyExists) return;
 
-    setTasks((prev) => [
-      ...prev,
-      { 
-        id: Date.now(), 
-        text: trimmedTask, 
-        done: false,
-        createdAt: new Date()
-      },
-    ]);
-    setNewTask("");
+    const novaTarefa = await adicionarTarefa(trimmedTask);
+    if (novaTarefa) {
+      setTasks((prev) => [...prev, novaTarefa]);
+      setNewTask("");
+    }
   };
 
-  const toggleTaskDone = (id: number) => {
-    setTasks((prev) =>
-      prev.map((task) =>
-        task.id === id ? { ...task, done: !task.done } : task
-      )
-    );
+  // Alterna status no banco e atualiza localmente
+  const toggleTaskDone = async (id: string) => {
+    const tarefa = tasks.find(t => t.id === id);
+    if (!tarefa) return;
+
+    const updated = await atualizarStatusTarefa(id, !tarefa.concluida);
+    if (updated) {
+      setTasks((prev) =>
+        prev.map((task) =>
+          task.id === id ? { ...task, concluida: updated.concluida } : task
+        )
+      );
+    }
   };
 
-  const deleteTask = (id: number) => {
+  // Remove a tarefa do banco e do estado local
+  const deleteTask = async (id: string) => {
+    await removerTarefa(id);
     setTasks((prev) => prev.filter((task) => task.id !== id));
   };
 
-  const clearCompletedTasks = () =>
-    setTasks((prev) => prev.filter((task) => !task.done));
+  // Limpa todas as tarefas concluídas
+  const clearCompletedTasks = async () => {
+    const completed = tasks.filter(t => t.concluida);
+    for (const t of completed) {
+      await removerTarefa(t.id);
+    }
+    setTasks((prev) => prev.filter(t => !t.concluida));
+  };
 
-  const completedTasks = tasks.filter((t) => t.done);
-  const pendingTasks = tasks.filter((t) => !t.done);
+  const completedTasks = tasks.filter(t => t.concluida);
+  const pendingTasks = tasks.filter(t => !t.concluida);
+
+  // Função para formatar data
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      const dateStr = date.toLocaleDateString('pt-BR');
+      const timeStr = date.toLocaleTimeString('pt-BR', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+      return { dateStr, timeStr };
+    } catch {
+      return { dateStr: "Data inválida", timeStr: "" };
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-6 text-center text-gray-600 dark:text-gray-400">
+        Carregando tarefas...
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -167,6 +215,7 @@ export function TodoList() {
                       task={task} 
                       onToggle={toggleTaskDone}
                       onDelete={deleteTask}
+                      formatDate={formatDate}
                     />
                   ))}
                 </div>
@@ -185,6 +234,7 @@ export function TodoList() {
                       task={task} 
                       onToggle={toggleTaskDone}
                       onDelete={deleteTask}
+                      formatDate={formatDate}
                     />
                   ))}
                 </div>
@@ -201,21 +251,25 @@ export function TodoList() {
 function TaskItem({ 
   task, 
   onToggle, 
-  onDelete 
+  onDelete,
+  formatDate
 }: { 
   task: Task; 
-  onToggle: (id: number) => void;
-  onDelete: (id: number) => void;
+  onToggle: (id: string) => void;
+  onDelete: (id: string) => void;
+  formatDate: (date: string) => { dateStr: string; timeStr: string };
 }) {
+  const { dateStr, timeStr } = formatDate(task.created_at);
+  
   return (
     <div className={`group flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-200 ${
-      task.done 
+      task.concluida
         ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700 hover:border-green-300 dark:hover:border-green-600' 
         : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 hover:shadow-md'
     }`}>
       <Checkbox
         id={`task-${task.id}`}
-        checked={task.done}
+        checked={task.concluida}
         onCheckedChange={() => onToggle(task.id)}
         className="w-5 h-5 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
       />
@@ -224,15 +278,15 @@ function TaskItem({
         <Label
           htmlFor={`task-${task.id}`}
           className={`text-base cursor-pointer block ${
-            task.done 
+            task.concluida
               ? "line-through text-gray-500 dark:text-gray-400" 
               : "text-gray-900 dark:text-white"
           }`}
         >
-          {task.text}
+          {task.titulo}
         </Label>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          Criada em {task.createdAt.toLocaleDateString('pt-BR')} às {task.createdAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+          Criada em {dateStr} {timeStr && `às ${timeStr}`}
         </p>
       </div>
       

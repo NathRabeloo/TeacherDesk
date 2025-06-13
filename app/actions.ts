@@ -838,3 +838,119 @@ export const buscarBibliografia = async (id: string) => {
 
   return { data: bibliografia };
 };
+
+
+export async function carregarMetas() {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("metas")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Erro ao carregar metas:", error.message);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function adicionarMeta(indicador: string, quantidade: number) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from("metas")
+    .insert({ indicador, quantidade, user_id: user.id })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Erro ao adicionar meta:", error.message);
+    return null;
+  }
+
+  return data;
+}
+
+export async function removerMeta(id: string) {
+  const supabase = createClient();
+  const { error } = await supabase.from("metas").delete().eq("id", id);
+  if (error) {
+    console.error("Erro ao remover meta:", error.message);
+  }
+}
+
+export async function carregarTarefas() {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("tarefas")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("Erro ao carregar tarefas:", error.message);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function adicionarTarefa(titulo: string) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from("tarefas")
+    .insert({ titulo, concluida: false, user_id: user.id })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Erro ao adicionar tarefa:", error.message);
+    return null;
+  }
+
+  return data;
+}
+
+export async function atualizarStatusTarefa(id: string, concluida: boolean) {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("tarefas")
+    .update({ concluida })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Erro ao atualizar tarefa:", error.message);
+    return null;
+  }
+
+  return data;
+}
+
+export async function removerTarefa(id: string) {
+  const supabase = createClient();
+
+  const { error } = await supabase
+    .from("tarefas")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error("Erro ao remover tarefa:", error.message);
+  }
+}
