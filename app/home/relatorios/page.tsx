@@ -50,7 +50,6 @@ export default async function RelatoriosPage() {
     const { count: respostasCount, error: respostasError } = await supabase
       .from("Resposta")
       .select("*", { count: "exact", head: true })
-      .in("quiz_id", quizIds);
 
     if (respostasError) {
       console.error("Erro ao contar respostas:", respostasError.message);
@@ -62,7 +61,6 @@ export default async function RelatoriosPage() {
     const { count: acertosCount, error: acertosError } = await supabase
       .from("Resposta")
       .select("*", { count: "exact", head: true })
-      .in("quiz_id", quizIds)
       .eq("correta", true);
 
     if (acertosError) {
@@ -100,9 +98,10 @@ export default async function RelatoriosPage() {
   
   // Desempenho por disciplina
   const { data: desempenhoDisciplinas, error: desempenhoError } = await supabase
-    .from("dashboard_resumo")
-    .select("disciplina, percentual_acerto_geral")
-
+  .from("vw_desempenho_por_disciplina_usuario")
+  .select("disciplina, percentual_acerto_geral")
+  .eq("user_id", userId);
+  
   if (desempenhoError) {
     console.error("Erro ao buscar desempenho:", desempenhoError.message);
   }
