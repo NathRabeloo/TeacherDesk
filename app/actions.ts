@@ -702,59 +702,6 @@ export const desativarEnquete = async (enqueteId: string) => {
   return { success: true };
 };
 
-// Exportar dados da enquete (incluindo pergunta)
-export const exportarDadosEnquete = async (enqueteId: string) => {
-  const supabase = createClient();
-
-  // Obter usuário autenticado
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (!user || userError) {
-    console.error("Usuário não autenticado:", userError?.message);
-    return { error: "Usuário não autenticado" };
-  }
-
-  // Verificar se a enquete pertence ao usuário
-  const { data: enquete, error: enqueteError } = await supabase
-    .from("enquetes")
-    .select("pergunta, user_id")
-    .eq("id", enqueteId)
-    .eq("user_id", user.id)
-    .single();
-
-  if (enqueteError || !enquete) {
-    return { error: "Enquete não encontrada ou você não tem permissão para exportá-la" };
-  }
-
-  // Buscar resultados
-  const resultadosData = await buscarResultados(enqueteId);
-  if (resultadosData.error) {
-    return { error: resultadosData.error };
-  }
-
-  if (!resultadosData.success || !resultadosData.resultados) {
-    return { error: "Não foi possível obter os resultados da enquete." };
-  }
-
-  // Gerar conteúdo do arquivo
-  const totalVotos = resultadosData.resultados.reduce((total: number, opcao: any) => total + opcao.votos, 0);
-  
-  let conteudo = `DADOS DA ENQUETE\n`;
-  conteudo += `================\n\n`;
-  conteudo += `Pergunta: ${enquete.pergunta}\n`;
-  conteudo += `Total de votos: ${totalVotos}\n\n`;
-  conteudo += `RESULTADOS:\n`;
-  conteudo += `-----------\n`;
-  
-  resultadosData.resultados!.forEach((opcao: any, index: number) => {
-    const percentual = totalVotos > 0 ? Math.round((opcao.votos / totalVotos) * 100) : 0;
-    conteudo += `${index + 1}. ${opcao.texto}: ${opcao.votos} votos (${percentual}%)\n`;
-  });
-
-  conteudo += `\nExportado em: ${new Date().toLocaleString('pt-BR')}\n`;
-
-  return { success: true, conteudo };
-};
-
 // Criar tutorial (sem autenticação)
 export const criarTutorial = async (formData: FormData) => {
     const titulo = formData.get("titulo")?.toString();
@@ -892,5 +839,81 @@ export const deletarEnquete = async (enqueteId: string) => {
   }
 
   return { success: true };
+};
+
+// Exportar dados da enquete (versão corrigida) - substituir no actions.ts
+export const exportarDadosEnquete = async (enqueteId: string) => {
+  const supabase = createClient();
+
+  // Obter usuário autenticado
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (!user || userError) {
+    console.error("Usuário não autenticado:", userError?.message);
+    return { error: "Usuário não autenticado" };
+  }
+
+  // Verificar se a enquete pertence ao usuário (incluindo inativas)
+  const { data: enquete, error: enqueteError } = await supabase
+    .from("enquetes")
+    .select("pergunta, user_id, ativa")
+    .eq("id", enqueteId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (enqueteError || !enquete) {
+    console.error("Erro ao buscar enquete:", enqueteError?.message);
+    return { error: "Enquete não encontrada ou você não tem permissão para exportá-la" };
+  }
+
+  // Buscar opções da enquete
+  const { data: opcoes, error: opcoesError } = await supabase
+    .from("opcoes_enquete")
+    .select("id, texto")
+    .eq("enquete_id", enqueteId);
+
+  if (opcoesError) {
+    console.error("Erro ao buscar opções:", opcoesError.message);
+    return { error: opcoesError.message };
+  }
+
+  // Contar votos para cada opção
+  const resultados = await Promise.all(
+    opcoes.map(async (opcao) => {
+      const { count } = await supabase
+        .from("respostas_enquete")
+        .select("*", { count: "exact", head: true })
+        .eq("opcao_id", opcao.id);
+
+      return {
+        id: opcao.id,
+        texto: opcao.texto,
+        votos: count || 0,
+      };
+    })
+  );
+
+  if (!resultados || resultados.length === 0) {
+    return { error: "Não foi possível obter os resultados da enquete." };
+  }
+
+  // Gerar conteúdo do arquivo
+  const totalVotos = resultados.reduce((total: number, opcao: any) => total + opcao.votos, 0);
+  
+  let conteudo = `DADOS DA ENQUETE\n`;
+  conteudo += `================\n\n`;
+  conteudo += `Pergunta: ${enquete.pergunta}\n`;
+  conteudo += `Status: ${enquete.ativa ? 'Ativa' : 'Encerrada'}\n`;
+  conteudo += `Total de votos: ${totalVotos}\n\n`;
+  conteudo += `RESULTADOS:\n`;
+  conteudo += `-----------\n`;
+  
+  resultados.forEach((opcao: any, index: number) => {
+    const percentual = totalVotos > 0 ? Math.round((opcao.votos / totalVotos) * 100) : 0;
+    conteudo += `${index + 1}. ${opcao.texto}: ${opcao.votos} votos (${percentual}%)\n`;
+  });
+
+  conteudo += `\nExportado em: ${new Date().toLocaleString('pt-BR')}\n`;
+
+  return { success: true, conteudo };
 };
 

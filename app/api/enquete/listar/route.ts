@@ -7,7 +7,7 @@ export async function GET(request: Request) {
     const result = await listarEnquetesUsuario();
 
     if (result.error) {
-      return NextResponse.json({ error: result.error }, { status: 401 });
+      return NextResponse.json({ error: result.error }, { status: 400 });
     }
 
     return NextResponse.json({ 

@@ -358,11 +358,15 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
               </TableHeader>
               <TableBody>
                 {filteredQuizzes.map((quiz, index) => (
-                  <TableRow
-                    key={quiz.id}
-                    className={`border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-750'}
-                      }`}
-                  >
+                  
+                <TableRow
+  key={quiz.id}
+  className={`border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150 ${index % 2 === 0 ? 'bg-gray-50 dark:bg-gray-800' : 'bg-gray-100 dark:bg-gray-900'}`}
+>
+
+
+
+
                     <TableCell className="py-4 px-6">
                       <div className="flex items-center gap-3">
                         <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded-lg">

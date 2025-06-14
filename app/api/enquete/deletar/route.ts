@@ -17,10 +17,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: result.error }, { status: 400 });
     }
 
-    return NextResponse.json({ 
-      success: true,
-      message: "Enquete deletada com sucesso" 
-    });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Erro no endpoint DELETE /api/enquete/deletar:", error);
     return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });

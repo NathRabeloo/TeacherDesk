@@ -11,14 +11,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { FaPoll, FaChartBar, FaHistory, FaPlus, FaQrcode, FaLink, FaDownload, FaTrash, FaPlay, FaStop } from "react-icons/fa";
+import { FaPoll, FaChartBar, FaHistory, FaPlus, FaQrcode, FaLink, FaDownload, FaTrash, FaPlay, FaStop, FaSync } from "react-icons/fa";
 import QRCode from "react-qr-code";
 import { 
   criarEnquete, 
   listarEnquetesUsuario, 
   desativarEnquete, 
   buscarResultados,
-  exportarDadosEnquete 
+  exportarDadosEnquete,
+  deletarEnquete
 } from "@/app/actions";
 
 type Opcao = { texto: string; votos: number };
@@ -82,10 +83,48 @@ export default function EnquetePage() {
     }
   };
 
-  const limparHistorico = async () => {
-    // Não vamos mais limpar do localStorage, mas podemos recarregar a lista
-    await carregarEnquetesUsuario();
-    alert("Lista de enquetes atualizada!");
+  const atualizarLista = async () => {
+    setLoading(true);
+    try {
+      await carregarEnquetesUsuario();
+      alert("Lista de enquetes atualizada!");
+    } catch (error) {
+      console.error("Erro ao atualizar lista:", error);
+      alert("Erro ao atualizar lista de enquetes");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const excluirEnquete = async (enqueteIdParaExcluir: string, perguntaEnquete: string) => {
+    const confirmacao = window.confirm(
+      `Tem certeza que deseja excluir a enquete "${perguntaEnquete}"? Esta ação não pode ser desfeita.`
+    );
+
+    if (!confirmacao) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await deletarEnquete(enqueteIdParaExcluir);
+      
+      if (result.error) {
+        alert("Erro ao excluir enquete: " + result.error);
+        return;
+      }
+
+      if (result.success) {
+        alert("Enquete excluída com sucesso!");
+        // Recarregar lista de enquetes
+        await carregarEnquetesUsuario();
+      }
+    } catch (error) {
+      console.error("Erro ao excluir enquete:", error);
+      alert("Erro inesperado ao excluir enquete");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const atualizarTextoOpcao = (index: number, novoTexto: string) => {
@@ -191,14 +230,17 @@ export default function EnquetePage() {
     setPerguntaAtual("");
   };
 
-  const exportarResultadosTxt = async () => {
-    if (!enqueteId) {
+  const exportarResultadosTxt = async (enqueteIdParaExportar?: string) => {
+    const idParaUsar = enqueteIdParaExportar || enqueteId;
+    
+    if (!idParaUsar) {
       alert("Nenhuma enquete selecionada para exportar.");
       return;
     }
 
+    setLoading(true);
     try {
-      const result = await exportarDadosEnquete(enqueteId);
+      const result = await exportarDadosEnquete(idParaUsar);
       if (result.error) {
         alert("Erro ao exportar dados: " + result.error);
         return;
@@ -209,13 +251,15 @@ export default function EnquetePage() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `enquete-${enqueteId}-${new Date().toISOString().split('T')[0]}.txt`;
+        a.download = `enquete-${idParaUsar}-${new Date().toISOString().split('T')[0]}.txt`;
         a.click();
         URL.revokeObjectURL(url);
       }
     } catch (error) {
       console.error("Erro ao exportar:", error);
       alert("Erro inesperado ao exportar dados");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -225,6 +269,7 @@ export default function EnquetePage() {
       return;
     }
 
+    setLoading(true);
     try {
       let conteudo = "HISTÓRICO DE ENQUETES\n";
       conteudo += "====================\n\n";
@@ -270,6 +315,8 @@ export default function EnquetePage() {
     } catch (error) {
       console.error("Erro ao exportar histórico:", error);
       alert("Erro inesperado ao exportar histórico");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -420,33 +467,39 @@ export default function EnquetePage() {
           </div>
 
           {/* Área de Instruções */}
-          <div className="lg:col-span-1">
+          <div>
             <Card className="bg-white dark:bg-gray-800 shadow-xl border-2 border-gray-200 dark:border-gray-700">
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="p-2 rounded-lg bg-gradient-to-r from-orange-500 to-red-600">
-                    <FaQrcode className="text-white text-lg" />
+              <CardContent className="p-8">
+                <div className="flex items-center space-x-4 mb-6">
+                  <div className="p-3 rounded-xl bg-gradient-to-r from-green-500 to-teal-600">
+                    <FaQrcode className="text-white text-xl" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                    Como Funciona
-                  </h3>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                      Como Usar
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-300 text-lg">
+                      Siga os passos abaixo
+                    </p>
+                  </div>
                 </div>
-                <div className="space-y-4 text-gray-700 dark:text-gray-300">
+
+                <div className="space-y-4">
                   <div className="flex items-start space-x-3">
                     <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mt-1">1</div>
-                    <p>Digite a pergunta da enquete no campo indicado</p>
+                    <p>Digite a pergunta da sua enquete</p>
                   </div>
                   <div className="flex items-start space-x-3">
                     <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mt-1">2</div>
-                    <p>Adicione pelo menos duas opções de resposta</p>
+                    <p>Adicione pelo menos 2 opções de resposta</p>
                   </div>
                   <div className="flex items-start space-x-3">
                     <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mt-1">3</div>
-                    <p>Clique em Gerar Enquete para criar o QR Code</p>
+                    <p>Clique em "Gerar Enquete"</p>
                   </div>
                   <div className="flex items-start space-x-3">
                     <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mt-1">4</div>
-                    <p>Compartilhe o QR Code ou link para votação</p>
+                    <p>Compartilhe o QR Code ou link com os participantes</p>
                   </div>
                   <div className="flex items-start space-x-3">
                     <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mt-1">5</div>
@@ -480,18 +533,20 @@ export default function EnquetePage() {
                   <Button
                     onClick={exportarHistoricoTxt}
                     variant="outline"
-                    className="border-2 border-purple-300 text-purple-600 hover:bg-purple-50 dark:border-purple-600 dark:text-purple-400 dark:hover:bg-purple-900/20"
+                    className="border-2 border-green-300 text-green-600 hover:bg-green-50 dark:border-green-600 dark:text-green-400 dark:hover:bg-green-900/20"
+                    disabled={loading}
                   >
                     <FaDownload className="mr-2" />
-                    Exportar Histórico
+                    {loading ? "Exportando..." : "Exportar Histórico"}
                   </Button>
                   <Button
-                    onClick={limparHistorico}
+                    onClick={atualizarLista}
                     variant="outline"
-                    className="border-2 border-red-300 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-900/20"
+                    className="border-2 border-blue-300 text-blue-600 hover:bg-blue-50 dark:border-blue-600 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                    disabled={loading}
                   >
-                    <FaTrash className="mr-2" />
-                    Atualizar Lista
+                    <FaSync className="mr-2" />
+                    {loading ? "Atualizando..." : "Atualizar Lista"}
                   </Button>
                 </div>
               </div>
@@ -518,20 +573,32 @@ export default function EnquetePage() {
                       <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                         Criada em: {new Date(enquete.criada_em).toLocaleDateString('pt-BR')}
                       </p>
-                      {!enquete.ativa && (
+                      
+                      <div className="space-y-2">
+                        {!enquete.ativa && (
+                          <Button
+                            onClick={() => exportarResultadosTxt(enquete.id)}
+                            variant="outline"
+                            size="sm"
+                            className="w-full border-2 border-green-300 text-green-600 hover:bg-green-50 dark:border-green-600 dark:text-green-400 dark:hover:bg-green-900/20"
+                            disabled={loading}
+                          >
+                            <FaDownload className="mr-2" />
+                            {loading ? "Exportando..." : "Exportar Resultados"}
+                          </Button>
+                        )}
+                        
                         <Button
-                          onClick={() => {
-                            setEnqueteId(enquete.id);
-                            exportarResultadosTxt();
-                          }}
-                          variant="outline"
+                          onClick={() => excluirEnquete(enquete.id, enquete.pergunta)}
+                          variant="destructive"
                           size="sm"
-                          className="w-full border-2 border-blue-300 text-blue-600 hover:bg-blue-50 dark:border-blue-600 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                          className="w-full"
+                          disabled={loading}
                         >
-                          <FaDownload className="mr-2" />
-                          Exportar Resultados
+                          <FaTrash className="mr-2" />
+                          {loading ? "Excluindo..." : "Excluir Enquete"}
                         </Button>
-                      )}
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
@@ -590,11 +657,12 @@ export default function EnquetePage() {
 
             <DialogFooter className="flex gap-3">
               <Button
-                onClick={exportarResultadosTxt}
+                onClick={() => exportarResultadosTxt()}
                 className="bg-gradient-to-r from-green-500 to-blue-600 text-white hover:from-green-600 hover:to-blue-700"
+                disabled={loading}
               >
                 <FaDownload className="mr-2" />
-                Exportar Resultados
+                {loading ? "Exportando..." : "Exportar Resultados"}
               </Button>
               <Button
                 onClick={criarOutraEnquete}
