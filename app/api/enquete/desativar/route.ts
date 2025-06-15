@@ -1,19 +1,19 @@
-// app/api/enquete/votar/route.ts - Endpoint para registrar voto
+// app/api/enquete/desativar/route.ts - Endpoint para desativar enquete
 import { NextResponse } from "next/server";
-import { registrarVoto } from "@/app/actions";
+import { desativarEnquete } from "@/app/actions";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { enqueteId, opcaoId } = body;
+    const { enqueteId } = body;
 
-    if (!enqueteId || !opcaoId) {
+    if (!enqueteId) {
       return NextResponse.json({ 
-        error: "ID da enquete e ID da opção são obrigatórios" 
+        error: "ID da enquete é obrigatório" 
       }, { status: 400 });
     }
 
-    const result = await registrarVoto(enqueteId, opcaoId);
+    const result = await desativarEnquete(enqueteId);
 
     if (result.error) {
       return NextResponse.json({ error: result.error }, { status: 400 });
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Erro no endpoint POST /api/enquete/votar:", error);
+    console.error("Erro no endpoint POST /api/enquete/desativar:", error);
     return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
   }
 }
