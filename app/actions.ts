@@ -442,8 +442,8 @@ export const criarEnquete = async (formData: FormData) => {
   let opcoes;
   try {
     opcoes = JSON.parse(opcoesJson);
-    if (!Array.isArray(opcoes) || opcoes.length === 0) {
-      return { error: "Opções devem ser um array não vazio" };
+    if (!Array.isArray(opcoes) || opcoes.length < 2) {
+      return { error: "É necessário ter pelo menos 2 opções para criar a enquete" };
     }
     for (const opcao of opcoes) {
       if (typeof opcao.texto !== "string" || !opcao.texto.trim()) {

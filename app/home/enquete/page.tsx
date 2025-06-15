@@ -35,7 +35,7 @@ type EnqueteSalva = {
 
 export default function EnquetePage() {
   const [pergunta, setPergunta] = useState("");
-  const [opcoes, setOpcoes] = useState<Opcao[]>([{ texto: "", votos: 0 }]);
+  const [opcoes, setOpcoes] = useState<Opcao[]>([{ texto: "", votos: 0 }, { texto: "", votos: 0 }]);
   const [enqueteAtiva, setEnqueteAtiva] = useState(false);
   const [mostrarResultado, setMostrarResultado] = useState(false);
   const [urlVotacao, setUrlVotacao] = useState("");
@@ -63,7 +63,7 @@ export default function EnquetePage() {
           setEnqueteId(enqueteAtivaEncontrada.id);
           setPergunta(enqueteAtivaEncontrada.pergunta);
           setPerguntaAtual(enqueteAtivaEncontrada.pergunta);
-          setUrlVotacao(`${window.location.origin}/home/votar?id=${encodeURIComponent(enqueteAtivaEncontrada.id)}`);
+          setUrlVotacao(`${window.location.origin}/votar?id=${encodeURIComponent(enqueteAtivaEncontrada.id)}`);
           setEnqueteAtiva(true);
         }
       }
@@ -203,7 +203,7 @@ export default function EnquetePage() {
         
         // Limpar formulário
         setPergunta("");
-        setOpcoes([{ texto: "", votos: 0 }]);
+        setOpcoes([{ texto: "", votos: 0 }, { texto: "", votos: 0 }]);
         setEnqueteId(null);
         setUrlVotacao("");
         setPerguntaAtual("");
@@ -221,7 +221,7 @@ export default function EnquetePage() {
 
   const criarOutraEnquete = () => {
     setPergunta("");
-    setOpcoes([{ texto: "", votos: 0 }]);
+    setOpcoes([{ texto: "", votos: 0 }, { texto: "", votos: 0 }]);
     setEnqueteAtiva(false);
     setMostrarResultado(false);
     setUrlVotacao("");
@@ -656,14 +656,7 @@ export default function EnquetePage() {
             </div>
 
             <DialogFooter className="flex gap-3">
-              <Button
-                onClick={() => exportarResultadosTxt()}
-                className="bg-gradient-to-r from-green-500 to-blue-600 text-white hover:from-green-600 hover:to-blue-700"
-                disabled={loading}
-              >
-                <FaDownload className="mr-2" />
-                {loading ? "Exportando..." : "Exportar Resultados"}
-              </Button>
+
               <Button
                 onClick={criarOutraEnquete}
                 className="bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700"
