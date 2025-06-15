@@ -859,7 +859,6 @@ export const listarTodasDisciplinas = async () => {
     return [];
   }
 
-  // Retorna a lista única (se no banco tiver repetidos, trate aqui)
   return data;
 };
 
