@@ -98,7 +98,17 @@ const Bibliografia: React.FC = () => {
         console.error("Erro ao listar bibliografias:", error);
         alert("Erro ao carregar bibliografias: " + error);
       } else {
-        setBibliografia(data ?? []);
+        setBibliografia(
+          (data ?? []).map((item: any) => ({
+            id: item.id,
+            titulo: item.titulo,
+            link: item.link,
+            disciplina_id: item.disciplina_id,
+            user_id: item.user_id ?? "",
+            nome_professor: item.nome_professor,
+            created_at: item.created_at,
+          }))
+        );
       }
     } catch (error) {
       console.error("Erro ao carregar bibliografia:", error);
@@ -249,10 +259,10 @@ const Bibliografia: React.FC = () => {
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Buscar Bibliografia
+                  Bibliografias
                 </h2>
                 <p className="text-gray-600 dark:text-gray-300 text-lg mt-1">
-                  Adicione e edite livros de bibliografia para suas disciplinas
+                  Adicione links de bibliografias e conteúdos para suas disciplinas
                 </p>
               </div>
             </div>
