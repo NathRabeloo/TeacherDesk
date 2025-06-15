@@ -113,16 +113,16 @@ export default function PlanoAulasPage() {
         setPaginaAtual(1)
         router.push(`/home/plano-aulas/${novoPlano.id}`)
       } else {
-        alert('Erro ao criar plano')
+        alert('Erro ao criar diario')
       }
     } catch (error) {
-      alert('Erro ao salvar plano')
+      alert('Erro ao salvar diario')
     }
     setLoading(false)
   }
 
   const excluirPlano = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir este plano?')) return
+    if (!confirm('Tem certeza que deseja excluir este diario?')) return
 
     setLoading(true)
     try {
@@ -133,10 +133,10 @@ export default function PlanoAulasPage() {
           setPaginaAtual(paginaAtual - 1)
         }
       } else {
-        alert('Erro ao excluir plano: ' + error)
+        alert('Erro ao excluir diario: ' + error)
       }
     } catch {
-      alert('Erro ao excluir plano')
+      alert('Erro ao excluir diario')
     }
     setLoading(false)
   }
@@ -155,7 +155,7 @@ export default function PlanoAulasPage() {
                   Diários de Aula
                 </h2>
                 <p className="text-gray-600 dark:text-gray-300 text-lg mt-1">
-                  Gerencie suas aulas inserindo registros em seus diários de aulas.
+                  Acompanhe o desenvolvimento de suas aulas.
                 </p>
               </div>
             </div>

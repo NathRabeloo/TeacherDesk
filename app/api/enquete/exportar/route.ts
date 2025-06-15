@@ -1,6 +1,6 @@
-// app/api/enquete/resultados/route.ts - Endpoint para buscar resultados
+// app/api/enquete/exportar/route.ts - Endpoint para exportar dados da enquete
 import { NextResponse } from "next/server";
-import { buscarResultados } from "@/app/actions";
+import { exportarDadosEnquete } from "@/app/actions";
 
 export async function GET(request: Request) {
   try {
@@ -11,7 +11,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "ID da enquete é obrigatório" }, { status: 400 });
     }
 
-    const result = await buscarResultados(enqueteId);
+    const result = await exportarDadosEnquete(enqueteId);
 
     if (result.error) {
       return NextResponse.json({ error: result.error }, { status: 400 });
@@ -19,11 +19,10 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ 
       success: true,
-      pergunta: result.pergunta,
-      resultados: result.resultados 
+      conteudo: result.conteudo 
     });
   } catch (error) {
-    console.error("Erro no endpoint GET /api/enquete/resultados:", error);
+    console.error("Erro no endpoint GET /api/enquete/exportar:", error);
     return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
   }
 }
