@@ -360,7 +360,7 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
                 {filteredQuizzes.map((quiz, index) => (
                   <TableRow
                     key={quiz.id}
-                    className={`border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-750'}
+                    className={`border-b border-gray-100 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-900'}
                       }`}
                   >
                     <TableCell className="py-4 px-6">
