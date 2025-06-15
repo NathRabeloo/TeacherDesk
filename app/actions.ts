@@ -648,9 +648,10 @@ export const deletarTutorial = async (tutorialId: string) => {
 export const criarBibliografia = async (formData: FormData) => {
   const titulo = formData.get("titulo")?.toString();
   const link = formData.get("link")?.toString();
+  const nome_professor = formData.get("nome_professor")?.toString();
   const disciplina_id = formData.get("disciplina_id")?.toString();
 
-  if (!titulo || !link || !disciplina_id) {
+  if (!titulo || !link || !disciplina_id || !nome_professor) {
     return { error: "Todos os campos são obrigatórios" };
   }
 
@@ -668,7 +669,7 @@ export const criarBibliografia = async (formData: FormData) => {
 
   const { data, error } = await supabase
     .from("Bibliografia")
-    .insert([{ titulo, link, disciplina_id, user_id }])
+    .insert([{ titulo, link, disciplina_id, user_id, nome_professor }])
     .select()
     .single();
 
@@ -680,8 +681,9 @@ export const criarBibliografia = async (formData: FormData) => {
   return { success: true, data };
 };
 
+
 // Listar Bibliografias
-export const listarBibliografias = async (filtroDisciplinaId?: string, disciplinaId?: string | undefined) => {
+export const listarBibliografias = async (filtroDisciplinaId?: string) => {
   const supabase = createClient();
   const {
     data: { user },
@@ -694,7 +696,7 @@ export const listarBibliografias = async (filtroDisciplinaId?: string, disciplin
 
   let query = supabase
     .from("Bibliografia")
-    .select("*")
+    .select("id, titulo, link, created_at, disciplina_id, nome_professor")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
@@ -712,14 +714,16 @@ export const listarBibliografias = async (filtroDisciplinaId?: string, disciplin
   return { data };
 };
 
+
 // Editar Bibliografia
 export const editarBibliografia = async (formData: FormData) => {
   const id = formData.get("id")?.toString();
   const titulo = formData.get("titulo")?.toString();
   const link = formData.get("link")?.toString();
   const disciplina_id = formData.get("disciplina_id")?.toString();
+  const nome_professor = formData.get("nome_professor")?.toString();
 
-  if (!id || !titulo || !link || !disciplina_id) {
+  if (!id || !titulo || !link || !disciplina_id || !nome_professor) {
     return { error: "Todos os campos são obrigatórios" };
   }
 
@@ -737,9 +741,9 @@ export const editarBibliografia = async (formData: FormData) => {
 
   const { data, error } = await supabase
     .from("Bibliografia")
-    .update({ titulo, link, disciplina_id, user_id })
+    .update({ titulo, link, disciplina_id, nome_professor, user_id })
     .eq("id", id)
-    .eq("user_id", user.id) // garante que só edita se for o dono
+    .eq("user_id", user.id)
     .select()
     .single();
 
@@ -791,6 +795,7 @@ export async function listarTodasBibliografias(filtroDisciplinaId?: string) {
       link,
       created_at,
       disciplina_id,
+      nome_professor,
       Disciplina (
         id,
         nome
@@ -812,14 +817,17 @@ export async function listarTodasBibliografias(filtroDisciplinaId?: string) {
   return data;
 }
 
+
 export const buscarBibliografia = async (id: string) => {
   const supabase = createClient();
 
   const { data, error } = await supabase
     .from('Bibliografia')
     .select(`
-      id, titulo, 
-      disciplina_id, 
+      id,
+      titulo,
+      nome_professor,
+      disciplina_id,
       disciplina!inner(nome)
     `)
     .eq('id', id)
@@ -830,7 +838,6 @@ export const buscarBibliografia = async (id: string) => {
     return { error: error.message };
   }
 
-
   const bibliografia = data ? {
     ...data,
     disciplina_nome: Array.isArray(data.disciplina) && data.disciplina.length > 0 ? data.disciplina[0].nome : 'Não informada'
@@ -839,6 +846,21 @@ export const buscarBibliografia = async (id: string) => {
   return { data: bibliografia };
 };
 
+export const listarTodasDisciplinas = async () => {
+  const supabase = createClient();
+  
+  const { data, error } = await supabase
+    .from("Disciplina")
+    .select("id, nome")
+    .order("nome", { ascending: true });
+  
+  if (error) {
+    console.error("Erro ao listar todas disciplinas:", error.message);
+    return [];
+  }
+
+  return data;
+};
 
 export async function carregarMetas() {
   const supabase = createClient();
@@ -954,3 +976,5 @@ export async function removerTarefa(id: string) {
     console.error("Erro ao remover tarefa:", error.message);
   }
 }
+
+
