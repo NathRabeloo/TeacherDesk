@@ -7,8 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import Image from "next/image";
+import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function Login({ searchParams }: { searchParams: Message }) {
+  const [showPassword, setShowPassword] = useState(false);
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
   return (
     <div className="w-screen h-screen flex flex-col lg:flex-row">
       
@@ -110,14 +118,28 @@ export default function Login({ searchParams }: { searchParams: Message }) {
                   Esqueceu a senha?
                 </Link>
               </div>
-              <Input
-                className=" bg-white"
-                id="password"
-                name="password"
-                type="password"
-                placeholder="Sua senha"
-                required
-              />
+              <div className="relative">
+                <Input
+                  className=" bg-white pr-10"
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Sua senha"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={togglePasswordVisibility}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
             </div>
 
             <div className="flex items-center space-x-2">
@@ -143,4 +165,3 @@ export default function Login({ searchParams }: { searchParams: Message }) {
     </div>
   );
 }
-
