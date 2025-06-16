@@ -5,6 +5,9 @@ import { type NextRequest, NextResponse } from "next/server";
 // Protege todas as rotas que começam com "/home"
 const PROTECTED_PREFIXES = ["/home"];
 
+// Rotas que devem ser excluídas da proteção mesmo estando em /protected
+const EXCLUDED_PROTECTED_ROUTES = ["/protected/reset-password"];
+
 export const updateSession = async (request: NextRequest) => {
   try {
     let response = NextResponse.next({
@@ -36,6 +39,11 @@ export const updateSession = async (request: NextRequest) => {
 
     const path = request.nextUrl.pathname;
 
+    // Verifica se é uma rota excluída da proteção
+    if (EXCLUDED_PROTECTED_ROUTES.includes(path)) {
+      return response;
+    }
+
     // Se o path começar com um prefixo protegido e não houver usuário logado
     if (PROTECTED_PREFIXES.some(prefix => path.startsWith(prefix)) && !user) {
       return NextResponse.redirect(new URL("/sign-in", request.url));
@@ -54,3 +62,17 @@ export const updateSession = async (request: NextRequest) => {
     });
   }
 };
+
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * Feel free to modify this pattern to include more paths.
+     */
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
+};
+
