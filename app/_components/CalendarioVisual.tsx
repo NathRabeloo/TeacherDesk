@@ -403,7 +403,7 @@ const Calendar = () => {
                       Nenhum evento encontrado
                     </p>
                     <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">
-                      Clique em "Novo Evento" para adicionar seu primeiro compromisso
+                      Clique em &quot;Novo Evento&quot; para adicionar seu primeiro compromisso
                     </p>
                   </div>
                 )}
