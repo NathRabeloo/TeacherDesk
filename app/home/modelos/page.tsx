@@ -201,12 +201,17 @@ export default function Modelos() {
 
   // Função para excluir um modelo (exclusão lógica)
   const handleDelete = async (id: string, arquivoPath: string) => {
+    const senha = prompt("Digite a senha de admin para confirmar a exclusão:");
+    if (senha !== "admin123") {
+      alert("Senha incorreta! Exclusão cancelada.");
+      return;
+    }
+
     if (!confirm("Tem certeza que deseja excluir este modelo?")) {
       return;
     }
 
     try {
-      // Atualiza o campo deletedAt para a data atual (exclusão lógica)
       const { error } = await supabase
         .from("Modelo")
         .update({ deletedAt: new Date().toISOString() })
@@ -218,9 +223,8 @@ export default function Modelos() {
         return;
       }
 
-      // Atualiza a lista de modelos
       fetchModelos();
-      // Ajustar página atual se necessário
+
       if (modelosPaginados.length === 1 && paginaAtual > 1) {
         setPaginaAtual(paginaAtual - 1);
       }
@@ -360,8 +364,8 @@ export default function Modelos() {
                   }}
                   variant={isTodos ? "default" : "outline"}
                   className={`rounded-xl transition-all duration-300 ${isTodos
-                      ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-gray-100 hover:to-gray-400 hover:text-black"
-                      : `bg-white text-black border ${gradientHover} hover:text-white hover:bg-gradient-to-r`
+                    ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-gray-100 hover:to-gray-400 hover:text-black"
+                    : `bg-white text-black border ${gradientHover} hover:text-white hover:bg-gradient-to-r`
                     }`}
                 >
                   {isTodos ? "Todos" : ext.toUpperCase()}
@@ -467,8 +471,8 @@ export default function Modelos() {
           {/* Paginação */}
           {totalPaginas > 1 && (
             <div className="flex justify-center gap-2 mt-12">
-              <Button 
-                disabled={paginaAtual === 1 || loading} 
+              <Button
+                disabled={paginaAtual === 1 || loading}
                 onClick={() => setPaginaAtual((p) => Math.max(1, p - 1))}
                 className="rounded-xl"
                 variant="outline"
@@ -486,8 +490,8 @@ export default function Modelos() {
                   {i + 1}
                 </Button>
               ))}
-              <Button 
-                disabled={paginaAtual === totalPaginas || loading} 
+              <Button
+                disabled={paginaAtual === totalPaginas || loading}
                 onClick={() => setPaginaAtual((p) => Math.min(totalPaginas, p + 1))}
                 className="rounded-xl"
                 variant="outline"

@@ -12,6 +12,7 @@ export interface Evento {
 
 interface ModalAddEventoProps {
   evento?: Evento | null;
+  selectedDate?: string;
   onAdd: (evento: Evento) => void;
   onClose: () => void;
   onDelete: (id: number) => void;
@@ -20,6 +21,7 @@ interface ModalAddEventoProps {
 
 const ModalAddEvento: React.FC<ModalAddEventoProps> = ({ 
   evento, 
+  selectedDate,
   onAdd, 
   onClose, 
   onDelete,
@@ -27,7 +29,7 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({
 }) => {
   const [nome, setNome] = useState(evento?.nome || "");
   const [descricao, setDescricao] = useState(evento?.descricao || "");
-  const [data, setData] = useState(evento?.data || "");
+  const [data, setData] = useState(evento?.data || selectedDate || "");
   const [prioridade, setPrioridade] = useState<"alta" | "media" | "baixa">(evento?.prioridade || "baixa");
   const supabase = createClient();
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
@@ -43,10 +45,11 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({
     } else {
       setNome("");
       setDescricao("");
-      setData("");
       setPrioridade("baixa");
+      // Use selectedDate if provided, otherwise empty string
+      setData(selectedDate || "");
     }
-  }, [evento]);
+  }, [evento, selectedDate]);
 
   const handleConcluirEvento = async () => {
     if (!evento || !evento.id) return;
@@ -173,6 +176,12 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({
     }
   };
 
+  const formatSelectedDate = (dateStr: string) => {
+    if (!dateStr) return "";
+    const [year, month, day] = dateStr.split("-");
+    return `${day}/${month}/${year}`;
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
@@ -192,7 +201,9 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({
                   {evento ? "Editar Evento" : "Novo Evento"}
                 </h2>
                 <p className="text-gray-600 dark:text-gray-300 text-sm">
-                  {evento ? "Modifique as informações do evento" : "Adicione um novo evento ao calendário"}
+                  {evento ? "Modifique as informações do evento" : 
+                   selectedDate ? `Adicionar evento para ${formatSelectedDate(selectedDate)}` :
+                   "Adicione um novo evento ao calendário"}
                 </p>
               </div>
             </div>
@@ -242,6 +253,11 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({
             <div>
               <label htmlFor="data" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                 Data
+                {selectedDate && !evento && (
+                  <span className="text-blue-500 text-xs ml-2">
+                    (Pré-selecionada)
+                  </span>
+                )}
               </label>
               <input
                 id="data"
@@ -414,3 +430,4 @@ const ModalAddEvento: React.FC<ModalAddEventoProps> = ({
 };
 
 export default ModalAddEvento;
+
