@@ -19,6 +19,7 @@ const Calendar = () => {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [eventoEmEdicao, setEventoEmEdicao] = useState<Evento | null>(null);
   const [showEventosProximos, setShowEventosProximos] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>("");
 
   const hoje = new Date();
   const diaAtual = (hoje.getFullYear() === currentYear && hoje.getMonth() === currentMonth) ? hoje.getDate() : null;
@@ -103,7 +104,19 @@ const Calendar = () => {
 
   const abrirModalEdicao = (evento: Evento) => {
     setEventoEmEdicao(evento);
+    setSelectedDate("");
     setShowModal(true);
+  };
+
+  const abrirModalNovoEvento = (dataStr?: string) => {
+    setEventoEmEdicao(null);
+    setSelectedDate(dataStr || "");
+    setShowModal(true);
+  };
+
+  const handleDayClick = (dia: number) => {
+    const dataStr = `${currentYear}-${(currentMonth + 1).toString().padStart(2, "0")}-${dia.toString().padStart(2, "0")}`;
+    abrirModalNovoEvento(dataStr);
   };
 
   const removerEvento = async (id: number) => {
@@ -224,10 +237,7 @@ const Calendar = () => {
               </div>
 
               <button
-                onClick={() => {
-                  setEventoEmEdicao(null);
-                  setShowModal(true);
-                }}
+                onClick={() => abrirModalNovoEvento()}
                 className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
               >
                 <FaPlus />
@@ -282,11 +292,12 @@ const Calendar = () => {
                     return (
                       <div 
                         key={dia} 
-                        className={`h-24 p-2 rounded-lg border-2 transition-all duration-200 hover:shadow-md ${
+                        className={`h-24 p-2 rounded-lg border-2 transition-all duration-200 hover:shadow-md cursor-pointer ${
                           isToday 
-                            ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20' 
-                            : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:border-gray-300'
+                            ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:border-blue-500' 
+                            : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
                         }`}
+                        onClick={() => handleDayClick(dia)}
                       >
                         <div className="flex justify-between items-start mb-1">
                           <span className={`text-sm font-semibold ${
@@ -308,7 +319,10 @@ const Calendar = () => {
                             <div 
                               key={idx} 
                               className={`text-xs p-1 rounded truncate cursor-pointer hover:shadow-sm transition-all ${getCorPrioridade(evento.prioridade)}`}
-                              onClick={() => abrirModalEdicao(evento)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                abrirModalEdicao(evento);
+                              }}
                             >
                               <div className="flex items-center gap-1">
                                 <div className={`w-2 h-2 rounded-full ${getCorIndicador(evento.prioridade)}`}></div>
@@ -362,33 +376,35 @@ const Calendar = () => {
                           {evento.descricao}
                         </p>
                         
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {formatDateBR(evento.data)}
-                          </span>
-                          <span className={`text-xs px-2 py-1 rounded-full text-white ${
-                            evento.prioridade === 'alta' ? 'bg-red-500' :
-                            evento.prioridade === 'media' ? 'bg-yellow-500' : 'bg-green-500'
-                          }`}>
-                            {evento.prioridade.toUpperCase()}
-                          </span>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <FaClock className="text-gray-400 text-xs" />
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {formatDateBR(evento.data)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <FaFlag className={`text-xs ${
+                              evento.prioridade === 'alta' ? 'text-red-500' :
+                              evento.prioridade === 'media' ? 'text-yellow-500' : 'text-green-500'
+                            }`} />
+                            <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                              {evento.prioridade}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <FaCalendarAlt className="mx-auto text-4xl text-gray-400 mb-3" />
-                    <p className="text-gray-500 dark:text-gray-400">Nenhum evento cadastrado</p>
-                    <button
-                      onClick={() => {
-                        setEventoEmEdicao(null);
-                        setShowModal(true);
-                      }}
-                      className="mt-3 text-blue-600 hover:text-blue-700 font-semibold"
-                    >
-                      Criar primeiro evento
-                    </button>
+                    <FaExclamationTriangle className="text-gray-400 text-4xl mx-auto mb-4" />
+                    <p className="text-gray-500 dark:text-gray-400 text-lg font-medium">
+                      Nenhum evento encontrado
+                    </p>
+                    <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">
+                      Clique em &quot;Novo Evento&quot; para adicionar seu primeiro compromisso
+                    </p>
                   </div>
                 )}
               </div>
@@ -397,30 +413,28 @@ const Calendar = () => {
         </div>
       </div>
 
+      {/* Modal de Adicionar/Editar Evento */}
       {showModal && (
         <ModalAddEvento
           evento={eventoEmEdicao}
-          onAdd={(eventoEditado) => {
+          selectedDate={selectedDate}
+          onAdd={(novoEvento) => {
             if (eventoEmEdicao) {
+              // Editando evento existente
               setEventos((oldEventos) =>
-                oldEventos.map((ev) => (ev.id === eventoEditado.id ? eventoEditado : ev))
+                oldEventos.map((ev) => (ev.id === novoEvento.id ? novoEvento : ev))
               );
             } else {
-              setEventos((oldEventos) => [...oldEventos, eventoEditado]);
+              // Adicionando novo evento
+              setEventos((oldEventos) => [...oldEventos, novoEvento]);
             }
-            setShowModal(false);
-            setEventoEmEdicao(null);
-          }}
-          onDelete={(id) => {
-            removerEvento(id);
-            setShowModal(false);
-            setEventoEmEdicao(null);
           }}
           onClose={() => {
             setShowModal(false);
             setEventoEmEdicao(null);
+            setSelectedDate("");
           }}
-          // Adicione esta prop para o botão de finalizar
+          onDelete={removerEvento}
         />
       )}
     </div>
@@ -428,3 +442,4 @@ const Calendar = () => {
 };
 
 export default Calendar;
+

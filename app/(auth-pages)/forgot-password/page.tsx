@@ -7,11 +7,28 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import Image from "next/image";
+import { ArrowLeft } from "lucide-react";
+import { useRouter } from 'next/navigation';
 
 export default function ForgotPassword({ searchParams }: { searchParams: Message }) {
+  const router = useRouter();
+
+  const handleBackToHome = () => {
+    router.push('/');
+  };
+
   return (
-    <div className="w-screen h-screen flex flex-col lg:flex-row">
+    <div className="w-screen h-screen flex flex-col lg:flex-row relative">
       
+    <button
+        onClick={handleBackToHome}
+        className="absolute top-6 left-6 z-50 group flex items-center justify-center w-12 h-12 bg-white/90 backdrop-blur-sm border border-white/30 text-blue-700 hover:text-white hover:bg-blue-600 transition-all duration-300 rounded-full shadow-lg hover:shadow-xl hover:scale-110"
+        title="Voltar para página inicial"
+      >
+        <ArrowLeft className="h-5 w-5 group-hover:-translate-x-0.5 transition-transform duration-300" />
+      </button>
+
+
       {/* Imagem - 60% */}
       <div className="hidden lg:block w-3/5 h-full relative">
         <Image
@@ -116,7 +133,18 @@ export default function ForgotPassword({ searchParams }: { searchParams: Message
           </form>
         </div>
       </div>
+
+      {/* Adicione este CSS para a animação float */}
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-20px);
+          }
+        }
+      `}</style>
     </div>
   );
 }
-
