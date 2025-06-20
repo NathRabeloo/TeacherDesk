@@ -8,18 +8,32 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { useRouter } from 'next/navigation';
 
 export default function Login({ searchParams }: { searchParams: Message }) {
   const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
 
+  const handleBackToHome = () => {
+    router.push('/');
+  };
+
   return (
-    <div className="w-screen h-screen flex flex-col lg:flex-row">
+    <div className="w-screen h-screen flex flex-col lg:flex-row relative">
       
+    <button
+        onClick={handleBackToHome}
+        className="absolute top-6 left-6 z-50 group flex items-center justify-center w-12 h-12 bg-white/90 backdrop-blur-sm border border-white/30 text-blue-700 hover:text-white hover:bg-blue-600 transition-all duration-300 rounded-full shadow-lg hover:shadow-xl hover:scale-110"
+        title="Voltar para página inicial"
+      >
+        <ArrowLeft className="h-5 w-5 group-hover:-translate-x-0.5 transition-transform duration-300" />
+      </button>
+
       {/* Imagem - 60% */}
       <div className="hidden lg:block w-3/5 h-full relative">
         <Image
@@ -38,15 +52,15 @@ export default function Login({ searchParams }: { searchParams: Message }) {
           position: 'relative',
           display: 'flex',
           flexDirection: 'row',
-          justifyContent: 'center',  // Centralizando horizontalmente
-          alignItems: 'center',      // Centralizando verticalmente
+          justifyContent: 'center',
+          alignItems: 'center',
           height: '100vh',
           background: 'linear-gradient(to right, #e6f0ff, #cce0ff)',
           fontFamily: 'Segoe UI, sans-serif',
           color: '#1e1e2f',
           padding: '0 5%',
           overflow: 'hidden',
-          zIndex: 10 // Colocando o formulário à frente do design de fundo
+          zIndex: 10
         }}
       >
         {/* Blur decorativo */}
@@ -78,7 +92,7 @@ export default function Login({ searchParams }: { searchParams: Message }) {
           }} />
         ))}
 
-        <div className="w-full max-w-md space-y-6 relative z-20"> {/* Adicionando o z-index 20 para sobrepor os decorativos */}
+        <div className="w-full max-w-md space-y-6 relative z-20">
           {/* Logo */}
           <div className="flex justify-center">
             <Image
