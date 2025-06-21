@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { FaEdit, FaTrash, FaQrcode, FaChartBar, FaSearch, FaFilter, FaPlus, FaUsers, FaQuestionCircle, FaHistory } from "react-icons/fa";
+import { FaEdit, FaTrash, FaQrcode, FaChartBar, FaSearch, FaFilter, FaPlus, FaQuestionCircle, } from "react-icons/fa";
 import QRCode from "react-qr-code";
 import { Copy } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
+import {  FaInfoCircle } from "react-icons/fa";
 
 import {
   Table,
@@ -585,81 +586,102 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-600">
-        <p className="text-2xl font-bold mt-2 mb-4 align-middle">Instruções</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-          {/* Editar */}
-          <div className="bg-gradient-to-br from-blue-500/80 to-blue-600/80 backdrop-blur-sm p-4 rounded-xl shadow-md text-white">
-            <div className="flex items-center gap-3">
-              <div className="flex-shrink-0">
-                <div className="h-10 w-10 rounded-lg border-2 border-white/30 bg-white/20 flex items-center justify-center">
-                  <FaEdit className="text-white text-base" />
-                </div>
-              </div>
-              <div className="flex-1">
-                <p className="text-lg font-bold">Editar Quiz</p>
-                <p className="text-blue-100 text-xs font-medium leading-relaxed">
-                  Permite fazer alterações nas perguntas, respostas ou título do quiz.
-                </p>
-              </div>
+
+
+ <div className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-800 dark:to-gray-900 p-8 rounded-3xl shadow-sm border border-blue-200/50 dark:border-gray-700">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-2 bg-blue-500/10 rounded-xl">
+          <FaInfoCircle className="text-blue-600 dark:text-blue-400 text-xl" />
+        </div>
+        <h3 className="text-2xl font-bold text-gray-800 dark:text-white">
+          Como usar as ações
+        </h3>
+      </div>
+
+      {/* Instructions Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        {/* Editar */}
+        <div className="group">
+          <div className="flex items-start gap-4 p-5 bg-white/70 dark:bg-gray-800/70 rounded-2xl border border-blue-200/30 dark:border-gray-600/50 hover:shadow-md transition-all duration-300">
+            <div className="p-3 bg-blue-100 dark:bg-blue-900/50 rounded-xl group-hover:scale-110 transition-transform duration-300">
+              <FaEdit className="text-blue-600 dark:text-blue-400 text-lg" />
+            </div>
+            <div className="flex-1">
+              <h4 className="font-semibold text-gray-900 dark:text-white text-lg mb-2">
+                Editar Quiz
+              </h4>
+              <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+                Modifique perguntas, respostas, título ou configurações do seu quiz a qualquer momento.
+              </p>
             </div>
           </div>
+        </div>
 
-          {/* Estatísticas */}
-          <div className="bg-gradient-to-br from-green-500/80 to-green-600/80 backdrop-blur-sm p-4 rounded-xl shadow-md text-white">
-            <div className="flex items-center gap-3">
-              <div className="flex-shrink-0">
-                <div className="h-10 w-10 rounded-lg border-2 border-white/30 bg-white/20 flex items-center justify-center">
-                  <FaChartBar className="text-white text-base" />
-                </div>
-              </div>
-              <div className="flex-1">
-                <p className="text-lg font-bold">Visualizar Estatísticas</p>
-                <p className="text-green-100 text-xs font-medium leading-relaxed">
-                  Mostra os dados de desempenho dos participantes, como quantas pessoas responderam, acertos e erros.
-                </p>
-              </div>
+        {/* Estatísticas */}
+        <div className="group">
+          <div className="flex items-start gap-4 p-5 bg-white/70 dark:bg-gray-800/70 rounded-2xl border border-green-200/30 dark:border-gray-600/50 hover:shadow-md transition-all duration-300">
+            <div className="p-3 bg-green-100 dark:bg-green-900/50 rounded-xl group-hover:scale-110 transition-transform duration-300">
+              <FaChartBar className="text-green-600 dark:text-green-400 text-lg" />
+            </div>
+            <div className="flex-1">
+              <h4 className="font-semibold text-gray-900 dark:text-white text-lg mb-2">
+                Ver Resultados
+              </h4>
+              <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+                Acesse relatórios detalhados com estatísticas de desempenho e participação dos alunos.
+              </p>
             </div>
           </div>
+        </div>
 
-          {/* QR Code */}
-          <div className="bg-gradient-to-br from-purple-500/80 to-purple-600/80 backdrop-blur-sm p-4 rounded-xl shadow-md text-white">
-            <div className="flex items-center gap-3">
-              <div className="flex-shrink-0">
-                <div className="h-10 w-10 rounded-lg border-2 border-white/30 bg-white/20 flex items-center justify-center">
-                  <FaQrcode className="text-white text-base" />
-                </div>
-              </div>
-              <div className="flex-1">
-                <p className="text-lg font-bold">Gerar QR Code</p>
-                <p className="text-purple-100 text-xs font-medium leading-relaxed">
-                  Cria um código QR que pode ser escaneado para acessar o quiz rapidamente.
-                </p>
-              </div>
+        {/* QR Code */}
+        <div className="group">
+          <div className="flex items-start gap-4 p-5 bg-white/70 dark:bg-gray-800/70 rounded-2xl border border-orange-200/30 dark:border-gray-600/50 hover:shadow-md transition-all duration-300">
+            <div className="p-3 bg-orange-100 dark:bg-orange-900/50 rounded-xl group-hover:scale-110 transition-transform duration-300">
+              <FaQrcode className="text-orange-600 dark:text-orange-400 text-lg" />
+            </div>
+            <div className="flex-1">
+              <h4 className="font-semibold text-gray-900 dark:text-white text-lg mb-2">
+                Gerenciar Turmas
+              </h4>
+              <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+                Crie turmas específicas e gere QR codes únicos para cada grupo de participantes.
+              </p>
             </div>
           </div>
+        </div>
 
-          {/* Excluir */}
-          <div className="bg-gradient-to-br from-red-500/80 to-red-600/80 backdrop-blur-sm p-4 rounded-xl shadow-md text-white">
-            <div className="flex items-center gap-3">
-              <div className="flex-shrink-0">
-                <div className="h-10 w-10 rounded-lg border-2 border-white/30 bg-white/20 flex items-center justify-center">
-                  <FaTrash className="text-white text-base" />
-                </div>
-              </div>
-              <div className="flex-1">
-                <p className="text-lg font-bold">Excluir Quiz</p>
-                <p className="text-red-100 text-xs font-medium leading-relaxed">
-                  Remove o quiz de forma permanente. Essa ação não pode ser desfeita.
-                </p>
-              </div>
+        {/* Excluir */}
+        <div className="group">
+          <div className="flex items-start gap-4 p-5 bg-white/70 dark:bg-gray-800/70 rounded-2xl border border-red-200/30 dark:border-gray-600/50 hover:shadow-md transition-all duration-300">
+            <div className="p-3 bg-red-100 dark:bg-red-900/50 rounded-xl group-hover:scale-110 transition-transform duration-300">
+              <FaTrash className="text-red-600 dark:text-red-400 text-lg" />
+            </div>
+            <div className="flex-1">
+              <h4 className="font-semibold text-gray-900 dark:text-white text-lg mb-2">
+                Excluir Quiz
+              </h4>
+              <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+                Remove permanentemente o quiz e todos os dados associados. Esta ação é irreversível.
+              </p>
             </div>
           </div>
-
         </div>
 
       </div>
+
+      {/* Footer tip */}
+      <div className="mt-6 p-4 bg-blue-50/50 dark:bg-blue-900/20 rounded-xl border border-blue-200/50 dark:border-blue-700/50">
+        <p className="text-sm text-blue-700 dark:text-blue-300 text-center">
+          💡 <strong>Dica:</strong> Passe o mouse sobre os botões da tabela para ver mais informações sobre cada ação
+        </p>
+      </div>
+    </div>
+
+      
     </div>
   );
 };
