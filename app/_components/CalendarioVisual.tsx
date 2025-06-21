@@ -398,13 +398,13 @@ const Calendar = () => {
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <FaExclamationTriangle className="text-gray-400 text-4xl mx-auto mb-4" />
+                    {/* <FaExclamationTriangle className="text-gray-400 text-4xl mx-auto mb-4" />
                     <p className="text-gray-500 dark:text-gray-400 text-lg font-medium">
                       Nenhum evento encontrado
                     </p>
                     <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">
                       Clique em &quot;Novo Evento&quot; para adicionar seu primeiro compromisso
-                    </p>
+                    </p> */}
                   </div>
                 )}
               </div>

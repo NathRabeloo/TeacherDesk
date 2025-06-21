@@ -233,9 +233,9 @@ const Tutoriais = () => {
         <div className="p-8">
           {tutoriaisPaginados.length === 0 ? (
             <div className="text-center py-12">
-              <FaBook className="mx-auto text-6xl text-gray-300 dark:text-gray-600 mb-4" />
+              {/* <FaBook className="mx-auto text-6xl text-gray-300 dark:text-gray-600 mb-4" />
               <p className="text-xl text-gray-500 dark:text-gray-400">Nenhum tutorial encontrado</p>
-              <p className="text-gray-400 dark:text-gray-500 mt-2">Tente ajustar seus filtros de busca</p>
+              <p className="text-gray-400 dark:text-gray-500 mt-2">Tente ajustar seus filtros de busca</p> */}
             </div>
           ) : (
             <>

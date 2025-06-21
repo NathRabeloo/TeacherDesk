@@ -318,7 +318,7 @@ const QuizList: React.FC<QuizListProps> = ({ onCreateQuiz, onEditQuiz, onViewRes
         {isLoading ? (
           <div className="text-center py-16">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
-            <p className="text-xl text-gray-600 dark:text-gray-300">Carregando quizs...</p>
+            <p className="text-xl text-gray-600 dark:text-gray-300">Carregando quizzes...</p>
           </div>
         ) : filteredQuizzes.length === 0 ? (
           <div className="text-center py-16">
