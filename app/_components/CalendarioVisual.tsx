@@ -24,31 +24,32 @@ const Calendar = () => {
   const hoje = new Date();
   const diaAtual = (hoje.getFullYear() === currentYear && hoje.getMonth() === currentMonth) ? hoje.getDate() : null;
 
+  // Função para recarregar eventos do banco
+  const fetchEventos = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("Evento")
+      .select("id, nome, data, descricao, prioridade")
+      .eq("usuarioId", user.id)
+      .is("deletedAt", null)
+      .order("data", { ascending: true });
+
+    if (!error) {
+      const eventosConvertidos = (data || []).map(ev => ({
+        ...ev,
+        data: ev.data.split("T")[0],
+        prioridade: ev.prioridade || "baixa"
+      }));
+      setEventos(eventosConvertidos);
+    } else {
+      console.error("Erro ao carregar eventos:", error.message);
+    }
+  };
+
   useEffect(() => {
-    const fetchEventos = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from("Evento")
-        .select("id, nome, data, descricao, prioridade")
-        .eq("usuarioId", user.id)
-        .is("deletedAt", null)
-        .order("data", { ascending: true });
-
-      if (!error) {
-        const eventosConvertidos = (data || []).map(ev => ({
-          ...ev,
-          data: ev.data.split("T")[0],
-          prioridade: ev.prioridade || "baixa"
-        }));
-        setEventos(eventosConvertidos);
-      } else {
-        console.error("Erro ao carregar eventos:", error.message);
-      }
-    };
-
     fetchEventos();
   }, []);
 
@@ -120,18 +121,62 @@ const Calendar = () => {
   };
 
   const removerEvento = async (id: number) => {
-    // Atualização no Supabase
-    const { error } = await supabase
-      .from("Evento")
-      .update({ deletedAt: new Date().toISOString() })
-      .eq("id", id);
+    try {
+      // Atualização no Supabase
+      const { error } = await supabase
+        .from("Evento")
+        .update({ deletedAt: new Date().toISOString() })
+        .eq("id", id);
 
-    if (!error) {
-      // Atualização local
-      setEventos((oldEventos) => oldEventos.filter((ev) => ev.id !== id));
-    } else {
-      console.error("Erro ao remover evento:", error.message);
+      if (!error) {
+        // Atualização local
+        setEventos((oldEventos) => oldEventos.filter((ev) => ev.id !== id));
+      } else {
+        console.error("Erro ao remover evento:", error.message);
+      }
+    } catch (error) {
+      console.error("Erro ao remover evento:", error);
     }
+  };
+
+  // Função para marcar evento como concluído
+  const marcarComoConcluido = async (id: number) => {
+    try {
+      const { error } = await supabase
+        .from("Evento")
+        .update({ deletedAt: new Date().toISOString() })
+        .eq("id", id);
+
+      if (!error) {
+        // Remove o evento da lista local
+        setEventos((oldEventos) => oldEventos.filter((ev) => ev.id !== id));
+      } else {
+        console.error("Erro ao marcar evento como concluído:", error.message);
+      }
+    } catch (error) {
+      console.error("Erro ao marcar evento como concluído:", error);
+    }
+  };
+
+  // Função para atualizar evento
+  const atualizarEvento = (eventoAtualizado: Evento) => {
+    setEventos((oldEventos) =>
+      oldEventos.map((ev) => (ev.id === eventoAtualizado.id ? eventoAtualizado : ev))
+    );
+  };
+
+  // Função para adicionar novo evento
+  const adicionarEvento = (novoEvento: Evento) => {
+    setEventos((oldEventos) => [...oldEventos, novoEvento]);
+  };
+
+  // Função chamada quando o modal é fechado após uma ação
+  const handleModalClose = () => {
+    setShowModal(false);
+    setEventoEmEdicao(null);
+    setSelectedDate("");
+    // Recarrega os eventos para garantir sincronização
+    fetchEventos();
   };
 
   // Eventos próximos nos próximos 3 dias
@@ -398,13 +443,13 @@ const Calendar = () => {
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <FaExclamationTriangle className="text-gray-400 text-4xl mx-auto mb-4" />
+                    {/* <FaExclamationTriangle className="text-gray-400 text-4xl mx-auto mb-4" />
                     <p className="text-gray-500 dark:text-gray-400 text-lg font-medium">
                       Nenhum evento encontrado
                     </p>
                     <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">
                       Clique em &quot;Novo Evento&quot; para adicionar seu primeiro compromisso
-                    </p>
+                    </p> */}
                   </div>
                 )}
               </div>
@@ -421,20 +466,15 @@ const Calendar = () => {
           onAdd={(novoEvento) => {
             if (eventoEmEdicao) {
               // Editando evento existente
-              setEventos((oldEventos) =>
-                oldEventos.map((ev) => (ev.id === novoEvento.id ? novoEvento : ev))
-              );
+              atualizarEvento(novoEvento);
             } else {
               // Adicionando novo evento
-              setEventos((oldEventos) => [...oldEventos, novoEvento]);
+              adicionarEvento(novoEvento);
             }
           }}
-          onClose={() => {
-            setShowModal(false);
-            setEventoEmEdicao(null);
-            setSelectedDate("");
-          }}
+          onClose={handleModalClose}
           onDelete={removerEvento}
+          onComplete={marcarComoConcluido} // Nova prop para marcar como concluído
         />
       )}
     </div>
@@ -442,4 +482,3 @@ const Calendar = () => {
 };
 
 export default Calendar;
-

@@ -20,6 +20,8 @@ import {
 } from "react-icons/fa";
 
 import { listarTodasBibliografias, listarTodasDisciplinas } from "@/app/actions";
+import { ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface BibliografiaPublicaItem {
   id: number;
@@ -57,6 +59,11 @@ const BibliografiaPublica: React.FC = () => {
   const [disciplinasPorProfessor, setDisciplinasPorProfessor] = useState<DisciplinaPorProfessor[]>([]);
 
   const itensPorPagina = 16;
+  const router = useRouter();
+
+  const handleBackToHome = () => {
+    router.push('/');
+  };
 
   useEffect(() => {
     carregarDados();
@@ -195,6 +202,13 @@ const BibliografiaPublica: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <button
+        onClick={handleBackToHome}
+        className="absolute top-6 left-6 z-50 group flex items-center justify-center w-12 h-12 bg-white/90 backdrop-blur-sm border border-white/30 text-blue-700 hover:text-white hover:bg-blue-600 transition-all duration-300 rounded-full shadow-lg hover:shadow-xl hover:scale-110"
+        title="Voltar para página inicial"
+      >
+        <ArrowLeft className="h-5 w-5 group-hover:-translate-x-0.5 transition-transform duration-300" />
+      </button>
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         
         {/* Cabeçalho */}

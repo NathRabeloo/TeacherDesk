@@ -171,9 +171,9 @@ export function ListaMetas({ dados }: { dados: Record<MetaIndicador, number> }) 
         {/* Lista de Metas */}
         {metas.length === 0 ? (
           <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-            <FaThLarge className="mx-auto text-4xl mb-4 opacity-50" />
+            {/* <FaThLarge className="mx-auto text-4xl mb-4 opacity-50" />
             <p className="text-lg">Nenhuma meta definida ainda</p>
-            <p className="text-sm">Adicione uma meta para começar a acompanhar seu progresso</p>
+            <p className="text-lg">Adicione metas para começar a acompanhar seu progresso</p> */}
           </div>
         ) : (
           <div className="space-y-4">

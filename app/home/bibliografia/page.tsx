@@ -235,17 +235,17 @@ const Bibliografia: React.FC = () => {
 
   const totalPaginas = Math.ceil(livrosFiltrados.length / itensPorPagina);
 
-  if (carregando && bibliografia.length === 0) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="p-8 text-center">
-            <p className="text-xl text-gray-500 dark:text-gray-400">Carregando...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // if (carregando && bibliografia.length === 0) {
+  //   return (
+  //     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  //       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+  //         <div className="p-8 text-center">
+  //           <p className="text-xl text-gray-500 dark:text-gray-400">Carregando...</p>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -365,11 +365,11 @@ const Bibliografia: React.FC = () => {
             </div>
           ))}
 
-          {livrosVisiveis.length === 0 && (
+          {/* {livrosVisiveis.length === 0 && (
             <p className="text-center text-gray-500 dark:text-gray-400 col-span-full">
               Nenhum livro encontrado.
             </p>
-          )}
+          )} */}
         </div>
 
         {/* Paginação */}

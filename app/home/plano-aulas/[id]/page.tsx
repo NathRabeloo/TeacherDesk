@@ -80,6 +80,31 @@ export default function RegistrosPlanoAula() {
     }
   }, [planoId])
 
+  // Função para converter data local para ISO string sem timezone
+  function formatDateForInput(dateString: string): string {
+    const date = new Date(dateString + 'T00:00:00'); // Força timezone local
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  // Função para formatar data para exibição mantendo timezone local
+  function formatDateForDisplay(dateString: string): string {
+    const date = new Date(dateString + 'T00:00:00'); // Força timezone local
+    return date.toLocaleDateString('pt-BR', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }
+
+  // Função para formatar data curta para exibição
+  function formatShortDateForDisplay(dateString: string): string {
+    const date = new Date(dateString + 'T00:00:00'); // Força timezone local
+    return date.toLocaleDateString('pt-BR');
+  }
   async function handleAdicionarRegistro() {
     if (!formData.data || !formData.conteudo.trim()) {
       setError('Preencha os campos obrigatórios')
@@ -164,7 +189,7 @@ export default function RegistrosPlanoAula() {
     setModoEdicao('editar')
     setRegistroEditando(registro)
     setFormData({
-      data: new Date(registro.data).toISOString().substring(0, 10),
+      data: formatDateForInput(registro.data), // Use a função utilitária
       conteudo: registro.conteudo,
       observacoes: registro.observacoes || '',
     })
@@ -208,7 +233,7 @@ export default function RegistrosPlanoAula() {
             <div className="flex items-center gap-4">
               <Dialog open={modoEdicao !== null} onOpenChange={(open) => !open && cancelarEdicao()}>
                 <DialogTrigger asChild>
-                  <Button 
+                  <Button
                     onClick={abrirAdicionar}
                     className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 text-lg font-semibold"
                   >
@@ -344,15 +369,10 @@ export default function RegistrosPlanoAula() {
                           </div>
                           <div>
                             <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                              {new Date(registro.data).toLocaleDateString('pt-BR', {
-                                weekday: 'long',
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                              })}
+                              {formatDateForDisplay(registro.data)}
                             </h3>
                             <p className="text-gray-500 dark:text-gray-400 text-sm">
-                              {new Date(registro.data).toLocaleDateString('pt-BR')}
+                              {formatShortDateForDisplay(registro.data)}
                             </p>
                           </div>
                         </div>
