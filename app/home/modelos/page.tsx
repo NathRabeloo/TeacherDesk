@@ -454,7 +454,7 @@ export default function Modelos() {
             </div>
           )}
 
-          {!loading && modelos.length === 0 && (
+          {/* {!loading && modelos.length === 0 && (
             <div className="text-center py-16">
               <div className="flex items-center justify-center w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full mx-auto mb-6">
                 <FaDownload className="text-4xl text-gray-400" />
@@ -466,7 +466,7 @@ export default function Modelos() {
                 Adicione modelos clicando no botão Novo Modelo.
               </p>
             </div>
-          )}
+          )} */}
 
           {/* Paginação */}
           {totalPaginas > 1 && (

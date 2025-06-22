@@ -363,7 +363,7 @@ export default function PlanoAulasPage() {
             </div>
           )}
 
-          {!loading && planosFiltrados.length === 0 && (
+          {/* {!loading && planosFiltrados.length === 0 && (
             <div className="text-center py-16">
               <div className="flex items-center justify-center w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full mx-auto mb-6">
                 <FaBookOpen className="text-4xl text-gray-400" />
@@ -377,7 +377,7 @@ export default function PlanoAulasPage() {
                   : "Crie seu primeiro diário clicando no botão Novo Diário."}
               </p>
             </div>
-          )}
+          )} */}
 
           {/* Paginação */}
           {totalPaginas > 1 && (
