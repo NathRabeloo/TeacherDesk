@@ -644,223 +644,6 @@ export const deletarTutorial = async (tutorialId: string) => {
     return { success: true };
 };
 
-// Criar Bibliografia
-export const criarBibliografia = async (formData: FormData) => {
-  const titulo = formData.get("titulo")?.toString();
-  const link = formData.get("link")?.toString();
-  const nome_professor = formData.get("nome_professor")?.toString();
-  const disciplina_id = formData.get("disciplina_id")?.toString();
-
-  if (!titulo || !link || !disciplina_id || !nome_professor) {
-    return { error: "Todos os campos são obrigatórios" };
-  }
-
-  const supabase = createClient();
-  const {
-    data: { user },
-    error: authError
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return { error: "Usuário não autenticado" };
-  }
-
-  const user_id = user.id;
-
-  const { data, error } = await supabase
-    .from("Bibliografia")
-    .insert([{ titulo, link, disciplina_id, user_id, nome_professor }])
-    .select()
-    .single();
-
-  if (error) {
-    console.error("Erro ao criar bibliografia:", error.message);
-    return { error: error.message };
-  }
-
-  return { success: true, data };
-};
-
-
-// Listar Bibliografias
-export const listarBibliografias = async (filtroDisciplinaId?: string) => {
-  const supabase = createClient();
-  const {
-    data: { user },
-    error: authError
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return { error: "Usuário não autenticado" };
-  }
-
-  let query = supabase
-    .from("Bibliografia")
-    .select("id, titulo, link, created_at, disciplina_id, nome_professor")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
-
-  if (filtroDisciplinaId) {
-    query = query.eq("disciplina_id", filtroDisciplinaId);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error("Erro ao listar bibliografias:", error.message);
-    return { error: error.message };
-  }
-
-  return { data };
-};
-
-
-// Editar Bibliografia
-export const editarBibliografia = async (formData: FormData) => {
-  const id = formData.get("id")?.toString();
-  const titulo = formData.get("titulo")?.toString();
-  const link = formData.get("link")?.toString();
-  const disciplina_id = formData.get("disciplina_id")?.toString();
-  const nome_professor = formData.get("nome_professor")?.toString();
-
-  if (!id || !titulo || !link || !disciplina_id || !nome_professor) {
-    return { error: "Todos os campos são obrigatórios" };
-  }
-
-  const supabase = createClient();
-  const {
-    data: { user },
-    error: authError
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return { error: "Usuário não autenticado" };
-  }
-
-  const user_id = user.id;
-
-  const { data, error } = await supabase
-    .from("Bibliografia")
-    .update({ titulo, link, disciplina_id, nome_professor, user_id })
-    .eq("id", id)
-    .eq("user_id", user.id)
-    .select()
-    .single();
-
-  if (error) {
-    console.error("Erro ao editar bibliografia:", error.message);
-    return { error: error.message };
-  }
-
-  return { success: true, data };
-};
-
-
-// Deletar Bibliografia
-export const deletarBibliografia = async (id: string) => {
-  const supabase = createClient();
-  const {
-    data: { user },
-    error: authError
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return { error: "Usuário não autenticado" };
-  }
-
-  const { error } = await supabase
-    .from("Bibliografia")
-    .delete()
-    .eq("id", id)
-    .eq("user_id", user.id); // só permite deletar se for dono
-
-  if (error) {
-    console.error("Erro ao deletar bibliografia:", error.message);
-    return { error: error.message };
-  }
-
-  return { success: true };
-};
-
-// === FUNÇÕES PARA BIBLIOGRAFIA PÚBLICA ===
-
-export async function listarTodasBibliografias(filtroDisciplinaId?: string) {
-  const supabase = createClient();
-
-  let query = supabase
-    .from("Bibliografia")
-    .select(`
-      id,
-      titulo,
-      link,
-      created_at,
-      disciplina_id,
-      nome_professor,
-      Disciplina (
-        id,
-        nome
-      )
-    `)
-    .order("created_at", { ascending: false });
-
-  if (filtroDisciplinaId && filtroDisciplinaId !== "all") {
-    query = query.eq("disciplina_id", filtroDisciplinaId);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error("Erro ao buscar bibliografias:", error.message);
-    return [];
-  }
-
-  return data;
-}
-
-
-export const buscarBibliografia = async (id: string) => {
-  const supabase = createClient();
-
-  const { data, error } = await supabase
-    .from('Bibliografia')
-    .select(`
-      id,
-      titulo,
-      nome_professor,
-      disciplina_id,
-      disciplina!inner(nome)
-    `)
-    .eq('id', id)
-    .single();
-
-  if (error) {
-    console.error('Erro ao buscar bibliografia:', error.message);
-    return { error: error.message };
-  }
-
-  const bibliografia = data ? {
-    ...data,
-    disciplina_nome: Array.isArray(data.disciplina) && data.disciplina.length > 0 ? data.disciplina[0].nome : 'Não informada'
-  } : null;
-
-  return { data: bibliografia };
-};
-
-export const listarTodasDisciplinas = async () => {
-  const supabase = createClient();
-  
-  const { data, error } = await supabase
-    .from("Disciplina")
-    .select("id, nome")
-    .order("nome", { ascending: true });
-  
-  if (error) {
-    console.error("Erro ao listar todas disciplinas:", error.message);
-    return [];
-  }
-
-  return data;
-};
 
 export async function carregarMetas() {
   const supabase = createClient();
@@ -978,3 +761,255 @@ export async function removerTarefa(id: string) {
 }
 
 
+
+const getUserInfo = async (supabase: any) => {
+  const {
+    data: { user },
+    error: authError
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { user: null, error: "Usuário não autenticado" };
+  }
+
+  const displayName = user.user_metadata?.full_name || 
+                     user.user_metadata?.name || 
+                     user.user_metadata?.display_name;
+
+  return { 
+    user, 
+    displayName,
+  };
+};
+
+// Criar Bibliografia (Atualizada)
+export const criarBibliografia = async (formData: FormData) => {
+  const titulo = formData.get("titulo")?.toString();
+  const link = formData.get("link")?.toString();
+  const disciplina_id = formData.get("disciplina_id")?.toString();
+
+  if (!titulo || !link || !disciplina_id) {
+    return { error: "Título, link e disciplina são obrigatórios" };
+  }
+
+  const supabase = createClient();
+  const { user, displayName, error: userError } = await getUserInfo(supabase);
+
+  if (userError || !user) {
+    return { error: userError };
+  }
+
+  const { data, error } = await supabase
+    .from("Bibliografia")
+    .insert([{ 
+      titulo, 
+      link, 
+      disciplina_id, 
+      user_id: user.id, 
+      nome_professor: displayName 
+    }])
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Erro ao criar bibliografia:", error.message);
+    return { error: error.message };
+  }
+
+  return { success: true, data };
+};
+
+export const listarBibliografias = async (filtroDisciplinaId?: string) => {
+  const supabase = createClient();
+  const {
+    data: { user },
+    error: authError
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { error: "Usuário não autenticado" };
+  }
+
+  let query = supabase
+    .from("Bibliografia")
+    .select("id, titulo, link, created_at, disciplina_id, nome_professor")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (filtroDisciplinaId) {
+    query = query.eq("disciplina_id", filtroDisciplinaId);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("Erro ao listar bibliografias:", error.message);
+    return { error: error.message };
+  }
+
+  return { data };
+};
+
+export const editarBibliografia = async (formData: FormData) => {
+  const id = formData.get("id")?.toString();
+  const titulo = formData.get("titulo")?.toString();
+  const link = formData.get("link")?.toString();
+  const disciplina_id = formData.get("disciplina_id")?.toString();
+
+  if (!id || !titulo || !link || !disciplina_id) {
+    return { error: "Todos os campos são obrigatórios" };
+  }
+
+  const supabase = createClient();
+  const { user, displayName, error: userError } = await getUserInfo(supabase);
+
+  if (userError || !user) {
+    return { error: userError };
+  }
+
+  const { data: currentData } = await supabase
+    .from("Bibliografia")
+    .select("nome_professor")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .single();
+
+  const { data, error } = await supabase
+    .from("Bibliografia")
+    .update({ 
+      titulo, 
+      link, 
+      disciplina_id,
+      nome_professor: currentData?.nome_professor || displayName
+    })
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Erro ao editar bibliografia:", error.message);
+    return { error: error.message };
+  }
+
+  return { success: true, data };
+};
+
+export const deletarBibliografia = async (id: string) => {
+  const supabase = createClient();
+  const {
+    data: { user },
+    error: authError
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { error: "Usuário não autenticado" };
+  }
+
+  const { error } = await supabase
+    .from("Bibliografia")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (error) {
+    console.error("Erro ao deletar bibliografia:", error.message);
+    return { error: error.message };
+  }
+
+  return { success: true };
+};
+
+export const getUserCurrentInfo = async () => {
+  const supabase = createClient();
+  const { user, displayName, error } = await getUserInfo(supabase);
+  
+  if (error) {
+    return { error };
+  }
+
+  return { 
+    success: true, 
+    data: { 
+      id: user.id,
+      name: displayName
+    } 
+  };
+};
+
+export async function listarTodasBibliografias(filtroDisciplinaId?: string) {
+  const supabase = createClient();
+
+  let query = supabase
+    .from("Bibliografia")
+    .select(`
+      id,
+      titulo,
+      link,
+      created_at,
+      disciplina_id,
+      nome_professor,
+      Disciplina (
+        id,
+        nome
+      )
+    `)
+    .order("created_at", { ascending: false });
+
+  if (filtroDisciplinaId && filtroDisciplinaId !== "all") {
+    query = query.eq("disciplina_id", filtroDisciplinaId);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("Erro ao buscar bibliografias:", error.message);
+    return [];
+  }
+
+  return data;
+}
+
+export const buscarBibliografia = async (id: string) => {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from('Bibliografia')
+    .select(`
+      id,
+      titulo,
+      nome_professor,
+      disciplina_id,
+      disciplina!inner(nome)
+    `)
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    console.error('Erro ao buscar bibliografia:', error.message);
+    return { error: error.message };
+  }
+
+  const bibliografia = data ? {
+    ...data,
+    disciplina_nome: Array.isArray(data.disciplina) && data.disciplina.length > 0 ? data.disciplina[0].nome : 'Não informada'
+  } : null;
+
+  return { data: bibliografia };
+};
+
+export const listarTodasDisciplinas = async () => {
+  const supabase = createClient();
+  
+  const { data, error } = await supabase
+    .from("Disciplina")
+    .select("id, nome")
+    .order("nome", { ascending: true });
+  
+  if (error) {
+    console.error("Erro ao listar todas disciplinas:", error.message);
+    return [];
+  }
+
+  return data;
+};

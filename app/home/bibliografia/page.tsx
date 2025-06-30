@@ -18,12 +18,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  FaBook,
   FaPlus,
   FaSearch,
   FaExternalLinkAlt,
   FaEdit,
   FaTrash,
+  FaUser,
 } from "react-icons/fa";
 
 import {
@@ -32,6 +32,7 @@ import {
   editarBibliografia,
   deletarBibliografia,
   listarDisciplinas,
+  getUserCurrentInfo,
 } from "@/app/actions";
 
 interface BibliografiaItem {
@@ -40,7 +41,7 @@ interface BibliografiaItem {
   link: string;
   disciplina_id: string;
   user_id: string;
-  nome_professor?: string; // novo campo nome_professor
+  nome_professor?: string;
   created_at?: string;
 }
 
@@ -49,9 +50,15 @@ interface Disciplina {
   nome: string;
 }
 
+interface UserInfo {
+  id: string;
+  name: string;
+}
+
 const Bibliografia: React.FC = () => {
   const [bibliografia, setBibliografia] = useState<BibliografiaItem[]>([]);
   const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [modalAberto, setModalAberto] = useState(false);
   const [modalConfirmarExcluirAberto, setModalConfirmarExcluirAberto] = useState(false);
   const [modalConfirmarLinkAberto, setModalConfirmLink] = useState<BibliografiaItem | null>(null);
@@ -59,7 +66,6 @@ const Bibliografia: React.FC = () => {
   const [titulo, setTitulo] = useState("");
   const [link, setLink] = useState("");
   const [disciplinaSelecionada, setDisciplinaSelecionada] = useState("");
-  const [nome_professor, setnome_professor] = useState(""); // estado nome_professor
   const [idEditando, setIdEditando] = useState<number | null>(null);
 
   const [paginaAtual, setPaginaAtual] = useState(1);
@@ -77,6 +83,12 @@ const Bibliografia: React.FC = () => {
   async function carregarDados() {
     setCarregando(true);
     try {
+      // Carregar informações do usuário
+      const userResponse = await getUserCurrentInfo();
+      if (userResponse.success && userResponse.data) {
+        setUserInfo(userResponse.data);
+      }
+
       // Carregar disciplinas
       const disciplinasData = await listarDisciplinas();
       setDisciplinas(disciplinasData || []);
@@ -124,8 +136,8 @@ const Bibliografia: React.FC = () => {
   }, [filtroDisciplina]);
 
   const handleSalvar = async () => {
-    if (!titulo.trim() || !link.trim() || !disciplinaSelecionada || !nome_professor.trim()) {
-      alert("Título, link, disciplina e nome do professor que está adicionando são obrigatórios!");
+    if (!titulo.trim() || !link.trim() || !disciplinaSelecionada) {
+      alert("Título, link e disciplina são obrigatórios!");
       return;
     }
 
@@ -135,7 +147,6 @@ const Bibliografia: React.FC = () => {
       formData.append("titulo", titulo);
       formData.append("link", link);
       formData.append("disciplina_id", disciplinaSelecionada);
-      formData.append("nome_professor", nome_professor); // enviar nome_professor
 
       let res;
       if (idEditando) {
@@ -166,7 +177,6 @@ const Bibliografia: React.FC = () => {
     setTitulo("");
     setLink("");
     setDisciplinaSelecionada("");
-    setnome_professor(""); // limpar nome_professor
     setIdEditando(null);
   };
 
@@ -182,7 +192,6 @@ const Bibliografia: React.FC = () => {
     setTitulo(item.titulo);
     setLink(item.link);
     setDisciplinaSelecionada(item.disciplina_id);
-    setnome_professor(item.nome_professor || ""); // setar nome_professor ao editar
     setModalAberto(true);
   };
 
@@ -218,7 +227,6 @@ const Bibliografia: React.FC = () => {
     }
   };
 
-  // Obter nome da disciplina
   const getNomeDisciplina = (disciplinaId: string) => {
     const disciplina = disciplinas.find(d => d.id === disciplinaId);
     return disciplina?.nome || "Disciplina não encontrada";
@@ -234,18 +242,6 @@ const Bibliografia: React.FC = () => {
   );
 
   const totalPaginas = Math.ceil(livrosFiltrados.length / itensPorPagina);
-
-  // if (carregando && bibliografia.length === 0) {
-  //   return (
-  //     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-  //       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-  //         <div className="p-8 text-center">
-  //           <p className="text-xl text-gray-500 dark:text-gray-400">Carregando...</p>
-  //         </div>
-  //       </div>
-  //     </div>
-  //   );
-  // }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -264,6 +260,12 @@ const Bibliografia: React.FC = () => {
                 <p className="text-gray-600 dark:text-gray-300 text-lg mt-1">
                   Adicione links de bibliografias e conteúdos para suas disciplinas
                 </p>
+                {userInfo && (
+                  <div className="flex items-center space-x-2 mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    <FaUser className="text-xs" />
+                    <span>Logado como: <strong>{userInfo.name}</strong></span>
+                  </div>
+                )}
               </div>
             </div>
             
@@ -364,12 +366,6 @@ const Bibliografia: React.FC = () => {
               </div>
             </div>
           ))}
-
-          {/* {livrosVisiveis.length === 0 && (
-            <p className="text-center text-gray-500 dark:text-gray-400 col-span-full">
-              Nenhum livro encontrado.
-            </p>
-          )} */}
         </div>
 
         {/* Paginação */}
@@ -443,17 +439,18 @@ const Bibliografia: React.FC = () => {
               </Select>
             </div>
 
-            {/* Campo nome_professor adicionado */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Adicionado por: *</label>
-              <Input
-                value={nome_professor}
-                onChange={(e) => setnome_professor(e.target.value)}
-                placeholder="Digite o seu nome quando adicionar a bibliografia"
-                className="w-full"
-                disabled={carregando}
-              />
-            </div>
+            {/* Informação do usuário (apenas exibição) */}
+            {userInfo && (
+              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                  Será adicionado por:
+                </label>
+                <div className="flex items-center space-x-2 text-gray-800 dark:text-gray-200">
+                  <FaUser className="text-blue-500" />
+                  <span className="font-medium">{userInfo.name}</span>
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter className="mt-6">
             <Button
